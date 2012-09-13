@@ -69,29 +69,3 @@ void Kernel<Laplace>::P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P k
   }
 #endif
 }
-
-template<>
-void Kernel<VanDerWaals>::P2P(C_iter Ci, C_iter Cj) const {     // Van der Waals P2P kernel on CPU
-  for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
-    int atypei = int(Bi->SRC);                                  //  Atom type of target
-    for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
-      int atypej = int(Bj->SRC);                                //   Atom type of source
-      vect dist = Bi->X - Bj->X - Xperiodic;                    //   Distance vector from source to target
-      real R2 = norm(dist);                                     //   R squared
-      if( R2 != 0 ) {                                           //   Exclude self interaction
-        real rs = RSCALE[atypei*ATOMS+atypej];                  //    r scale
-        real gs = GSCALE[atypei*ATOMS+atypej];                  //    g scale
-        real R2s = R2 * rs;                                     //    R^2 * r scale
-        if( R2MIN <= R2s && R2s < R2MAX ) {                     //    Exclude outlier values
-          real invR2 = 1.0 / R2s;                               //     1 / R^2
-          real invR6 = invR2 * invR2 * invR2;                   //     1 / R^6
-          real dtmp = gs * invR6 * invR2 * (2.0 * invR6 - 1.0); //     g scale / R^2 * (2 / R^12 + 1 / R^6)
-          Bi->TRG[0] += gs * invR6 * (invR6 - 1.0);             //     Van der Waals potential
-          Bi->TRG[1] -= dist[0] * dtmp;                         //     x component of Van der Waals force
-          Bi->TRG[2] -= dist[1] * dtmp;                         //     y component of Van der Waals force
-          Bi->TRG[3] -= dist[2] * dtmp;                         //     z component of Van der Waals force
-        }                                                       //    End if for outlier values
-      }                                                         //   End if for self interaction 
-    }                                                           //  End loop over source bodies
-  }                                                             // End loop over target bodies
-}

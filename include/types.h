@@ -130,8 +130,7 @@ typedef std::map<std::string,double>           Timer;           //!< Map of time
 typedef std::map<std::string,double>::iterator TI_iter;         //!< Iterator for timer event name map
 
 enum Equation {                                                 //!< Equation type enumeration
-  Laplace,                                                      //!< Laplace potential + force
-  VanDerWaals                                                   //!< Van der Walls potential + force
+  Laplace                                                       //!< Laplace potential + force
 };
 
 //! Structure of source bodies (stuff to send)
@@ -214,13 +213,5 @@ typedef std::map<C_iter,int>           Map;                     //!< Map of inte
 typedef std::map<C_iter,int>::iterator MC_iter;                 //!< Iterator for interation list map
 typedef std::vector<Map>               Maps;                    //!< Vector of map of interaction lists
 
-//! Structure for Ewald summation
-struct Ewald {
-  vect K;                                                       //!< 3-D wave number vector
-  real REAL;                                                    //!< real part of wave
-  real IMAG;                                                    //!< imaginary part of wave
-};
-typedef std::vector<Ewald>             Ewalds;                  //!< Vector of Ewald summation types
-typedef std::vector<Ewald>::iterator   E_iter;                  //!< Iterator for Ewald summation types
 
 #endif

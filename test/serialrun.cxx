@@ -24,8 +24,10 @@ THE SOFTWARE.
 #include "vtk.h"
 #endif
 
+#define TOPDOWN
+
 int main() {
-  const int numBodies = 10000;                                  // Number of bodies
+  const int numBodies = 125000;                                  // Number of bodies
   const int numTarget = 100;                                    // Number of target points to be used for error eval
   IMAGES = 0;                                                   // Level of periodic image tree (0 for non-periodic)
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria

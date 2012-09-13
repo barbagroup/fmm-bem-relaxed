@@ -88,7 +88,7 @@ private:
 
 //! Form parent-child mutual link
   void linkParent(Cells &cells, int &begin, int &end) {
-    Cell parent;                                                // Parent cell
+    Cell parent = Cell();                                                // Parent cell
     Cells parents;                                              // Parent cell vector;
     int oldend = end;                                           // Save old end counter
     parent.ICELL = getParent(cells[begin].ICELL);               // Set cell index
@@ -155,7 +155,7 @@ public:
     int nleaf = 0;                                              // Initialize number of leafs
     bigint index = bodies[0].ICELL;                             // Initialize cell index
     B_iter firstLeaf = bodies.begin();                          // Initialize body iterator for first leaf
-    Cell cell;                                                  // Cell structure
+    Cell cell = Cell();                                                  // Cell structure
     for( B_iter B=bodies.begin(); B!=bodies.end(); ++B ) {      // Loop over bodies
       if( B->ICELL != index ) {                                 //  If it belongs to a new cell
         cell.NCLEAF = nleaf;                                    //   Set number of child leafs

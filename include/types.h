@@ -62,8 +62,8 @@ int omp_get_thread_num() {
 #endif
 
 typedef unsigned           bigint;                              //!< Big integer type
-typedef float              real;                                //!< Real number type on CPU
-typedef float              gpureal;                             //!< Real number type on GPU
+typedef double              real;                                //!< Real number type on CPU
+typedef double              gpureal;                             //!< Real number type on GPU
 typedef std::complex<real> complex;                             //!< Complex number type
 typedef vec<3,real>        vect;                                //!< 3-D vector type
 
@@ -90,8 +90,8 @@ extern int PAPIEVENT;                                           //!< PAPI event 
 #endif
 #endif
 
-const int  P        = 10;                                       //!< Order of expansions
-const int  NCRIT    = 100;                                      //!< Number of bodies per cell
+const int  P        = 8;                                       //!< Order of expansions
+const int  NCRIT    = 200;                                      //!< Number of bodies per cell
 const int  MAXBODY  = 200000;                                   //!< Maximum number of bodies per GPU kernel
 const int  MAXCELL  = 10000000;                                 //!< Maximum number of bodies/coefs in cell per GPU kernel
 const real CLET     = 2;                                        //!< LET opening critetia
@@ -185,7 +185,7 @@ struct JCell {
   bigint ICELL;                                                 //!< Cell index
   Mset   M;                                                     //!< Multipole coefficients
 
-  JCell() { M.resize(MTERM); };
+  JCell() { M.resize(NTERM); };
 };
 typedef std::vector<JCell>             JCells;                  //!< Vector of source cells
 typedef std::vector<JCell>::iterator   JC_iter;                 //!< Iterator for source cell vector
@@ -206,7 +206,7 @@ struct Cell {
   Mset     M;                                                   //!< Multipole coefficients
   Lset     L;                                                   //!< Local coefficients
 
-  Cell() { M.resize(MTERM); L.resize(LTERM); };
+  Cell() { M.resize(NTERM); L.resize(NTERM); };
 };
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells
 typedef std::vector<Cell>::iterator    C_iter;                  //!< Iterator for cell vector

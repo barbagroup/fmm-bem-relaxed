@@ -75,7 +75,6 @@ public:
   using Kernel<equation>::P2P;                                  //!< Evaluate P2P kernel
   using Kernel<equation>::L2L;                                  //!< Evaluate L2L kernel
   using Kernel<equation>::L2P;                                  //!< Evaluate L2P kernel
-  using Kernel<equation>::EwaldReal;                            //!< Evaluate Ewald real part
   using Dataset<equation>::initSource;                          //!< Initialize source values
   using Dataset<equation>::initTarget;                          //!< Initialize target values
 
@@ -100,25 +99,6 @@ private:
 #if QUARK
   inline void interact(C_iter Ci, C_iter Cj, Quark *quark);     //!< interact() function using QUARK
 #endif
-
-//! Traverse a single tree using a stack
-  void traverseStack(C_iter Ci, C_iter C) {
-    CellStack cellStack;                                        // Stack of cells
-    cellStack.push(C);                                          // Push pair to queue
-    while( !cellStack.empty() ) {                               // While traversal stack is not empty
-      C = cellStack.top();                                      //  Get cell from top of stack
-      cellStack.pop();                                          //  Pop traversal stack
-      for( C_iter Cj=Cj0+C->CHILD; Cj!=Cj0+C->CHILD+C->NCHILD; ++Cj ) {// Loop over cell's children
-        vect dX = Ci->X - Cj->X - Xperiodic;                    //   Distance vector from source to target
-        real Rq = std::sqrt(norm(dX));                          //   Scalar distance
-        if( Rq * THETA < Ci->R + Cj->R && Cj->NCHILD == 0 ) {   //   If twigs are close
-          evalEwaldReal(Ci,Cj);                                 //    Ewald real part
-        } else if( Cj->NCHILD != 0 ) {                          //   If cells are not twigs
-          cellStack.push(Cj);                                   //    Push source cell to stack
-        }                                                       //   End if for twig cells
-      }                                                         //  End loop over cell's children
-    }                                                           // End while loop for traversal stack
-  }
 
 //! Traverse a pair of trees using a queue
   void traverseQueue(Pair pair) {
@@ -415,37 +395,6 @@ public:
     }                                                           // Endif for periodic boundary condition
   }
 
-//! Traverse neighbor cells only (for cutoff based methods)
-  void neighbor(Cells &cells, Cells &jcells) {
-    C_iter root = cells.end() - 1;                              // Iterator for root target cell
-    C_iter jroot = jcells.end() - 1;                            // Iterator for root source cell
-    Ci0 = cells.begin();                                        // Set begin iterator for target cells
-    Cj0 = jcells.begin();                                       // Set begin iterator for source cells
-    listP2P.resize(cells.size());                               // Resize P2P interaction list
-    flagP2P.resize(cells.size());                               // Resize P2P periodic image flag
-    for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {     // Loop over target cells
-      if( Ci->NCHILD == 0 ) {                                   //  If cell is a twig
-        int I = 0;                                              //   Initialize index of periodic image
-        for( int ix=-1; ix<=1; ++ix ) {                         //   Loop over x periodic direction
-          for( int iy=-1; iy<=1; ++iy ) {                       //    Loop over y periodic direction
-            for( int iz=-1; iz<=1; ++iz, ++I ) {                //     Loop over z periodic direction
-              Iperiodic = 1 << I;                               //      Set periodic image flag
-              Xperiodic[0] = ix * 2 * R0;                       //      Coordinate offset for x periodic direction
-              Xperiodic[1] = iy * 2 * R0;                       //      Coordinate offset for y periodic direction
-              Xperiodic[2] = iz * 2 * R0;                       //      Coordinate offset for z periodic direction
-              traverseStack(Ci,jroot);                          //      Traverse the source tree
-            }                                                   //     End loop over z periodic direction
-          }                                                     //    End loop over y periodic direction
-        }                                                       //   End loop over x periodic direction
-        for( B_iter B=Ci->LEAF; B!=Ci->LEAF+Ci->NCLEAF; ++B) {  //   Loop over all leafs in cell
-          B->TRG[0] -= M_2_SQRTPI * B->SRC * ALPHA;             //    Self term of Ewald real part
-        }                                                       //   End loop over all leafs in cell
-      }                                                         //  End if for twig cells
-      listP2P[Ci-Ci0].sort();                                   //  Sort interaction list
-      listP2P[Ci-Ci0].unique();                                 //  Eliminate duplicate periodic entries
-    }                                                           // End loop over target cells
-  }
-
   void setSourceBody();                                         //!< Set source buffer for bodies (for GPU)
   void setSourceCell(bool isM);                                 //!< Set source buffer for cells (for GPU)
   void setTargetBody(Lists lists, Maps flags);                  //!< Set target buffer for bodies (for GPU)
@@ -465,8 +414,6 @@ public:
   void evalP2P(Cells &cells);                                   //!< Evaluate queued P2P kernels (near field)
   void evalL2L(Cells &cells);                                   //!< Evaluate all L2L kernels
   void evalL2P(Cells &cells);                                   //!< Evaluate all L2P kernels
-  void evalEwaldReal(C_iter Ci, C_iter Cj);                     //!< Evaluate on CPU, queue on GPU
-  void evalEwaldReal(Cells &cells);                             //!< Evaluate queued Ewald real kernels
 };
 
 #if CPU

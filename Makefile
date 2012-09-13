@@ -12,5 +12,8 @@ OBJECT = kernel/$(DEVICE)$(EXPAND)Laplace.o kernel/CPUP2P.o
 serial: test/serialrun.cxx $(OBJECT)
 	$(CXX) $? $(LFLAGS) -o serial
 
+clean:
+	@rm -f kernel/*.o serial
+
 .cxx.o:
 	$(CXX) -c $? -o $@ $(LFLAGS)

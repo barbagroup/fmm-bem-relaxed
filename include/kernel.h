@@ -277,6 +277,7 @@ public:
     delete[] Cnm;                                               // Free M2L translation matrix Cjknm
   }
 
+#if 0
 //! Set paramters for Van der Waals
   void setVanDerWaals(int atoms, double *rscale, double *gscale) {
     assert(atoms <= 16);                                        // Change GPU constant memory alloc if needed
@@ -297,6 +298,7 @@ public:
     SIGMA = sigma;                                              // Set scaling parameter
   }
 
+#endif
 };
 
 template<Equation equation>
@@ -310,8 +312,10 @@ public:
   void P2P(C_iter Ci, C_iter Cj) const;                         //!< Evaluate P2P kernel on CPU
   void L2L(C_iter Ci) const;                                    //!< Evaluate L2L kernel on CPU
   void L2P(C_iter Ci) const;                                    //!< Evaluate L2P kernel on CPU
+#if 0
   void EwaldReal(C_iter Ci, C_iter Cj) const;                   //!< Evaluate Ewald real part on CPU
   void EwaldWave(Bodies &bodies) const;                         //!< Evaluate Ewald wave part on CPU
+#endif
   void P2M();                                                   //!< Evaluate P2M kernel on GPU
   void M2M();                                                   //!< Evaluate M2M kernel on GPU
   void M2L();                                                   //!< Evaluate M2L kernel on GPU
@@ -319,8 +323,10 @@ public:
   void P2P();                                                   //!< Evalaute P2P kernel on GPU
   void L2L();                                                   //!< Evaluate L2L kernel on GPU
   void L2P();                                                   //!< Evaluate L2P kernel on GPU
+#if 0
   void EwaldReal();                                             //!< Evaluate Ewald real part on GPU
   void EwaldWave();                                             //!< Evalaute Ewald wave part on GPU
+#endif
   void finalize();                                              //!< Finalize kernels
 
   void allocate();                                              //!< Allocate GPU variables

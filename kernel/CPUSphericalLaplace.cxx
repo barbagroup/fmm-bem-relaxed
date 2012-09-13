@@ -264,4 +264,3 @@ void Kernel<Laplace>::L2P(C_iter Ci) const {
 template<>
 void Kernel<Laplace>::finalize() {}
 
-#include "../kernel/CPUEwaldLaplace.cxx"

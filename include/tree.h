@@ -43,7 +43,6 @@ public:
   using Evaluator<equation>::upwardPeriodic;                    //!< Upward phase for periodic cells
   using Evaluator<equation>::traverse;                          //!< Traverse tree to get interaction list
   using Evaluator<equation>::traversePeriodic;                  //!< Traverse tree for periodic images
-  using Evaluator<equation>::neighbor;                          //!< Traverse source tree to get neighbor list
   using Evaluator<equation>::evalP2M;                           //!< Evaluate P2M kernel
   using Evaluator<equation>::evalM2M;                           //!< Evaluate M2M kernel
   using Evaluator<equation>::evalM2L;                           //!< Evaluate M2L kernel
@@ -51,8 +50,6 @@ public:
   using Evaluator<equation>::evalP2P;                           //!< Evaluate P2P kernel
   using Evaluator<equation>::evalL2L;                           //!< Evaluate L2L kernel
   using Evaluator<equation>::evalL2P;                           //!< Evaluate L2P kernel
-  using Evaluator<equation>::evalEwaldReal;                     //!< Evaluate Ewald real part
-  using Evaluator<equation>::EwaldWave;                         //!< Evalaute Ewald wave part
 
 private:
 //! Get parent cell index from current cell index
@@ -249,16 +246,6 @@ public:
                            << " M2L: " << NM2L << std::endl;
   }
 
-//! Calculate Ewald summation
-  void Ewald(Bodies &bodies, Cells &cells, Cells &jcells) {
-    startTimer("Ewald wave");                                   // Start timer
-    EwaldWave(bodies);                                          // Ewald wave part
-    stopTimer("Ewald wave",printNow);                           // Stop timer & print
-    startTimer("Ewald real");                                   // Start timer
-    neighbor(cells,jcells);                                     // Neighbor calculation for real part
-    evalEwaldReal(cells);                                       // Evaluate queued Ewald real kernels (only GPU)
-    stopTimer("Ewald real",printNow);                           // Stop timer & print
-  }
 };
 
 #endif

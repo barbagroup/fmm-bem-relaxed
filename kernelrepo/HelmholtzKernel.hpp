@@ -1,35 +1,31 @@
 #pragma once
+/** @file HelmholtzKernel.hpp
+ * @brief Helmholtz Kernel class to provide Helmholtz FMM operations.
+ */
 
 #include "Point.hpp"
 
 #include <vector>
 
-/** @file Kernel.hpp
- * @brief Example Kernel class to be used for Tree/FMM codes. */
-
-/** @class Kernel
- * @brief Example Kernel that can be followed to develop Kernel classes for
- * Tree/FMM code.
- *
- * This class acts as a starting point for defining Kernels that may be
- * used with the treecode and fast multipole method implementations provided in
- * TODO.txt.
- *
- * Not all methods must be implemented, but most constexr and typedefs should
- * be kept for compatibility.
+/** @class HelmholtzKernel
+ * @brief The Helmholtz kernel is defined as K(pi,pj) = exp(ik|pi-pj|)/(|pi-pj|).
+ * This class implements
  */
-class Kernel
+class HelmHoltzKernel
 {
+  /* The wavenumber of the Helmholtz kernel */
+  double kappa;
+
   static constexpr int dimension = 3;
   typedef Point point_type;
-  typedef double charge_type;
-  typedef double range_type;
+  typedef std::complex<double> charge_type;
+  typedef std::complex<double> range_type;
 
-  typedef std::vector<double> multipole_type;
-  typedef std::vector<double> local_type;
+  typedef S2Function multipole_type;
+  typedef S2Function local_type;
 
   std::string name() {
-    return "Kernel Name";
+    return "Helmholtz Kernel";
   }
 
   multipole_type init_multipole(double box_size) const {
@@ -39,19 +35,12 @@ class Kernel
     return local_type();
   }
 
-  /** Translation-invariant Kernel flag.
-   Translation-variant Kernels are currently ot supported.
-   Are there any FMMs that do? */
   static constexpr bool is_translation_invariant = true;
   /** Rotation-invariant Kernel evalutation flag */
   static constexpr bool is_rotation_invariant = true;
-  /** Symmetric Kernel evaulation flag
-   * True when K(r1,r2) = K(r2,r1)
-   * This is often the case with potential kernels */
+  /** Symmetric Kernel evaulation flag */
   static constexpr bool is_symmetric = true;
-  /** Anti-symmetric Kernel evaluation flag
-   * True when K(r1,r2) = -K(r2,r1)
-   * This is often the case with force kernels */
+  /** Anti-symmetric Kernel evaluation flag */
   static constexpr bool is_antisymmetric = false;
 
   /* Only the trivial Kernel is both symmetric and anti-symmetric */
@@ -62,10 +51,8 @@ class Kernel
                 "Kernel rotationally-invariant, but not symmetric");
 
   /** Translation and rotation-invariant P2P Kernel evaluation
-   * Implement this function (and flag) when K(r1,r2) = K(|r1-r2|)
-   * This is often the case with potential kernels
    *
-   * @param[in] rij Positive scalar to evaluate the kernel, @a rij = |ri-rj|
+   * @param[in] rij Positive scalar to evaluate the kernel, @a pij = |pi-pj|
    * @result The value of the Kernel: K(pij) = K(|pi-pj|)
    */
   inline range_type operator()(const double pij) const {

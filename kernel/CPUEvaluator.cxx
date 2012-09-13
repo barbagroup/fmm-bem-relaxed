@@ -37,8 +37,10 @@ template<Equation equation>
 void Evaluator<equation>::evalP2M(Cells &cells) {               // Evaluate all P2M kernels
   startTimer("evalP2M");                                        // Start timer
   for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
-    C->M = 0;                                                   //  Initialize multipole coefficients
-    C->L = 0;                                                   //  Initialize local coefficients
+    for (size_t i=0; i<C->M.size(); i++) C->M[i] = 0;
+    //C->M = 0;                                                   //  Initialize multipole coefficients
+    for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
+    //C->L = 0;                                                   //  Initialize local coefficients
     if( C->NCHILD == 0 ) {                                      //  If cell is a twig
       P2M(C);                                                   //   Perform P2M kernel
     }                                                           //  Endif for twig

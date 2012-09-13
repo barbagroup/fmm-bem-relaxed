@@ -111,8 +111,13 @@ const int NTERM = P*(P+1)/2;                                    //!< Number of S
 typedef vec<MTERM,real>                        Mset;            //!< Multipole coefficient type for Cartesian
 typedef vec<LTERM,real>                        Lset;            //!< Local coefficient type for Cartesian
 #elif Spherical
+#if 0
 typedef vec<NTERM,complex>                     Mset;            //!< Multipole coefficient type for spherical
 typedef vec<NTERM,complex>                     Lset;            //!< Local coefficient type for spherical
+#else
+typedef std::vector<complex>  Mset;
+typedef std::vector<complex>  Lset;
+#endif
 #endif
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
 
@@ -179,6 +184,8 @@ typedef std::vector<Node>::iterator    N_iter;                  //!< Iterator fo
 struct JCell {
   bigint ICELL;                                                 //!< Cell index
   Mset   M;                                                     //!< Multipole coefficients
+
+  JCell() { M.resize(MTERM); };
 };
 typedef std::vector<JCell>             JCells;                  //!< Vector of source cells
 typedef std::vector<JCell>::iterator   JC_iter;                 //!< Iterator for source cell vector
@@ -198,6 +205,8 @@ struct Cell {
   real     RCRIT;                                               //!< Critical cell radius
   Mset     M;                                                   //!< Multipole coefficients
   Lset     L;                                                   //!< Local coefficients
+
+  Cell() { M.resize(MTERM); L.resize(LTERM); };
 };
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells
 typedef std::vector<Cell>::iterator    C_iter;                  //!< Iterator for cell vector

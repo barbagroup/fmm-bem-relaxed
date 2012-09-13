@@ -77,7 +77,8 @@ private:
           cells[c_old].LEAF = cells[c].LEAF;                    //    Copy iterator of first leaf
           sticks.push_back(cells[c_old]);                       //    Push stick into vector
         }                                                       //   Endif for collision type
-        cells[c_old].M += cells[c].M;                           //   Accumulate multipole
+        // cells[c_old].M += cells[c].M;                           //   Accumulate multipole
+        for (size_t i=0; i<cells[c_old].M.size(); i++) cells[c_old].M[i] += cells[c].M[i];
         cells.erase(cells.begin()+c);                           //   Erase colliding cell
         c--;                                                    //   Decrement counter to account for erase
         end--;                                                  //   Decrement end to account for erase
@@ -91,8 +92,10 @@ private:
     Cells parents;                                              // Parent cell vector;
     int oldend = end;                                           // Save old end counter
     parent.ICELL = getParent(cells[begin].ICELL);               // Set cell index
-    parent.M = 0;                                               // Initialize multipole coefficients
-    parent.L = 0;                                               // Initlalize local coefficients
+    // parent.M = 0;                                               // Initialize multipole coefficients
+    for (size_t i=0; i<parent.M.size(); i++) parent.M[i] = 0;
+    // parent.L = 0;                                               // Initlalize local coefficients
+    for (size_t i=0; i<parent.L.size(); i++) parent.L[i] = 0;
     parent.NCLEAF = parent.NDLEAF = parent.NCHILD = 0;          // Initialize NCLEAF, NDLEAF, & NCHILD
     parent.LEAF = cells[begin].LEAF;                            // Set pointer to first leaf
     parent.CHILD = begin;                                       // Link to child
@@ -102,8 +105,10 @@ private:
         cells.push_back(parent);                                //   Push cells into vector
         end++;                                                  //   Increment cell counter
         parent.ICELL = getParent(cells[i].ICELL);               //   Set cell index
-        parent.M = 0;                                           //   Initialize multipole coefficients
-        parent.L = 0;                                           //   Initialize local coefficients
+        // parent.M = 0;                                           //   Initialize multipole coefficients
+        for (size_t l=0; l<parent.M.size(); l++) parent.M[l] = 0;
+        // parent.L = 0;                                           //   Initialize local coefficients
+        for (size_t l=0; l<parent.L.size(); l++) parent.L[l] = 0;
         parent.NCLEAF = parent.NDLEAF = parent.NCHILD = 0;      //   Initialize NCLEAF, NDLEAF, & NCHILD
         parent.LEAF = cells[i].LEAF;                            //   Set pointer to first leaf
         parent.CHILD = i;                                       //   Link to child
@@ -220,7 +225,10 @@ public:
 #if HYBRID
     timeKernels();                                              // Time all kernels for auto-tuning
 #endif
-    for( C_iter C=cells.begin(); C!=cells.end(); ++C ) C->L = 0;// Initialize local coefficients
+    for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {        // Initialize local coefficients
+      //C->L = 0;
+      for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
+    }
     if( IMAGES != 0 ) {                                         // If periodic boundary condition
       startTimer("Upward P");                                   //  Start timer
       upwardPeriodic(jcells);                                   //  Upward phase for periodic images

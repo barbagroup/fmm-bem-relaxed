@@ -89,6 +89,8 @@ private:
 //! Form parent-child mutual link
   void linkParent(Cells &cells, int &begin, int &end) {
     Cell parent = Cell();                                                // Parent cell
+    parent.alloc_multipole(Kernel<equation>::multipole_size(getLevel(parent.ICELL)));
+    parent.alloc_local(Kernel<equation>::local_size(getLevel(parent.ICELL)));
     Cells parents;                                              // Parent cell vector;
     int oldend = end;                                           // Save old end counter
     parent.ICELL = getParent(cells[begin].ICELL);               // Set cell index
@@ -165,6 +167,10 @@ public:
         cell.ICELL  = index;                                    //   Set cell index
         cell.LEAF   = firstLeaf;                                //   Set pointer to first leaf
         getCenter(cell);                                        //   Set cell center and radius
+
+        cell.alloc_multipole(Kernel<equation>::multipole_size(getLevel(cell.ICELL)));
+        cell.alloc_local(Kernel<equation>::multipole_size(getLevel(cell.ICELL)));
+
         twigs.push_back(cell);                                  //   Push cells into vector
         firstLeaf = B;                                          //   Set new first leaf
         nleaf = 0;                                              //   Reset number of bodies

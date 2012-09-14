@@ -262,5 +262,17 @@ void Kernel<Laplace>::L2P(C_iter Ci) const {
 }
 
 template<>
+int Kernel<Laplace>::multipole_size(const int level)
+{
+  return P*(P+1)/2 + level*0; // to get rid of compiler warning
+}
+
+template<>
+int Kernel<Laplace>::local_size(const int level)
+{
+  return P*(P+1)/2 + (level*0);
+}
+
+template<>
 void Kernel<Laplace>::finalize() {}
 

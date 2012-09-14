@@ -103,9 +103,11 @@ const int  GPUS     = 3;                                        //!< Number of G
 const int  THREADS  = 64;                                       //!< Number of threads per thread-block
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
+#if 0
 const int MTERM = P*(P+1)*(P+2)/6;                              //!< Number of Cartesian mutlipole terms
 const int LTERM = (P+1)*(P+2)*(P+3)/6;                          //!< Number of Cartesian local terms
 const int NTERM = P*(P+1)/2;                                    //!< Number of Spherical multipole/local terms
+#endif
 
 #if Cartesian
 typedef vec<MTERM,real>                        Mset;            //!< Multipole coefficient type for Cartesian
@@ -185,7 +187,7 @@ struct JCell {
   bigint ICELL;                                                 //!< Cell index
   Mset   M;                                                     //!< Multipole coefficients
 
-  JCell() { M.resize(NTERM); };
+  JCell() {}; // { M.resize(NTERM); };
 };
 typedef std::vector<JCell>             JCells;                  //!< Vector of source cells
 typedef std::vector<JCell>::iterator   JC_iter;                 //!< Iterator for source cell vector
@@ -206,7 +208,9 @@ struct Cell {
   Mset     M;                                                   //!< Multipole coefficients
   Lset     L;                                                   //!< Local coefficients
 
-  Cell() { M.resize(NTERM); L.resize(NTERM); };
+  Cell() {}; // { M.resize(NTERM); L.resize(NTERM); };
+  void alloc_multipole(const int N) { M.resize(N); };
+  void alloc_local(const int N) { L.resize(N); };
 };
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells
 typedef std::vector<Cell>::iterator    C_iter;                  //!< Iterator for cell vector

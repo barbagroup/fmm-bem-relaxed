@@ -6,25 +6,35 @@
 #include "Point.hpp"
 
 #include <vector>
+#include <complex>
 
 /** @class HelmholtzKernel
  * @brief The Helmholtz kernel is defined as K(pi,pj) = exp(ik|pi-pj|)/(|pi-pj|).
  * This class implements
  */
-class HelmHoltzKernel
+struct HelmholtzKernel
 {
   /* The wavenumber of the Helmholtz kernel */
   double kappa;
+  static constexpr std::complex<double> CI = std::complex<double>(0,1);
 
   static constexpr int dimension = 3;
   typedef Point point_type;
   typedef std::complex<double> charge_type;
   typedef std::complex<double> range_type;
 
-  typedef S2Function multipole_type;
-  typedef S2Function local_type;
+  // TODO
+  //typedef S2Function multipole_type;
+  //typedef S2Function local_type;
 
-  std::string name() {
+  typedef std::vector<double> multipole_type;
+  typedef std::vector<double> local_type;
+
+  HelmholtzKernel(double kappa_)
+      : kappa(kappa_) {
+  }
+
+  std::string name() const {
     return "Helmholtz Kernel";
   }
 
@@ -35,51 +45,48 @@ class HelmHoltzKernel
     return local_type();
   }
 
-  static constexpr bool is_translation_invariant = true;
-  /** Rotation-invariant Kernel evalutation flag */
-  static constexpr bool is_rotation_invariant = true;
-  /** Symmetric Kernel evaulation flag */
-  static constexpr bool is_symmetric = true;
-  /** Anti-symmetric Kernel evaluation flag */
-  static constexpr bool is_antisymmetric = false;
-
-  /* Only the trivial Kernel is both symmetric and anti-symmetric */
-  static_assert(!(is_antisymmetric && is_symmetric),
-                "Kernel both symmetric and antisymmetric");
-  /* If rotationally-invariant than must also be symmetric */
-  static_assert(!is_rotation_invariant || is_symmetric,
-                "Kernel rotationally-invariant, but not symmetric");
-
-  /** Translation and rotation-invariant P2P Kernel evaluation
+  /** Kernel evaluation
    *
-   * @param[in] rij Positive scalar to evaluate the kernel, @a pij = |pi-pj|
-   * @result The value of the Kernel: K(pij) = K(|pi-pj|)
+   * @param[in] t The target point
+   * @param[in] s The source point
+   * @result The value of the Kernel, K(t,s)
    */
-  inline range_type operator()(const double pij) const {
-    return 1 / pij;
-  }
-
-  /** P2P Kernel evaluation
-   *
-   * @param[in] pi The position of the ith point
-   * @param[in] pj The position of the jth point
-   * @result The value of the Kernel: K(pi,pj)
-   */
-  inline range_type operator()(const point_type& pi,
-                               const point_type& pj) const {
-    return operator()((pi-pj).magnitude());
+  inline range_type operator()(const point_type& t,
+                               const point_type& s) const {
+    double r = (t-s).magnitude();
+    return exp(CI*kappa*r) / r;
   }
 
 
-  /** Alternative to the above flags and signatures?
-   * ::NO::, because want to cut the direct loop in half if symm/antisymm
+  /** P2P symmetric source-target Kernel accumulation
+   * ri += K(pi,pj) * cj
+   * rj += K(pj,pi) * ci
+   *
+   * @param[in]     pi,pj The interacting points
+   * @param[in]     ci,cj The charges of pi and pj respectively
+   * @param[in,out] ri,rj The results to accumulate into respectively
    */
   inline void P2P(const point_type& pi, const charge_type& ci,
+                  range_type& ri,
                   const point_type& pj, const charge_type& cj,
-                  range_type& ri, range_type& rj) const {
-    range_type val = operator()(pi,pj);
-    ri += cj * val;
-    rj += ci * val;
+                  range_type& rj) const {
+    range_type Kij = operator()(pi,pj);
+    ri += Kij * cj;
+    rj += Kij * ci;
+  }
+
+  /** P2P source-target Kernel accumulation
+   * r += K(t,s) * c
+   *
+   * @param[in]     t The target point
+   * @param[in]     s The source point
+   * @param[in]     c The source charge
+   * @param[in,out] r The result to accumulate into
+   */
+  inline void P2P(const point_type& t, const point_type& s,
+                  const charge_type& c,
+                  range_type& r) const {
+    r += operator()(t,s) * c;
   }
 
   /** m += P2M(p,c,r) */

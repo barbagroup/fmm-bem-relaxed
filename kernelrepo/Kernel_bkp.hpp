@@ -28,7 +28,7 @@ struct Kernel
   typedef std::vector<double> multipole_type;
   typedef std::vector<double> local_type;
 
-  std::string name() const {
+  std::string name() {
     return "Kernel Name";
   }
 
@@ -39,47 +39,75 @@ struct Kernel
     return local_type();
   }
 
-  /** Kernel evaluation
-   *
-   * @param[in] t The target point
-   * @param[in] s The source point
-   * @result The value of the Kernel, K(t,s)
+  /** Translation-invariant Kernel flag.
+   * Translation-variant Kernels are currently not supported.
+   * Are there any FMMs that do?
    */
-  inline range_type operator()(const point_type& t,
-                               const point_type& s) const {
+  static constexpr bool is_translation_invariant = true;
+  /** Rotation-invariant Kernel evalutation flag
+   * True when K(r1,r2) = K(|r1-r2|)
+   */
+  static constexpr bool is_rotation_invariant = true;
+  /** Symmetric Kernel evaulation flag
+   * True when K(r1,r2) = K(r2,r1)
+   * This is often the case with potential kernels
+   */
+  static constexpr bool is_symmetric = true;
+  /** Anti-symmetric Kernel evaluation flag
+   * True when K(r1,r2) = -K(r2,r1)
+   * This is often the case with force kernels
+   */
+  static constexpr bool is_antisymmetric = false;
+
+  /* Only the trivial Kernel is both symmetric and anti-symmetric */
+  static_assert(!(is_antisymmetric && is_symmetric),
+                "Kernel both symmetric and antisymmetric");
+  /* If rotationally-invariant than must also be symmetric */
+  static_assert(!is_rotation_invariant || is_symmetric,
+                "Kernel rotationally-invariant, but not symmetric");
+
+  /** Translation and rotation-invariant P2P Kernel evaluation
+   * Implement this function (and flag) when K(pi,pj) = K(|pi-pj|)
+   * This is often the case with potential kernels
+   *
+   * @param[in] rij Positive scalar to evaluate the kernel, @a pij = |pi-pj|
+   * @result The value of the Kernel: K(pij) = K(|pi-pj|)
+   */
+  inline range_type operator()(const double pij) const {
     return 1;
   }
 
-
-  /** P2P symmetric source-target Kernel accumulation
-   * ri += K(pi,pj) * cj
-   * rj += K(pj,pi) * ci
+  /** P2P Kernel evaluation
    *
-   * @param[in]     pi,pj The interacting points
-   * @param[in]     ci,cj The charges of pi and pj respectively
-   * @param[in,out] ri,rj The results to accumulate into respectively
+   * @param[in] pi The position of the ith point
+   * @param[in] pj The position of the jth point
+   * @result The value of the Kernel, K(pi,pj)
+   */
+  inline range_type operator()(const point_type& pi,
+                               const point_type& pj) const {
+    return operator()((pi-pj).magnitude());
+  }
+
+
+  /** Alternative to the above flags and signatures?
    */
   inline void P2P(const point_type& pi, const charge_type& ci,
                   range_type& ri,
                   const point_type& pj, const charge_type& cj,
                   range_type& rj) const {
-    range_type Kij = operator()(pi,pj);
-    ri += Kij * cj;
-    rj += Kij * ci;
+    range_type val = operator()(pi,pj);
+    ri += cj * val;
+    rj += ci * val;
   }
 
-  /** P2P source-target Kernel accumulation
-   * r += K(t,s) * c
-   *
-   * @param[in]     t The target point
-   * @param[in]     s The source point
-   * @param[in]     c The source charge
-   * @param[in,out] r The result to accumulate into
+  /** Another form that is needed when target vec != source vec
+   * Instead, should go off of the flags and use op(t,s)?
+   * NO... can't easily unroll the charge comps into MADs if needed...
    */
   inline void P2P(const point_type& t, const point_type& s,
                   const charge_type& c,
                   range_type& r) const {
-    r += operator()(t,s) * c;
+    r += c * operator()(t,s);
   }
 
   /** m += P2M(p,c,r) */

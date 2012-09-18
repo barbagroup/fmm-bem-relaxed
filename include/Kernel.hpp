@@ -22,8 +22,6 @@ THE SOFTWARE.
 
 #pragma once
 
-#include <Sorter.hpp>
-
 #define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
 // #define NO_POINTERS
@@ -32,23 +30,6 @@ THE SOFTWARE.
 class KernelBase
 {
 protected:
-  std::vector<int>     keysHost;                                //!< Offsets for rangeHost
-  std::vector<int>     rangeHost;                               //!< Offsets for sourceHost
-  std::vector<gpureal> sourceHost;                              //!< Sources on host
-  std::vector<gpureal> targetHost;                              //!< Targets on host
-  std::vector<gpureal> constHost;                               //!< Constants on host
-  Map                  sourceBegin;                             //!< Define map for offset of source cells
-  Map                  sourceSize;                              //!< Define map for size of source cells
-  Map                  targetBegin;                             //!< Define map for offset of target cells
-  size_t               keysDevcSize;                            //!< Size of offsets for rangeDevc
-  size_t               rangeDevcSize;                           //!< Size of offsets for sourceDevc
-  size_t               sourceDevcSize;                          //!< Size of sources on device
-  size_t               targetDevcSize;                          //!< Size of targets on device
-  int                 *keysDevc;                                //!< Offsets for rangeDevc
-  int                 *rangeDevc;                               //!< Offsets for sourceDevc
-  gpureal             *sourceDevc;                              //!< Sources on device
-  gpureal             *targetDevc;                              //!< Targets on device
-
   real *factorial;                                              //!< Factorial
   real *prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
   real *Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
@@ -160,24 +141,15 @@ protected:
 
 public:
 //! Constructor
-  KernelBase() : keysHost(), rangeHost(), sourceHost(), targetHost(), constHost(),
-                 sourceBegin(), sourceSize(), targetBegin(),
-                 keysDevcSize(0), rangeDevcSize(0),
-                 sourceDevcSize(0), targetDevcSize(0),
-                 keysDevc(), rangeDevc(), sourceDevc(), targetDevc(),
-                 factorial(), prefactor(), Anm(), Cnm(),
-                 X0(0), R0(0), Ci0(), Cj0() {}
+  KernelBase()
+      : factorial(), prefactor(), Anm(), Cnm(),
+        X0(0), R0(0), Ci0(), Cj0() {}
 //! Destructor
   ~KernelBase() {}
 //! Copy constructor
-  KernelBase(const KernelBase&) : 
-                 keysHost(), rangeHost(), sourceHost(), targetHost(), constHost(),
-                 sourceBegin(), sourceSize(), targetBegin(),
-                 keysDevcSize(0), rangeDevcSize(0),
-                 sourceDevcSize(0), targetDevcSize(0),
-                 keysDevc(), rangeDevc(), sourceDevc(), targetDevc(),
-                 factorial(), prefactor(), Anm(), Cnm(),
-                 X0(0), R0(0), Ci0(), Cj0() {}
+  KernelBase(const KernelBase&)
+      :factorial(), prefactor(), Anm(), Cnm(),
+       X0(0), R0(0), Ci0(), Cj0() {}
 //! Overload assignment
   KernelBase &operator=(const KernelBase) {return *this;}
 

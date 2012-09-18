@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 #include <FMM_plan.hpp>
 #include <Dataset.hpp>
-#include <Kernel.hpp>
+#include <SphericalLaplaceKernel.hpp>
 
 #define TOPDOWN
 //#define BOTTOMUP
@@ -34,7 +34,7 @@ int main() {
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   Bodies bodies(numBodies);                                     // Define vector of bodies
 
-  Kernel K;
+  SphericalLaplaceKernel K;
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
@@ -44,7 +44,7 @@ int main() {
 #endif
 
   FMM_options opts;
-  FMM_plan<Kernel> FMM(K,bodies,opts);
+  FMM_plan<SphericalLaplaceKernel> FMM(K,bodies,opts);
   FMM.execute(jbodies);
   FMM.checkError(bodies,jbodies);
 }

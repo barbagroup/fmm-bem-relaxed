@@ -23,7 +23,6 @@ THE SOFTWARE.
 #pragma once
 
 #include <Types.hpp>
-#include <Kernel.hpp>
 
 #define splitFirst(Ci,Cj) Cj->NCHILD == 0 || (Ci->NCHILD != 0 && Ci->R > Cj->R)
 
@@ -197,7 +196,7 @@ protected:
   }
 
   //! Traverse tree for periodic cells
-  void traversePeriodic(Cells &cells, Cells &jcells) {          
+  void traversePeriodic(Cells &cells, Cells &jcells) {
     Xperiodic = 0;                                              // Set periodic coordinate offset
     Iperiodic = Icenter;                                        // Set periodic flag to center
     C_iter Cj = jcells.end()-1;                                 // Initialize iterator for periodic source cell

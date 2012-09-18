@@ -24,7 +24,6 @@ THE SOFTWARE.
 #include <Types.hpp>
 #include <Logger.hpp>
 #include <Sorter.hpp>
-#include <Kernel.hpp>
 
 extern Logger Log;
 extern Sorter sort;
@@ -324,7 +323,7 @@ public:
     B_iter LEAF[NCRIT];                                         //!< Iterator for leafs
     vect X;                                                     //!< Node center
     real R;                                                     //!< Node radius
-  };  
+  };
   std::vector<Node> nodes;                                      //!< Nodes in the tree
 
 //! Calculate octant from position
@@ -424,7 +423,7 @@ private:
   void setIndex() {
     Log.startTimer("Set index");                                    // Start timer
     traverse(nodes.begin());                                    // Traverse tree
-    Log.stopTimer("Set index");                            // Stop timer 
+    Log.stopTimer("Set index");                            // Stop timer
   }
 };
 

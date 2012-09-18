@@ -26,8 +26,7 @@ THE SOFTWARE.
 
 // #define NO_POINTERS
 
-//! Unified CPU/GPU kernel class
-class KernelBase
+class SphericalLaplaceKernel
 {
 protected:
   real *factorial;                                              //!< Factorial
@@ -169,17 +168,17 @@ protected:
 
  public:
 //! Constructor
-  KernelBase()
+  SphericalLaplaceKernel()
       : factorial(), prefactor(), Anm(), Cnm(),
         X0(0), R0(0), Ci0(), Cj0() {}
 //! Destructor
-  ~KernelBase() {}
+  ~SphericalLaplaceKernel() {}
 //! Copy constructor
-  KernelBase(const KernelBase&)
+  SphericalLaplaceKernel(const SphericalLaplaceKernel&)
       :factorial(), prefactor(), Anm(), Cnm(),
        X0(0), R0(0), Ci0(), Cj0() {}
 //! Overload assignment
-  KernelBase &operator=(const KernelBase) {return *this;}
+  SphericalLaplaceKernel &operator=(const SphericalLaplaceKernel) {return *this;}
 
 //! Set center of root cell
   void setX0(vect x0) {X0 = x0;}
@@ -270,6 +269,29 @@ protected:
     printf("PreCalculation finished\n");
   }
 
+  void initialize();                                            //!< Initialize kernels
+  void P2M(C_iter Ci);                                          //!< Evaluate P2M kernel on CPU
+  void M2M(C_iter Ci);                                          //!< Evaluate M2M kernel on CPU
+  void M2L(C_iter Ci, C_iter Cj) const;                         //!< Evaluate M2L kernel on CPU
+  void M2P(C_iter Ci, C_iter Cj) const;                         //!< Evaluate M2P kernel on CPU
+  void P2P(C_iter Ci, C_iter Cj) const;                         //!< Evaluate P2P kernel on CPU
+  void L2L(C_iter Ci) const;                                    //!< Evaluate L2L kernel on CPU
+  void L2P(C_iter Ci) const;                                    //!< Evaluate L2P kernel on CPU
+  void P2M();                                                   //!< Evaluate P2M kernel on GPU
+  void M2M();                                                   //!< Evaluate M2M kernel on GPU
+  void M2L();                                                   //!< Evaluate M2L kernel on GPU
+  void M2P();                                                   //!< Evaluate M2P kernel on GPU
+  void P2P();                                                   //!< Evalaute P2P kernel on GPU
+  void L2L();                                                   //!< Evaluate L2L kernel on GPU
+  void L2P();                                                   //!< Evaluate L2P kernel on GPU
+  void finalize();                                              //!< Finalize kernels
+
+  void allocate();                                              //!< Allocate GPU variables
+  void hostToDevice();                                          //!< Copy from host to device
+  void deviceToHost();
+  static int multipole_size(const int level=0);
+  static int local_size(const int level=0);
+
 //! Free temporary allocations
   void postCalculation() {
     delete[] factorial;                                         // Free factorial
@@ -281,6 +303,7 @@ protected:
   }
 };
 
+#if 0
 class Kernel : public KernelBase {
 public:
   void initialize();                                            //!< Initialize kernels
@@ -309,5 +332,239 @@ public:
   Kernel(const Kernel&) {};
   Kernel() {};
 };
+#endif
 
-#include <CPUSphericalLaplace.hpp>
+void SphericalLaplaceKernel::initialize() {}
+
+void SphericalLaplaceKernel::P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
+  for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
+    real P0 = 0;                                                //  Initialize potential
+    vect F0 = 0;                                                //  Initialize force
+    for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
+      vect dist = Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
+      real R2 = norm(dist) + EPS2;                              //   R^2
+      real invR2 = 1.0 / R2;                                    //   1 / R^2
+      if( R2 == 0 ) invR2 = 0;                                  //   Exclude self interaction
+      real invR = Bj->SRC * std::sqrt(invR2);                   //   potential
+      dist *= invR2 * invR;                                     //   force
+      P0 += invR;                                               //   accumulate potential
+      F0 += dist;                                               //   accumulate force
+    }                                                           //  End loop over source bodies
+
+    Bi->TRG[0] += P0;                                           //  potential
+    Bi->TRG[1] -= F0[0];                                        //  x component of force
+    Bi->TRG[2] -= F0[1];                                        //  y component of force
+    Bi->TRG[3] -= F0[2];                                        //  z component of force
+    // printf("setting: %lg\n",Bi->TRG[0]);
+  }                                                             // End loop over target bodies
+}
+
+void SphericalLaplaceKernel::P2M(C_iter Cj) {
+  real Rmax = 0;
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  for( B_iter B=Cj->LEAF; B!=Cj->LEAF+Cj->NCLEAF; ++B ) {
+    vect dist = B->X - Cj->X;
+    real R = std::sqrt(norm(dist));
+    if( R > Rmax ) Rmax = R;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      for( int m=0; m<=n; ++m ) {
+        const int nm  = n * n + n + m;
+        const int nms = n * (n + 1) / 2 + m;
+        Cj->M[nms] += B->SRC * Ynm[nm];
+      }
+    }
+  }
+  Cj->RMAX = Rmax;
+  Cj->RCRIT = std::min(Cj->R,Rmax);
+}
+
+void SphericalLaplaceKernel::M2M(C_iter Ci) {
+  const complex I(0.,1.);
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  real Rmax = Ci->RMAX;
+  for( C_iter Cj=Cj0+Ci->CHILD; Cj!=Cj0+Ci->CHILD+Ci->NCHILD; ++Cj ) {
+    vect dist = Ci->X - Cj->X;
+    real R = std::sqrt(norm(dist)) + Cj->RCRIT;
+    if( R > Rmax ) Rmax = R;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+    for( int j=0; j!=P; ++j ) {
+      for( int k=0; k<=j; ++k ) {
+        const int jk = j * j + j + k;
+        const int jks = j * (j + 1) / 2 + k;
+        complex M = 0;
+        for( int n=0; n<=j; ++n ) {
+          for( int m=-n; m<=std::min(k-1,n); ++m ) {
+            if( j-n >= k-m ) {
+              const int jnkm  = (j - n) * (j - n) + j - n + k - m;
+              const int jnkms = (j - n) * (j - n + 1) / 2 + k - m;
+              const int nm    = n * n + n + m;
+              M += Cj->M[jnkms] * std::pow(I,real(m-abs(m))) * Ynm[nm]
+                 * real(ODDEVEN(n) * Anm[nm] * Anm[jnkm] / Anm[jk]);
+            }
+          }
+          for( int m=k; m<=n; ++m ) {
+            if( j-n >= m-k ) {
+              const int jnkm  = (j - n) * (j - n) + j - n + k - m;
+              const int jnkms = (j - n) * (j - n + 1) / 2 - k + m;
+              const int nm    = n * n + n + m;
+              M += std::conj(Cj->M[jnkms]) * Ynm[nm]
+                 * real(ODDEVEN(k+n+m) * Anm[nm] * Anm[jnkm] / Anm[jk]);
+            }
+          }
+        }
+        Ci->M[jks] += M * EPS;
+      }
+    }
+  }
+  Ci->RMAX = Rmax;
+  Ci->RCRIT = std::min(Ci->R,Rmax);
+}
+
+void SphericalLaplaceKernel::M2L(C_iter Ci, C_iter Cj) const {
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  vect dist = Ci->X - Cj->X - Xperiodic;
+  real rho, alpha, beta;
+  cart2sph(rho,alpha,beta,dist);
+  evalLocal(rho,alpha,beta,Ynm,YnmTheta);
+  for( int j=0; j!=P; ++j ) {
+    for( int k=0; k<=j; ++k ) {
+      const int jk = j * j + j + k;
+      const int jks = j * (j + 1) / 2 + k;
+      complex L = 0;
+      for( int n=0; n!=P; ++n ) {
+        for( int m=-n; m<0; ++m ) {
+          const int nm   = n * n + n + m;
+          const int nms  = n * (n + 1) / 2 - m;
+          const int jknm = jk * P * P + nm;
+          const int jnkm = (j + n) * (j + n) + j + n + m - k;
+          L += std::conj(Cj->M[nms]) * Cnm[jknm] * Ynm[jnkm];
+        }
+        for( int m=0; m<=n; ++m ) {
+          const int nm   = n * n + n + m;
+          const int nms  = n * (n + 1) / 2 + m;
+          const int jknm = jk * P * P + nm;
+          const int jnkm = (j + n) * (j + n) + j + n + m - k;
+          L += Cj->M[nms] * Cnm[jknm] * Ynm[jnkm];
+        }
+      }
+      Ci->L[jks] += L;
+    }
+  }
+}
+
+void SphericalLaplaceKernel::M2P(C_iter Ci, C_iter Cj) const {
+  const complex I(0.,1.);                                       // Imaginary unit
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  for( B_iter B=Ci->LEAF; B!=Ci->LEAF+Ci->NDLEAF; ++B ) {
+    vect dist = B->X - Cj->X - Xperiodic;
+    vect spherical = 0;
+    vect cartesian = 0;
+    real r, theta, phi;
+    cart2sph(r,theta,phi,dist);
+    evalLocal(r,theta,phi,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      int nm  = n * n + n;
+      int nms = n * (n + 1) / 2;
+      B->TRG[0] += std::real(Cj->M[nms] * Ynm[nm]);
+      spherical[0] -= std::real(Cj->M[nms] * Ynm[nm]) / r * (n+1);
+      spherical[1] += std::real(Cj->M[nms] * YnmTheta[nm]);
+      for( int m=1; m<=n; ++m ) {
+        nm  = n * n + n + m;
+        nms = n * (n + 1) / 2 + m;
+        B->TRG[0] += 2 * std::real(Cj->M[nms] * Ynm[nm]);
+        spherical[0] -= 2 * std::real(Cj->M[nms] *Ynm[nm]) / r * (n+1);
+        spherical[1] += 2 * std::real(Cj->M[nms] *YnmTheta[nm]);
+        spherical[2] += 2 * std::real(Cj->M[nms] *Ynm[nm] * I) * m;
+      }
+    }
+    sph2cart(r,theta,phi,spherical,cartesian);
+    B->TRG[1] += cartesian[0];
+    B->TRG[2] += cartesian[1];
+    B->TRG[3] += cartesian[2];
+  }
+}
+
+void SphericalLaplaceKernel::L2L(C_iter Ci) const {
+  const complex I(0.,1.);
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  C_iter Cj = Ci0 + Ci->PARENT;
+  vect dist = Ci->X - Cj->X;
+  real rho, alpha, beta;
+  cart2sph(rho,alpha,beta,dist);
+  evalMultipole(rho,alpha,beta,Ynm,YnmTheta);
+  for( int j=0; j!=P; ++j ) {
+    for( int k=0; k<=j; ++k ) {
+      const int jk = j * j + j + k;
+      const int jks = j * (j + 1) / 2 + k;
+      complex L = 0;
+      for( int n=j; n!=P; ++n ) {
+        for( int m=j+k-n; m<0; ++m ) {
+          const int jnkm = (n - j) * (n - j) + n - j + m - k;
+          const int nm   = n * n + n - m;
+          const int nms  = n * (n + 1) / 2 - m;
+          L += std::conj(Cj->L[nms]) * Ynm[jnkm]
+             * real(ODDEVEN(k) * Anm[jnkm] * Anm[jk] / Anm[nm]);
+        }
+        for( int m=0; m<=n; ++m ) {
+          if( n-j >= abs(m-k) ) {
+            const int jnkm = (n - j) * (n - j) + n - j + m - k;
+            const int nm   = n * n + n + m;
+            const int nms  = n * (n + 1) / 2 + m;
+            L += Cj->L[nms] * std::pow(I,real(m-k-abs(m-k)))
+               * Ynm[jnkm] * Anm[jnkm] * Anm[jk] / Anm[nm];
+          }
+        }
+      }
+      Ci->L[jks] += L * EPS;
+    }
+  }
+}
+
+void SphericalLaplaceKernel::L2P(C_iter Ci) const {
+  const complex I(0.,1.);                                       // Imaginary unit
+  complex Ynm[4*P*P], YnmTheta[4*P*P];
+  for( B_iter B=Ci->LEAF; B!=Ci->LEAF+Ci->NCLEAF; ++B ) {
+    vect dist = B->X - Ci->X;
+    vect spherical = 0;
+    vect cartesian = 0;
+    real r, theta, phi;
+    cart2sph(r,theta,phi,dist);
+    evalMultipole(r,theta,phi,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      int nm  = n * n + n;
+      int nms = n * (n + 1) / 2;
+      B->TRG[0] += std::real(Ci->L[nms] * Ynm[nm]);
+      spherical[0] += std::real(Ci->L[nms] * Ynm[nm]) / r * n;
+      spherical[1] += std::real(Ci->L[nms] * YnmTheta[nm]);
+      for( int m=1; m<=n; ++m ) {
+        nm  = n * n + n + m;
+        nms = n * (n + 1) / 2 + m;
+        B->TRG[0] += 2 * std::real(Ci->L[nms] * Ynm[nm]);
+        spherical[0] += 2 * std::real(Ci->L[nms] * Ynm[nm]) / r * n;
+        spherical[1] += 2 * std::real(Ci->L[nms] * YnmTheta[nm]);
+        spherical[2] += 2 * std::real(Ci->L[nms] * Ynm[nm] * I) * m;
+      }
+    }
+    sph2cart(r,theta,phi,spherical,cartesian);
+    B->TRG[1] += cartesian[0];
+    B->TRG[2] += cartesian[1];
+    B->TRG[3] += cartesian[2];
+  }
+}
+
+int SphericalLaplaceKernel::multipole_size(const int level)
+{
+  return P*(P+1)/2 + level*0; // to get rid of compiler warning
+}
+
+int SphericalLaplaceKernel::local_size(const int level)
+{
+  return P*(P+1)/2 + (level*0);
+}
+
+void SphericalLaplaceKernel::finalize() {}

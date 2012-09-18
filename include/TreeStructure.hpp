@@ -24,7 +24,6 @@ THE SOFTWARE.
 #include <Types.hpp>
 #include <Logger.hpp>
 #include <Sorter.hpp>
-#include <Evaluator.hpp>
 #include <Kernel.hpp>
 
 extern Logger Log;
@@ -51,7 +50,7 @@ public:
 
   // topdown tree construction
   template <class Kernel>
-  void topdown(Bodies &bodies, Cells &cells, Evaluator<Kernel> *eval)
+  void topdown(Bodies &bodies, Cells &cells, Kernel &K) // Evaluator<Kernel> *eval)
   {
     grow(bodies);
     setIndex();
@@ -61,13 +60,34 @@ public:
 
     Cells twigs;
     bodies2twigs(bodies,twigs);
-    eval->evalP2M(twigs);
+    // run over twigs, init expansions & run P2M
+    Log.startTimer("P2M");
+    for (C_iter C=twigs.begin(); C!=twigs.end(); ++C)
+    {
+      C->M.resize(NTERM);
+      C->L.resize(NTERM);
+      for (size_t i=0; i<C->M.size(); i++) C->M[i]=0;
+      for (size_t i=0; i<C->L.size(); i++) C->L[i]=0;
+
+      if (C->NCHILD==0) K.P2M(C);
+    }
+    Log.stopTimer("P2M");
 
     // here twigs contains all twig cells for P2M
 
     Cells sticks;
     twigs2cells(twigs,cells,sticks);
-    eval->evalM2M(cells,cells);
+    // Upward pass 2 (M2M)
+    C_iter Cj0 = cells.begin();
+    K.Cj0 = Cj0;
+    for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
+      int level = getLevel(Ci->ICELL);                            // Get current level
+      std::stringstream eventName;                                // Declare event name
+      eventName << "evalM2M: " << level << "   ";                 // Set event name with level
+      Log.startTimer(eventName.str());                                // Start timer
+      K.M2M(Ci);                                                    // Perform M2M kernel
+      Log.stopTimer(eventName.str());                                 // Stop timer
+    }                                                             // End loop target over cells
   }
 
 private:

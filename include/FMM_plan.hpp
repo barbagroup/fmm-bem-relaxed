@@ -82,7 +82,7 @@ public:
     // initialise tree & construct
     // these need an evaluator to do P2M & M2M..
     tree.init(X0,R0);
-    tree.topdown(bodies,cells,eval);
+    tree.topdown(bodies,cells,K); // eval);
     printf("Tree created\n");
   }
 

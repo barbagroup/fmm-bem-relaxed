@@ -99,7 +99,7 @@ protected:
       real p = pn;                                              //  Associated Legendre polynomial Pnm
       int npn = m * m + 2 * m;                                  //  Index of Ynm for m > 0
       int nmn = m * m;                                          //  Index of Ynm for m < 0
-      Ynm[npn] = rhom * p * KernelBase::prefactor[npn] * eim;               //  rho^m * Ynm for m > 0
+      Ynm[npn] = rhom * p * prefactor[npn] * eim;               //  rho^m * Ynm for m > 0
       Ynm[nmn] = std::conj(Ynm[npn]);                           //  Use conjugate relation for m < 0
       real p1 = p;                                              //  Pnm-1
       p = x * (2 * m + 1) * p1;                                 //  Pnm using recurrence relation

@@ -24,6 +24,8 @@ THE SOFTWARE.
 #include <Types.hpp>
 #include <Logger.hpp>
 #include <Sorter.hpp>
+#include <Evaluator.hpp>
+#include <Kernel.hpp>
 
 extern Logger Log;
 extern Sorter sort;
@@ -48,7 +50,8 @@ public:
   }
 
   // topdown tree construction
-  void topdown(Bodies &bodies, Cells &cells)
+  template <class Kernel>
+  void topdown(Bodies &bodies, Cells &cells, Evaluator<Kernel> *eval)
   {
     grow(bodies);
     setIndex();
@@ -58,11 +61,13 @@ public:
 
     Cells twigs;
     bodies2twigs(bodies,twigs);
+    eval->evalP2M(twigs);
 
     // here twigs contains all twig cells for P2M
 
     Cells sticks;
     twigs2cells(twigs,cells,sticks);
+    eval->evalM2M(cells,cells);
   }
 
 private:
@@ -217,7 +222,8 @@ public:
     getCenter(cell);                                            // Set cell center and radius
     twigs.push_back(cell);                                      // Push cells into vector
     Log.stopTimer("Bodies2twigs");                              // Stop timer & print
-    evalP2M(twigs);                                             // Evaluate all P2M kernels
+    // evalP2M(twigs);                                             // Evaluate all P2M kernels
+
   }
 
   //! Link twigs bottomup to create all cells in tree
@@ -253,7 +259,7 @@ public:
     Log.startTimer("Twigs2cells");                                  // Start timer
     unique(cells,sticks,begin,end);                             // Just in case there is a collision at root
     Log.stopTimer("Twigs2cells");                          // Stop timer & print
-    evalM2M(cells,cells);                                       // Evaluate all M2M kernels
+    // evalM2M(cells,cells);                                       // Evaluate all M2M kernels
   }
 
 #if 0

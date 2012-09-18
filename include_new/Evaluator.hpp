@@ -398,6 +398,7 @@ void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2
 template <class Kernel>
 void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2M kernels
   Cj0 = jcells.begin();                                         // Set begin iterator
+  K.Cj0 = Cj0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
     int level = getLevel(Ci->ICELL);                            // Get current level
     std::stringstream eventName;                                // Declare event name

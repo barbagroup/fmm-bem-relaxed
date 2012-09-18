@@ -83,8 +83,7 @@ public:
     // these need an evaluator to do P2M & M2M..
     tree.init(X0,R0);
     tree.topdown(bodies,cells,eval);
-
-
+    printf("Tree created\n");
   }
 
   ~FMM_plan()
@@ -98,6 +97,7 @@ public:
   {
     // run evaluator and traverse tree
     jcells = cells;
+    printf("executing...\n");
     eval->downward(cells,jcells,false);
   }
 

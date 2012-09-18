@@ -20,18 +20,28 @@
  */
 struct Kernel
 {
+  // Only dimension = 3 support. TODO
   static constexpr int dimension = 3;
+  // Spacial point type
   typedef Point point_type;
+  // The Kernel return type
+  typedef double kernel_value_type;
+  // The charge type
   typedef double charge_type;
+  // The range type, kernel_value_type * charge_type
   typedef double range_type;
 
+  // The multipole expansion type
   typedef std::vector<double> multipole_type;
+  // The local expansion type
   typedef std::vector<double> local_type;
 
+  /** A name identifier for this Kernel */
   std::string name() const {
     return "Kernel Name";
   }
 
+  // TODO
   multipole_type init_multipole(double box_size) const {
     return multipole_type();
   }
@@ -39,14 +49,14 @@ struct Kernel
     return local_type();
   }
 
-  /** Kernel evaluation
+  /** Kernel evaluation, K(t,s)
    *
    * @param[in] t The target point
    * @param[in] s The source point
    * @result The value of the Kernel, K(t,s)
    */
-  inline range_type operator()(const point_type& t,
-                               const point_type& s) const {
+  inline kernel_value_type operator()(const point_type& t,
+                                      const point_type& s) const {
     return 1;
   }
 

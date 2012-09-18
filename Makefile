@@ -1,4 +1,4 @@
-.SUFFIXES: .cxx .o
+.SUFFIXES: .cpp .o
 
 EXPAND = Spherical
 DEVICE = CPU
@@ -15,5 +15,5 @@ serial: test/serialrun.o $(OBJECT)
 clean:
 	@rm -f kernel/*.o test/*.o serial
 
-.cxx.o:
+.cpp.o:
 	$(CXX) -c $? -o $@ $(LFLAGS)

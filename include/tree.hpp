@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef tree_h
 #define tree_h
-#include "evaluator.h"
+#include "evaluator.hpp"
 
 //! Base class for tree structure
 template<Equation equation>

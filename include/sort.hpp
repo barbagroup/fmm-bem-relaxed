@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef sort_h
 #define sort_h
-#include "logger.h"
+#include "logger.hpp"
 
 //! Custom bucket sort for body and cell structures
 class Sort : public Logger {

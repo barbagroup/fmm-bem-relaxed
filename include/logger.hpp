@@ -22,7 +22,7 @@ THE SOFTWARE.
 #ifndef logger_h
 #define logger_h
 #include <sys/time.h>
-#include "types.h"
+#include "types.hpp"
 
 //! Timer and Trace logger
 class Logger {
@@ -175,7 +175,7 @@ public:
           << "\" height=\"90.0\" fill=\"#"<< std::setfill('0') << std::setw(6) << std::hex << color// height of bar
           << "\" stroke=\"#000000\" stroke-width=\"1\"/>\n";    //  stroke color and width
     }                                                           // End while loop for queue of traces
-    traceFile << "  </g>\n" "</svg>\n";                         // Footer for trace log file 
+    traceFile << "  </g>\n" "</svg>\n";                         // Footer for trace log file
     traceFile.close();                                          // Close trace log file
   }
 };

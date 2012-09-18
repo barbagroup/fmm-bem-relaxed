@@ -42,13 +42,10 @@ THE SOFTWARE.
 #include <string>
 #include <utility>
 #include <vector>
-#include "vec.h"                                                //!< My vector type with operator overloading
+#include "vec.hpp"                                                //!< My vector type with operator overloading
 #include <xmmintrin.h>
 #if PAPI
 #include <papi.h>
-#endif
-#if QUARK
-#include "quark.h"
 #endif
 #if MTHREADS
 #include <mttb/task_group.h>

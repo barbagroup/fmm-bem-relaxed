@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef kernel_h
 #define kernel_h
-#include "sort.h"
+#include "sort.hpp"
 #define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
 //! Unified CPU/GPU kernel class

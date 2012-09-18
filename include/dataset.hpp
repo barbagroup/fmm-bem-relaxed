@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef dataset_h
 #define dataset_h
-#include "kernel.h"
+#include "kernel.hpp"
 
 //! Contains all the different datasets
 template<Equation equation>

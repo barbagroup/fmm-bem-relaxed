@@ -18,7 +18,7 @@
  * Not all methods must be implemented, but most constexr and typedefs should
  * be kept for compatibility.
  */
-struct Kernel
+struct LaplaceKernel
 {
   // Only dimension = 3 support. TODO
   static constexpr int dimension = 3;

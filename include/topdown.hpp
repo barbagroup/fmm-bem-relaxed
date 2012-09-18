@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef topdown_h
 #define topdown_h
-#include "tree.h"
+#include "tree.hpp"
 
 //! Topdown tree constructor class
 template<Equation equation>
@@ -144,7 +144,7 @@ public:
   void setIndex() {
     startTimer("Set index");                                    // Start timer
     traverse(nodes.begin());                                    // Traverse tree
-    stopTimer("Set index",printNow);                            // Stop timer 
+    stopTimer("Set index",printNow);                            // Stop timer
   }
 };
 

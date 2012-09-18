@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef serialfmm_h
 #define serialfmm_h
-#include "bottomup.h"
+#include "bottomup.hpp"
 
 //! Serial FMM interface
 template<Equation equation>

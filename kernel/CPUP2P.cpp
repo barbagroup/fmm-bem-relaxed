@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 #define KERNEL
-#include "kernel.h"
+#include "kernel.hpp"
 #undef KERNEL
 
 template<>

@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #ifndef evaluator_h
 #define evaluator_h
-#include "dataset.h"
+#include "dataset.hpp"
 #define splitFirst(Ci,Cj) Cj->NCHILD == 0 || (Ci->NCHILD != 0 && Ci->R > Cj->R)
 
 //! Interface between tree and kernel
@@ -96,17 +96,9 @@ private:
 #endif
   }
 
-#if QUARK
-  inline void interact(C_iter Ci, C_iter Cj, Quark *quark);     //!< interact() function using QUARK
-#endif
-
 //! Traverse a pair of trees using a queue
   void traverseQueue(Pair pair) {
     PairQueue pairQueue;                                        // Queue of interacting cell pairs
-#if QUARK
-    Quark *quark = QUARK_New(4);                                // Initialize QUARK object
-    C_iter root = pair.first;                                   // Iterator for root target cell
-#endif
     pairQueue.push_back(pair);                                  // Push pair to queue
     while( !pairQueue.empty() ) {                               // While dual traversal queue is not empty
       pair = pairQueue.front();                                 //  Get interaction pair from front of queue
@@ -122,20 +114,7 @@ private:
           interact(pair.first,Cj,pairQueue);                    //    Calculate interaction betwen cells
         }                                                       //   End loop over second cell's children
       }                                                         //  End if for which cell to split
-#if QUARK
-      if( int(pairQueue.size()) > root->NDLEAF / 100 ) {        //  When queue size reaches threshold
-        while( !pairQueue.empty() ) {                           //   While dual traversal queue is not empty
-          pair = pairQueue.front();                             //    Get interaction pair from front of queue
-          pairQueue.pop_front();                                //    Pop dual traversal queue
-          interact(pair.first,pair.second,quark);               //    Schedule interact() task on QUARK
-        }                                                       //   End while loop for dual traversal queue
-      }                                                         //  End if for queue size
-#endif
     }                                                           // End while loop for dual traversal queue
-#if QUARK
-    QUARK_Delete(quark);                                        // Delete QUARK object 
-    writeTrace();                                               // Write event trace to file
-#endif
   }
 
 //! Get range of periodic images
@@ -212,7 +191,7 @@ protected:
   }
 
 //! Traverse tree for periodic cells
-  void traversePeriodic(Cells &cells, Cells &jcells) {          
+  void traversePeriodic(Cells &cells, Cells &jcells) {
     Xperiodic = 0;                                              // Set periodic coordinate offset
     Iperiodic = Icenter;                                        // Set periodic flag to center
     C_iter Cj = jcells.end()-1;                                 // Initialize iterator for periodic source cell
@@ -417,9 +396,9 @@ public:
 };
 
 #if CPU
-#include "../kernel/CPUEvaluator.cxx"
+#include "../kernel/CPUEvaluator.cpp"
 #elif GPU
-#include "../kernel/GPUEvaluator.cxx"
+#include "../kernel/GPUEvaluator.cpp"
 #endif
 
 #undef splitFirst

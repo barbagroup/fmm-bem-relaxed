@@ -3,8 +3,8 @@
 EXPAND = Spherical
 DEVICE = CPU
 
-#CXX = g++ -g -Wall -Wextra -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include -I./include_new
-CXX = g++ -g -Wall -Wextra -I./include_new -DTREECODE
+CXX = g++ -g -Wall -Wextra -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include -I./include_new -DTREECODE
+#CXX = g++ -g -Wall -Wextra -I./include_new 
 
 LFLAGS = -D$(DEVICE) -D$(EXPAND)
 

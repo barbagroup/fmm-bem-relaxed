@@ -74,16 +74,17 @@ public:
     // set domain of problem (center & radius)
     setDomain(bodies);
 
+    // initialise evaluator
+    // do all kernel precomputation
+    K.preCalculation();
+    eval = new Evaluator<Kernel>(K,R0);
+
     // initialise tree & construct
     // these need an evaluator to do P2M & M2M..
     tree.init(X0,R0);
-    tree.topdown(bodies,cells);
+    tree.topdown(bodies,cells,eval);
 
-    // do all kernel precomputation
-    K.preCalculation();
 
-    // initialise evaluator
-    eval = new Evaluator<Kernel>(K,R0);
   }
 
   ~FMM_plan()

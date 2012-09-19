@@ -152,16 +152,6 @@ struct Leaf {
 typedef std::vector<Leaf>              Leafs;                   //!< Vector of leafs
 typedef std::vector<Leaf>::iterator    L_iter;                  //!< Iterator for leaf vector
 
-//! Structure of source cells (stuff to send)
-struct JCell {
-  bigint ICELL;                                                 //!< Cell index
-  Mset   M;                                                     //!< Multipole coefficients
-
-  JCell() {}; // { M.resize(NTERM); };
-};
-typedef std::vector<JCell>             JCells;                  //!< Vector of source cells
-typedef std::vector<JCell>::iterator   JC_iter;                 //!< Iterator for source cell vector
-
 // TODO: move into Tree
 //! Structure of cells
 struct Cell {

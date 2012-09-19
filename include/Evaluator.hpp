@@ -338,6 +338,7 @@ public:
 };
 
 #undef splitFirst
+
 template <class Kernel>
 void Evaluator<Kernel>::evalP2P(Bodies &ibodies, Bodies &jbodies, bool) {// Evaluate all P2P kernels
   Xperiodic = 0;                                                // Set periodic coordinate offset

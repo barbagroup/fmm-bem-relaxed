@@ -105,8 +105,6 @@ const int  PTHREADS = 4;                                        //!< Number of p
 
 // TODO: Move into SphericalLaplaceKernel
 const int NTERM = P*(P+1)/2;                                    //!< Number of Spherical multipole/local terms
-
-
 typedef std::vector<complex>  Mset;                             //!< Multipole coefficient type
 typedef std::vector<complex>  Lset;                             //!< Local coefficient type
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
@@ -176,6 +174,7 @@ struct JCell {
 typedef std::vector<JCell>             JCells;                  //!< Vector of source cells
 typedef std::vector<JCell>::iterator   JC_iter;                 //!< Iterator for source cell vector
 
+// TODO: move into Tree
 //! Structure of cells
 struct Cell {
   bigint   ICELL;                                               //!< Cell index

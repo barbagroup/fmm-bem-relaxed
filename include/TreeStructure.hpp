@@ -61,8 +61,7 @@ public:
     bodies2twigs(bodies,twigs);
     // run over twigs, init expansions & run P2M
     Log.startTimer("P2M");
-    for (C_iter C=twigs.begin(); C!=twigs.end(); ++C)
-    {
+    for (C_iter C=twigs.begin(); C!=twigs.end(); ++C) {
       C->M.resize(NTERM);
       C->L.resize(NTERM);
       for (size_t i=0; i<C->M.size(); i++) C->M[i]=0;

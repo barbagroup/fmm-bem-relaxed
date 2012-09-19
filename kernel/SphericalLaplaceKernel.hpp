@@ -104,9 +104,7 @@ class SphericalLaplaceKernel
     printf("PreCalculation starting\n");
     const complex I(0.,1.);                                     // Imaginary unit
     factorial = new real  [P];                                  // Factorial
-    printf("initialising prefactor\n");
     prefactor = new real  [4*P*P];                              // sqrt( (n - |m|)! / (n + |m|)! )
-    printf("done: %p\n",this->prefactor);
     Anm       = new real  [4*P*P];                              // (-1)^n / sqrt( (n + m)! / (n - m)! )
     Cnm       = new complex [P*P*P*P];                          // M2L translation matrix Cjknm
 
@@ -371,9 +369,6 @@ class SphericalLaplaceKernel
 
   void finalize() {}                                            //!< Finalize kernels
 
-  void allocate();                                              //!< Allocate GPU variables
-  void hostToDevice();                                          //!< Copy from host to device
-  void deviceToHost();
   static int multipole_size(const int level=0) {
     (void) level;  // Quiet warning
     return P*(P+1)/2;

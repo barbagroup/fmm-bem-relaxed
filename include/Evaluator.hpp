@@ -316,14 +316,6 @@ public:
                            << " M2L: " << NM2L << std::endl;
   }
 
-  void setSourceBody();                                         //!< Set source buffer for bodies (for GPU)
-  void setSourceCell(bool isM);                                 //!< Set source buffer for cells (for GPU)
-  void setTargetBody(Lists lists, Maps flags);                  //!< Set target buffer for bodies (for GPU)
-  void setTargetCell(Lists lists, Maps flags);                  //!< Set target buffer for cells (for GPU)
-  void getTargetBody(Lists &lists);                             //!< Get body values from target buffer (for GPU)
-  void getTargetCell(Lists &lists, bool isM);                   //!< Get cell values from target buffer (for GPU)
-  void clearBuffers();                                          //!< Clear GPU buffers
-
   void evalP2P(Bodies &ibodies, Bodies &jbodies, bool onCPU=false);//!< Evaluate all P2P kernels (all pairs)
   void evalP2M(Cells &cells);                                   //!< Evaluate all P2M kernels
   void evalM2M(Cells &cells, Cells &jcells);                    //!< Evaluate all M2M kernels

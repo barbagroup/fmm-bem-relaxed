@@ -50,22 +50,6 @@ class SphericalLaplaceKernel
         X0(0), R0(0), Ci0(), Cj0() {}
   //! Destructor
   ~SphericalLaplaceKernel() {}
-  //! Copy constructor
-  SphericalLaplaceKernel(const SphericalLaplaceKernel&)
-      :factorial(), prefactor(), Anm(), Cnm(),
-       X0(0), R0(0), Ci0(), Cj0() {}
-  //! Overload assignment
-  SphericalLaplaceKernel &operator=(const SphericalLaplaceKernel) {return *this;}
-
-  //! Set center of root cell
-  void setX0(vect x0) {X0 = x0;}
-  //! Set radius of root cell
-  void setR0(real r0) {R0 = r0;}
-
-  //! Get center of root cell
-  vect getX0() const {return X0;}
-  //! Get radius of root cell
-  real getR0() const {return R0;}
 
   //! Precalculate M2L translation matrix
   void preCalculation() {
@@ -111,8 +95,6 @@ class SphericalLaplaceKernel
     }                                                           // End loop over in j in Cjknm
     printf("PreCalculation finished\n");
   }
-
-  void initialize() {}
 
   void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
     for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies

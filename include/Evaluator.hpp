@@ -56,33 +56,6 @@ protected:
 
   Kernel &K;
 
-public:
-  // MOVE TO PRIVATE
-#if 0
-  using Kernel<equation>::R0;                                   //!< Radius of root cell
-  using Kernel<equation>::Ci0;                                  //!< Begin iterator for target cells
-  using Kernel<equation>::Cj0;                                  //!< Begin iterator for source cells
-  using Kernel<equation>::ALPHA;                                //!< Scaling parameter for Ewald summation
-  using Kernel<equation>::keysHost;                             //!< Offsets for rangeHost
-  using Kernel<equation>::rangeHost;                            //!< Offsets for sourceHost
-  using Kernel<equation>::constHost;                            //!< Constants on host
-  using Kernel<equation>::sourceHost;                           //!< Sources on host
-  using Kernel<equation>::targetHost;                           //!< Targets on host
-  using Kernel<equation>::sourceBegin;                          //!< Define map for offset of source cells
-  using Kernel<equation>::sourceSize;                           //!< Define map for size of source cells
-  using Kernel<equation>::targetBegin;                          //!< Define map for offset of target cells
-  using Kernel<equation>::allocate;                             //!< Allocate GPU kernels
-  using Kernel<equation>::hostToDevice;                         //!< Copy from host to device
-  using Kernel<equation>::deviceToHost;                         //!< Copy from device to host
-  using Kernel<equation>::P2M;                                  //!< Evaluate P2M kernel
-  using Kernel<equation>::M2M;                                  //!< Evaluate M2M kernel
-  using Kernel<equation>::M2L;                                  //!< Evaluate M2L kernel
-  using Kernel<equation>::M2P;                                  //!< Evaluate M2P kernel
-  using Kernel<equation>::P2P;                                  //!< Evaluate P2P kernel
-  using Kernel<equation>::L2L;                                  //!< Evaluate L2L kernel
-  using Kernel<equation>::L2P;                                  //!< Evaluate L2P kernel
-#endif
-
 private:
   //! Approximate interaction between two cells
   inline void approximate(C_iter Ci, C_iter Cj) {

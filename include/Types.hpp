@@ -90,7 +90,7 @@ extern int PAPIEVENT;                                           //!< PAPI event 
 #endif
 #endif
 
-const int  P        = 8;                                       //!< Order of expansions
+// const int  P        = 8;                                       //!< Order of expansions
 const int  NCRIT    = 100;                                      //!< Number of bodies per cell
 const int  MAXBODY  = 200000;                                   //!< Maximum number of bodies per GPU kernel
 const int  MAXCELL  = 10000000;                                 //!< Maximum number of bodies/coefs in cell per GPU kernel
@@ -104,7 +104,6 @@ const int  THREADS  = 64;                                       //!< Number of t
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
 // TODO: Move into SphericalLaplaceKernel
-const int NTERM = P*(P+1)/2;                                    //!< Number of Spherical multipole/local terms
 typedef std::vector<complex>  Mset;                             //!< Multipole coefficient type
 typedef std::vector<complex>  Lset;                             //!< Local coefficient type
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types

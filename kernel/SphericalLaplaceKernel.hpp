@@ -38,6 +38,7 @@ class SphericalLaplaceKernel
 
 
  private:
+  int P;
   real *factorial;                                              //!< Factorial
   real *prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
   real *Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
@@ -46,7 +47,10 @@ class SphericalLaplaceKernel
  public:
   //! Constructor
   SphericalLaplaceKernel()
-      : factorial(), prefactor(), Anm(), Cnm(),
+      : P(5), factorial(), prefactor(), Anm(), Cnm(),
+        X0(0), R0(0), Ci0(), Cj0() {}
+  SphericalLaplaceKernel(const int p)
+      : P(p), factorial(), prefactor(), Anm(), Cnm(),
         X0(0), R0(0), Ci0(), Cj0() {}
   //! Destructor
   ~SphericalLaplaceKernel() {}
@@ -319,11 +323,11 @@ class SphericalLaplaceKernel
 
   void finalize() {}                                            //!< Finalize kernels
 
-  static int multipole_size(const int level=0) {
+  int multipole_size(const int level=0) {
     (void) level;  // Quiet warning
     return P*(P+1)/2;
   }
-  static int local_size(const int level=0) {
+  int local_size(const int level=0) {
     (void) level;  // Quiet warning
     return P*(P+1)/2;
   }

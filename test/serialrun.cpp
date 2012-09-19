@@ -34,7 +34,7 @@ int main() {
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   Bodies bodies(numBodies);                                     // Define vector of bodies
 
-  SphericalLaplaceKernel K;
+  SphericalLaplaceKernel K(8);
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
@@ -44,6 +44,7 @@ int main() {
 #endif
 
   FMM_options opts;
+  //FMM_plan FMM(K,bodies,opts);
   FMM_plan<SphericalLaplaceKernel> FMM(K,bodies,opts);
   FMM.execute(jbodies);
   FMM.checkError(bodies,jbodies);

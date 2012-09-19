@@ -63,8 +63,8 @@ public:
     Log.startTimer("P2M");
     for (C_iter C=twigs.begin(); C!=twigs.end(); ++C) {
       int level = getLevel(C->ICELL);
-      C->alloc_multipole(Kernel::multipole_size(level));
-      C->alloc_local(Kernel::local_size(level));
+      C->alloc_multipole(K.multipole_size(level));
+      C->alloc_local(K.local_size(level));
 
       if (C->NCHILD==0) K.P2M(C);
     }
@@ -79,8 +79,8 @@ public:
     K.Cj0 = Cj0;
     for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
       int level = getLevel(Ci->ICELL);                            // Get current level
-      Ci->alloc_multipole(Kernel::multipole_size(level));
-      Ci->alloc_local(Kernel::local_size(level));
+      Ci->alloc_multipole(K.multipole_size(level));
+      Ci->alloc_local(K.local_size(level));
       std::stringstream eventName;                                // Declare event name
       eventName << "evalM2M: " << level << "   ";                 // Set event name with level
       Log.startTimer(eventName.str());                                // Start timer

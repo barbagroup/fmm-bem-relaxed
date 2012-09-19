@@ -69,7 +69,7 @@ private:
   }
 
 public:
-  FMM_plan(Kernel k, Bodies& bodies, FMM_options& opts) : K(k)
+  FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts) : K(k)
   {
     // set domain of problem (center & radius)
     setDomain(bodies);

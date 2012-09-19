@@ -168,11 +168,26 @@ struct Cell {
   real     RCRIT;                                               //!< Critical cell radius
   Mset     M;                                                   //!< Multipole coefficients
   Lset     L;                                                   //!< Local coefficients
+  bool     Minit;
+  bool     Linit;
 
-  Cell() {}; // { M.resize(NTERM); L.resize(NTERM); };
-  void alloc_multipole(const int N) { M.resize(N); };
-  void alloc_local(const int N) { L.resize(N); };
+  Cell() : Minit(false), Linit(false) {};
+  void alloc_multipole(const int N) {
+    if (!Minit) {
+      M.resize(N);
+      for ( complex& c : M ) c = 0;
+      Minit = true;
+    }
+  };
+  void alloc_local(const int N) {
+    if (!Linit) {
+      L.resize(N);
+      for ( complex& c : L ) c = 0;
+      Linit = true;
+    }
+  };
 };
+
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells
 typedef std::vector<Cell>::iterator    C_iter;                  //!< Iterator for cell vector
 typedef std::queue<C_iter>             CellQueue;               //!< Queue of cell iterators

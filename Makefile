@@ -1,6 +1,6 @@
 .SUFFIXES: .cpp .o
 
-CXX = g++ -g -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include -I./kernel -I./test #-Wall -Wextra
+CXX = g++ -std=c++0x -g -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include -I./kernel -I./test #-Wall -Wextra
 
 LFLAGS =
 

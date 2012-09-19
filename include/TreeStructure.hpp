@@ -62,10 +62,9 @@ public:
     // run over twigs, init expansions & run P2M
     Log.startTimer("P2M");
     for (C_iter C=twigs.begin(); C!=twigs.end(); ++C) {
-      C->M.resize(NTERM);
-      C->L.resize(NTERM);
-      for (size_t i=0; i<C->M.size(); i++) C->M[i]=0;
-      for (size_t i=0; i<C->L.size(); i++) C->L[i]=0;
+      int level = getLevel(C->ICELL);
+      C->alloc_multipole(Kernel::multipole_size(level));
+      C->alloc_local(Kernel::local_size(level));
 
       if (C->NCHILD==0) K.P2M(C);
     }
@@ -80,6 +79,8 @@ public:
     K.Cj0 = Cj0;
     for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
       int level = getLevel(Ci->ICELL);                            // Get current level
+      Ci->alloc_multipole(Kernel::multipole_size(level));
+      Ci->alloc_local(Kernel::local_size(level));
       std::stringstream eventName;                                // Declare event name
       eventName << "evalM2M: " << level << "   ";                 // Set event name with level
       Log.startTimer(eventName.str());                                // Start timer
@@ -138,10 +139,8 @@ private:
   //! Form parent-child mutual link
   void linkParent(Cells& cells, int &begin, int &end) {
     Cell parent = Cell();                                                // Parent cell
-    //parent.alloc_multipole(Kernel<equation>::multipole_size(getLevel(parent.ICELL)));
-    //parent.alloc_local(Kernel<equation>::local_size(getLevel(parent.ICELL)));
-    parent.alloc_multipole(NTERM);
-    parent.alloc_local(NTERM);
+    // parent.alloc_multipole(NTERM);
+    // parent.alloc_local(NTERM);
     Cells parents;                                              // Parent cell vector;
     int oldend = end;                                           // Save old end counter
     parent.ICELL = getParent(cells[begin].ICELL);               // Set cell index
@@ -159,9 +158,9 @@ private:
         end++;                                                  //   Increment cell counter
         parent.ICELL = getParent(cells[i].ICELL);               //   Set cell index
         // parent.M = 0;                                           //   Initialize multipole coefficients
-        for (size_t l=0; l<parent.M.size(); l++) parent.M[l] = 0;
+        //for (size_t l=0; l<parent.M.size(); l++) parent.M[l] = 0;
         // parent.L = 0;                                           //   Initialize local coefficients
-        for (size_t l=0; l<parent.L.size(); l++) parent.L[l] = 0;
+        //for (size_t l=0; l<parent.L.size(); l++) parent.L[l] = 0;
         parent.NCLEAF = parent.NDLEAF = parent.NCHILD = 0;      //   Initialize NCLEAF, NDLEAF, & NCHILD
         parent.LEAF = cells[i].LEAF;                            //   Set pointer to first leaf
         parent.CHILD = i;                                       //   Link to child
@@ -221,8 +220,8 @@ public:
 
         //cell.alloc_multipole(Kernel<equation>::multipole_size(getLevel(cell.ICELL)));
         //cell.alloc_local(Kernel<equation>::multipole_size(getLevel(cell.ICELL)));
-        cell.alloc_multipole(NTERM);
-        cell.alloc_local(NTERM);
+        //cell.alloc_multipole(NTERM);
+        //cell.alloc_local(NTERM);
 
         twigs.push_back(cell);                                  //   Push cells into vector
         firstLeaf = B;                                          //   Set new first leaf

@@ -349,9 +349,12 @@ template <class Kernel>
 void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2M kernels
   Log.startTimer("evalP2M");                                        // Start timer
   for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
-    for (size_t i=0; i<C->M.size(); i++) C->M[i] = 0;
+    int level = getLevel(C->ICELL);
+    C->alloc_multipole(Kernel::multipole_size(level));
+    C->alloc_local(Kernel::multipole_size(level));
+    //for (size_t i=0; i<C->M.size(); i++) C->M[i] = 0;
     //C->M = 0;                                                   //  Initialize multipole coefficients
-    for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
+    //for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
     //C->L = 0;                                                   //  Initialize local coefficients
     if( C->NCHILD == 0 ) {                                      //  If cell is a twig
       K.P2M(C);                                                   //   Perform P2M kernel
@@ -366,6 +369,8 @@ void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2
   K.Cj0 = Cj0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
     int level = getLevel(Ci->ICELL);                            // Get current level
+    Ci->alloc_multipole(Kernel::multipole_size(level));
+    Ci->alloc_local(Kernel::local_size(level));
     std::stringstream eventName;                                // Declare event name
     eventName << "evalM2M: " << level << "   ";                 // Set event name with level
     Log.startTimer(eventName.str());                                // Start timer

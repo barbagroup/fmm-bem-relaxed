@@ -152,18 +152,6 @@ struct Leaf {
 typedef std::vector<Leaf>              Leafs;                   //!< Vector of leafs
 typedef std::vector<Leaf>::iterator    L_iter;                  //!< Iterator for leaf vector
 
-//! Structure of nodes (only used in fast/topdown.h)
-struct Node {
-  bool NOCHILD;                                                 //!< Flag for twig nodes
-  int  LEVEL;                                                   //!< Level in the tree structure
-  int  NLEAF;                                                   //!< Number of descendant leafs
-  int  CHILD[8];                                                //!< Index of child node
-  vect X;                                                       //!< Coordinate at center
-  Leaf *LEAF;                                                   //!< Pointer to first leaf
-};
-typedef std::vector<Node>              Nodes;                   //!< Vector of nodes
-typedef std::vector<Node>::iterator    N_iter;                  //!< Iterator for node vector
-
 //! Structure of source cells (stuff to send)
 struct JCell {
   bigint ICELL;                                                 //!< Cell index

@@ -32,8 +32,8 @@ class SphericalLaplaceKernel
   // TODO Remove these
   vect X0;                                                      //!< Center of root cell
   real R0;                                                      //!< Radius of root cell
-  C_iter               Ci0;                                     //!< Begin iterator for target cells
-  C_iter               Cj0;                                     //!< Begin iterator for source cells
+  //C_iter               Ci0;                                     //!< Begin iterator for target cells
+  //C_iter               Cj0;                                     //!< Begin iterator for source cells
 
 
 
@@ -48,10 +48,12 @@ class SphericalLaplaceKernel
   //! Constructor
   SphericalLaplaceKernel()
       : P(5), factorial(), prefactor(), Anm(), Cnm(),
-        X0(0), R0(0), Ci0(), Cj0() {}
+        // X0(0), R0(0), Ci0(), Cj0() {}
+        X0(0), R0(0) {}
   SphericalLaplaceKernel(const int p)
       : P(p), factorial(), prefactor(), Anm(), Cnm(),
-        X0(0), R0(0), Ci0(), Cj0() {}
+        // X0(0), R0(0), Ci0(), Cj0() {}
+        X0(0), R0(0) {}
   //! Destructor
   ~SphericalLaplaceKernel() {}
 
@@ -145,7 +147,7 @@ class SphericalLaplaceKernel
     Cj->RCRIT = std::min(Cj->R,Rmax);
   }
 
-  void M2M(C_iter Ci) {
+  void M2M(C_iter Ci, C_iter Cj0) {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Ci->RMAX;
@@ -253,7 +255,7 @@ class SphericalLaplaceKernel
     }
   }
 
-  void L2L(C_iter Ci) const {
+  void L2L(C_iter Ci, C_iter Ci0) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     C_iter Cj = Ci0 + Ci->PARENT;
@@ -353,7 +355,7 @@ class SphericalLaplaceKernel
     return std::sqrt( dx*dx + dy*dy + dz*dz );
   }
 
-  void setCenter(C_iter C) const {
+  void setCenter(C_iter C, C_iter Cj0) const {
     real m = 0;
     vect X = 0;
     for( B_iter B=C->LEAF; B!=C->LEAF+C->NCLEAF; ++B ) {

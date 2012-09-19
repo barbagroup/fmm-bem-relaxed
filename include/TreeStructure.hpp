@@ -76,7 +76,6 @@ public:
     twigs2cells(twigs,cells,sticks);
     // Upward pass 2 (M2M)
     C_iter Cj0 = cells.begin();
-    K.Cj0 = Cj0;
     for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
       int level = getLevel(Ci->ICELL);                            // Get current level
       Ci->alloc_multipole(K.multipole_size(level));
@@ -84,7 +83,7 @@ public:
       std::stringstream eventName;                                // Declare event name
       eventName << "evalM2M: " << level << "   ";                 // Set event name with level
       Log.startTimer(eventName.str());                                // Start timer
-      K.M2M(Ci);                                                    // Perform M2M kernel
+      K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
       Log.stopTimer(eventName.str());                                 // Stop timer
     }                                                             // End loop target over cells
   }

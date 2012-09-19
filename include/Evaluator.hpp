@@ -256,8 +256,6 @@ public:
     }                                                           // Endif for periodic boundary condition
     Ci0 = cells.begin();                                        // Set begin iterator for target cells
     Cj0 = jcells.begin();                                       // Set begin iterator for source cells
-    K.Ci0 = Ci0;
-    K.Cj0 = Cj0;
     if( IMAGES == 0 ) {                                         // If free boundary condition
       Iperiodic = Icenter;                                      //  Set periodic image flag to center
       Xperiodic = 0;                                            //  Set periodic coordinate offset
@@ -362,13 +360,12 @@ void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2
 template <class Kernel>
 void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2M kernels
   Cj0 = jcells.begin();                                         // Set begin iterator
-  K.Cj0 = Cj0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
     int level = getLevel(Ci->ICELL);                            // Get current level
     std::stringstream eventName;                                // Declare event name
     eventName << "evalM2M: " << level << "   ";                 // Set event name with level
     Log.startTimer(eventName.str());                                // Start timer
-    K.M2M(Ci);                                                    // Perform M2M kernel
+    K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
     Log.stopTimer(eventName.str());                                 // Stop timer
   }                                                             // End loop target over cells
 }
@@ -382,7 +379,6 @@ void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(Cells &cells) {               // Evaluate queued M2L kernels
   Ci0 = cells.begin();                                          // Set begin iterator
-  K.Ci0 = Ci0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over cells
     int level = getLevel(Ci->ICELL);                            // Get current level
     std::stringstream eventName;                                // Declare event name
@@ -421,7 +417,6 @@ void Evaluator<Kernel>::evalM2P(C_iter Ci, C_iter Cj) {       // Evaluate single
 template <class Kernel>
 void Evaluator<Kernel>::evalM2P(Cells &cells) {               // Evaluate queued M2P kernels
   Ci0 = cells.begin();                                          // Set begin iterator
-  K.Ci0 = Ci0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over cells
     int level = getLevel(Ci->ICELL);                            // Get current level
     std::stringstream eventName;                                // Declare event name
@@ -461,7 +456,6 @@ template <class Kernel>
 void Evaluator<Kernel>::evalP2P(Cells &cells) {               // Evaluate queued P2P kernels
   Log.startTimer("evalP2P");                                        // Start timer
   Ci0 = cells.begin();                                          // Set begin iterator
-  K.Ci0 = Ci0;
   for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over cells
     while( !listP2P[Ci-Ci0].empty() ) {                         //  While M2P interaction list is not empty
       C_iter Cj = listP2P[Ci-Ci0].back();                       //   Set source cell iterator
@@ -490,13 +484,12 @@ void Evaluator<Kernel>::evalP2P(Cells &cells) {               // Evaluate queued
 template <class Kernel>
 void Evaluator<Kernel>::evalL2L(Cells &cells) {               // Evaluate all L2L kernels
   Ci0 = cells.begin();                                          // Set begin iterator
-  K.Ci0 = Ci0;
   for( C_iter Ci=cells.end()-2; Ci!=cells.begin()-1; --Ci ) {   // Loop over cells topdown (except root cell)
     int level = getLevel(Ci->ICELL);                            // Get current level
     std::stringstream eventName;                                // Declare event name
     eventName << "evalL2L: " << level << "   ";                 // Set event name with level
     Log.startTimer(eventName.str());                                // Start timer
-    K.L2L(Ci);                                                    // Perform L2L kernel
+    K.L2L(Ci,Ci0);                                                    // Perform L2L kernel
     Log.stopTimer(eventName.str());                                 // Stop timer
   }                                                             // End loop over cells topdown
 }

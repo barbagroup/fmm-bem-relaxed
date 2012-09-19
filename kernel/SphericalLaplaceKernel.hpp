@@ -30,7 +30,6 @@ class SphericalLaplaceKernel
 {
  private:
   int P;
-  real *factorial;                                              //!< Factorial
   real *prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
   real *Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
   complex *Cnm;                                                 //!< M2L translation matrix \f$ C_{jn}^{km} \f$
@@ -38,9 +37,9 @@ class SphericalLaplaceKernel
  public:
   //! Constructor
   SphericalLaplaceKernel()
-      : P(5), factorial(), prefactor(), Anm(), Cnm() {};
+      : P(5), prefactor(), Anm(), Cnm() {};
   SphericalLaplaceKernel(const int p)
-      : P(p), factorial(), prefactor(), Anm(), Cnm() {};
+      : P(p), prefactor(), Anm(), Cnm() {};
   //! Destructor
   ~SphericalLaplaceKernel() {}
 
@@ -48,15 +47,9 @@ class SphericalLaplaceKernel
   void preCalculation() {
     printf("PreCalculation starting\n");
     const complex I(0.,1.);                                     // Imaginary unit
-    factorial = new real  [P];                                  // Factorial
     prefactor = new real  [4*P*P];                              // sqrt( (n - |m|)! / (n + |m|)! )
     Anm       = new real  [4*P*P];                              // (-1)^n / sqrt( (n + m)! / (n - m)! )
     Cnm       = new complex [P*P*P*P];                          // M2L translation matrix Cjknm
-
-    factorial[0] = 1;                                           // Initialize factorial
-    for( int n=1; n!=P; ++n ) {                                 // Loop to P
-      factorial[n] = factorial[n-1] * n;                        //  n!
-    }                                                           // End loop to P
 
     for( int n=0; n!=2*P; ++n ) {                               // Loop over n in Anm
       for( int m=-n; m<=n; ++m ) {                              //  Loop over m in Anm
@@ -323,7 +316,6 @@ class SphericalLaplaceKernel
 
   //! Free temporary allocations
   void postCalculation() {
-    delete[] factorial;                                         // Free factorial
     printf("deleting prefactor\n");
     delete[] prefactor;                                         // Free sqrt( (n - |m|)! / (n + |m|)! )
     printf("done\n");

@@ -29,7 +29,7 @@
 class SphericalLaplaceKernel
 {
  public:
-  // TODO MOVE THIS TO PROTECTED
+  // TODO Remove these
   vect X0;                                                      //!< Center of root cell
   real R0;                                                      //!< Radius of root cell
   C_iter               Ci0;                                     //!< Begin iterator for target cells

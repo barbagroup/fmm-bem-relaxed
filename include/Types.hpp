@@ -103,12 +103,9 @@ const int  GPUS     = 3;                                        //!< Number of G
 const int  THREADS  = 64;                                       //!< Number of threads per thread-block
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
-#if 0
-const int MTERM = P*(P+1)*(P+2)/6;                              //!< Number of Cartesian mutlipole terms
-const int LTERM = (P+1)*(P+2)*(P+3)/6;                          //!< Number of Cartesian local terms
-#endif
-
+// TODO: Move into SphericalLaplaceKernel
 const int NTERM = P*(P+1)/2;                                    //!< Number of Spherical multipole/local terms
+
 
 typedef std::vector<complex>  Mset;                             //!< Multipole coefficient type
 typedef std::vector<complex>  Lset;                             //!< Local coefficient type
@@ -126,10 +123,6 @@ typedef std::map<pthread_t,int>                ThreadMap;       //!< Map of pthr
 typedef std::queue<Trace>                      Traces;          //!< Queue of traces
 typedef std::map<std::string,double>           Timer;           //!< Map of timer event name to timed value
 typedef std::map<std::string,double>::iterator TI_iter;         //!< Iterator for timer event name map
-
-enum Equation {                                                 //!< Equation type enumeration
-  Laplace                                                       //!< Laplace potential + force
-};
 
 //! Structure of source bodies (stuff to send)
 struct JBody {

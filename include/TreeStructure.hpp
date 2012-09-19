@@ -39,7 +39,7 @@ public:
   Bodies buffer;                                                //!< Buffer for MPI communication & sorting
 
   TreeStructure() : X0(0), R0(0) {};
-  TreeStructure(vect &X, real &R) : X0(X), R0(R) {};
+  TreeStructure(vect& X, real& R) : X0(X), R0(R) {};
 
   void init(vect &x, real &r)
   {
@@ -49,7 +49,7 @@ public:
 
   // topdown tree construction
   template <class Kernel>
-  void topdown(Bodies &bodies, Cells &cells, Kernel &K) // Evaluator<Kernel> *eval)
+  void topdown(Bodies& bodies, Cells& cells, Kernel& K) // Evaluator<Kernel> *eval)
   {
     grow(bodies);
     setIndex();

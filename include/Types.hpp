@@ -110,18 +110,8 @@ const int LTERM = (P+1)*(P+2)*(P+3)/6;                          //!< Number of C
 
 const int NTERM = P*(P+1)/2;                                    //!< Number of Spherical multipole/local terms
 
-#if Cartesian
-typedef vec<MTERM,real>                        Mset;            //!< Multipole coefficient type for Cartesian
-typedef vec<LTERM,real>                        Lset;            //!< Local coefficient type for Cartesian
-#elif Spherical
-#if 0
-typedef vec<NTERM,complex>                     Mset;            //!< Multipole coefficient type for spherical
-typedef vec<NTERM,complex>                     Lset;            //!< Local coefficient type for spherical
-#else
-typedef std::vector<complex>  Mset;
-typedef std::vector<complex>  Lset;
-#endif
-#endif
+typedef std::vector<complex>  Mset;                             //!< Multipole coefficient type
+typedef std::vector<complex>  Lset;                             //!< Local coefficient type
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
 
 //! Structure for pthread based trace

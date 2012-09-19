@@ -1,16 +1,12 @@
 .SUFFIXES: .cpp .o
 
-EXPAND = Spherical
-DEVICE = CPU
+CXX = g++ -g -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include -I./kernel #-Wall -Wextra
 
-CXX = g++ -g -Wall -Wextra -Wshadow -Wuninitialized -O3 -ffast-math -fopenmp -funroll-loops -fforce-addr -fPIC -I./include
-#CXX = g++ -g -Wall -Wextra -I./include_new 
-
-LFLAGS = -D$(DEVICE) -D$(EXPAND)
+LFLAGS =
 
 main: serial
 
-serial: test/serialrun.o 
+serial: test/serialrun.o
 	$(CXX) $^ $(LFLAGS) -o serial
 
 clean:

@@ -28,15 +28,6 @@
 
 class SphericalLaplaceKernel
 {
- public:
-  // TODO Remove these
-  vect X0;                                                      //!< Center of root cell
-  real R0;                                                      //!< Radius of root cell
-  //C_iter               Ci0;                                     //!< Begin iterator for target cells
-  //C_iter               Cj0;                                     //!< Begin iterator for source cells
-
-
-
  private:
   int P;
   real *factorial;                                              //!< Factorial
@@ -47,13 +38,9 @@ class SphericalLaplaceKernel
  public:
   //! Constructor
   SphericalLaplaceKernel()
-      : P(5), factorial(), prefactor(), Anm(), Cnm(),
-        // X0(0), R0(0), Ci0(), Cj0() {}
-        X0(0), R0(0) {}
+      : P(5), factorial(), prefactor(), Anm(), Cnm() {};
   SphericalLaplaceKernel(const int p)
-      : P(p), factorial(), prefactor(), Anm(), Cnm(),
-        // X0(0), R0(0), Ci0(), Cj0() {}
-        X0(0), R0(0) {}
+      : P(p), factorial(), prefactor(), Anm(), Cnm() {};
   //! Destructor
   ~SphericalLaplaceKernel() {}
 

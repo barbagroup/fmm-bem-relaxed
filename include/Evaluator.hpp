@@ -119,7 +119,7 @@ protected:
   void timeKernels();                                           //!< Time all kernels for auto-tuning
 
   //! Upward phase for periodic cells
-  void upwardPeriodic(Cells &jcells) {
+  void upwardPeriodic(Cells& jcells) {
     Cells pccells, pjcells;                                     // Periodic center cell and jcell
     pccells.push_back(jcells.back());                           // Root cell is first periodic cell
     for( int level=0; level<IMAGES-1; ++level ) {               // Loop over sublevels of tree
@@ -169,7 +169,7 @@ protected:
   }
 
   //! Traverse tree for periodic cells
-  void traversePeriodic(Cells &cells, Cells &jcells) {
+  void traversePeriodic(Cells& cells, Cells& jcells) {
     Xperiodic = 0;                                              // Set periodic coordinate offset
     Iperiodic = Icenter;                                        // Set periodic flag to center
     C_iter Cj = jcells.end()-1;                                 // Initialize iterator for periodic source cell
@@ -193,7 +193,7 @@ protected:
 public:
   //! Constructor
   Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()) {};
-  Evaluator(Kernel &k, real r0) : R0(r0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k){};
+  Evaluator(Kernel& k, real r0) : R0(r0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k){};
   //! Destructor
   ~Evaluator() {}
 
@@ -214,7 +214,7 @@ public:
   }
 
   //! Create periodic images of bodies
-  Bodies periodicBodies(Bodies &bodies) {
+  Bodies periodicBodies(Bodies& bodies) {
     Bodies jbodies;                                             // Vector for periodic images of bodies
     int prange = getPeriodicRange();                            // Get range of periodic images
     for( int ix=-prange; ix<=prange; ++ix ) {                   // Loop over x periodic direction
@@ -234,7 +234,7 @@ public:
   }
 
   //! Use multipole acceptance criteria to determine whether to approximate, do P2P, or subdivide
-  void interact(C_iter Ci, C_iter Cj, PairQueue &pairQueue) {
+  void interact(C_iter Ci, C_iter Cj, PairQueue& pairQueue) {
     vect dX = Ci->X - Cj->X - Xperiodic;                        // Distance vector from source to target
     real Rq = std::sqrt(norm(dX));                              // Scalar distance
     if( Rq * THETA > Ci->R + Cj->R ) {                          // If distance if far enough
@@ -248,7 +248,7 @@ public:
   }
 
   //! Dual tree traversal
-  void traverse(Cells &cells, Cells &jcells) {
+  void traverse(Cells& cells, Cells& jcells) {
     C_iter root = cells.end() - 1;                              // Iterator for root target cell
     C_iter jroot = jcells.end() - 1;                            // Iterator for root source cell
     if( IMAGES != 0 ) {                                         // If periodic boundary condition
@@ -289,7 +289,7 @@ public:
   }
 
   //! Downward phase (M2L,M2P,P2P,L2L,L2P evaluation)
-  void downward(Cells &cells, Cells &jcells, bool periodic=true) {
+  void downward(Cells& cells, Cells& jcells, bool periodic=true) {
 #if HYBRID
     timeKernels();                                              // Time all kernels for auto-tuning
 #endif
@@ -316,17 +316,17 @@ public:
                            << " M2L: " << NM2L << std::endl;
   }
 
-  void evalP2P(Bodies &ibodies, Bodies &jbodies, bool onCPU=false);//!< Evaluate all P2P kernels (all pairs)
-  void evalP2M(Cells &cells);                                   //!< Evaluate all P2M kernels
-  void evalM2M(Cells &cells, Cells &jcells);                    //!< Evaluate all M2M kernels
+  void evalP2P(Bodies& ibodies, Bodies& jbodies, bool onCPU=false);//!< Evaluate all P2P kernels (all pairs)
+  void evalP2M(Cells& cells);                                   //!< Evaluate all P2M kernels
+  void evalM2M(Cells& cells, Cells& jcells);                    //!< Evaluate all M2M kernels
   void evalM2L(C_iter Ci, C_iter Cj);                           //!< Evaluate on CPU, queue on GPU
-  void evalM2L(Cells &cells);                                   //!< Evaluate queued M2L kernels
+  void evalM2L(Cells& cells);                                   //!< Evaluate queued M2L kernels
   void evalM2P(C_iter Ci, C_iter Cj);                           //!< Evaluate on CPU, queue on GPU
-  void evalM2P(Cells &cells);                                   //!< Evaluate queued M2P kernels
+  void evalM2P(Cells& cells);                                   //!< Evaluate queued M2P kernels
   void evalP2P(C_iter Ci, C_iter Cj);                           //!< Evaluate on CPU, queue on GPU
-  void evalP2P(Cells &cells);                                   //!< Evaluate queued P2P kernels (near field)
-  void evalL2L(Cells &cells);                                   //!< Evaluate all L2L kernels
-  void evalL2P(Cells &cells);                                   //!< Evaluate all L2P kernels
+  void evalP2P(Cells& cells);                                   //!< Evaluate queued P2P kernels (near field)
+  void evalL2L(Cells& cells);                                   //!< Evaluate all L2L kernels
+  void evalL2P(Cells& cells);                                   //!< Evaluate all L2P kernels
 };
 
 #undef splitFirst

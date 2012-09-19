@@ -133,7 +133,7 @@ public:
   }
 
 //! Stop tracer for given event
-  inline void stopTracer(ThreadTrace &beginTrace, int color) {
+  inline void stopTracer(ThreadTrace& beginTrace, int color) {
     pthread_mutex_lock(&mutex);                                 // Lock shared variable access
     Trace trace;                                                // Define trace structure
     trace.thread = pthread_self();                              // Store pthread id

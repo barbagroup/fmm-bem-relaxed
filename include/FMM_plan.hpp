@@ -36,7 +36,7 @@ private:
   Evaluator<Kernel> *eval;
   Kernel &K;
 
-  void setDomain(Bodies &bodies, vect x0=0, real r0=M_PI)
+  void setDomain(Bodies& bodies, vect x0=0, real r0=M_PI)
   {
     vect xmin,xmax;                                             // Min,Max of domain
     B_iter B = bodies.begin();                                  // Reset body iterator
@@ -69,7 +69,7 @@ private:
   }
 
 public:
-  FMM_plan(Kernel k, Bodies &bodies, FMM_options &opts) : K(k)
+  FMM_plan(Kernel k, Bodies& bodies, FMM_options& opts) : K(k)
   {
     // set domain of problem (center & radius)
     setDomain(bodies);
@@ -93,7 +93,7 @@ public:
     delete eval;
   }
 
-  void execute(Bodies &jbodies)
+  void execute(Bodies& jbodies)
   {
     // run evaluator and traverse tree
     jcells = cells;
@@ -101,7 +101,7 @@ public:
     eval->downward(cells,jcells,false);
   }
 
-  void checkError(Bodies &FMM_bodies, Bodies &sources)
+  void checkError(Bodies& FMM_bodies, Bodies& sources)
   {
     int numTargets = 100;
     FMM_bodies.resize(numTargets);

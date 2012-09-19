@@ -41,7 +41,7 @@ public:
   TreeStructure() : X0(0), R0(0) {};
   TreeStructure(vect& X, real& R) : X0(X), R0(R) {};
 
-  void init(vect &x, real &r)
+  void init(vect& x, real& r)
   {
     X0 = x;
     R0 = r;
@@ -111,7 +111,7 @@ private:
   }
 
   //! Merge sticks with cells (levelwise)
-  void unique(Cells &cells, Cells &sticks, int begin, int &end) {
+  void unique(Cells& cells, Cells& sticks, int begin, int &end) {
     int c_old = begin;                                          // Initialize old cell counter
     for( int c=begin; c!=end; ++c ) {                           // Loop over cells in level
       if( cells[c].ICELL != cells[c_old].ICELL ) {              //  If current cell index is different from previous
@@ -136,7 +136,7 @@ private:
   }
 
   //! Form parent-child mutual link
-  void linkParent(Cells &cells, int &begin, int &end) {
+  void linkParent(Cells& cells, int &begin, int &end) {
     Cell parent = Cell();                                                // Parent cell
     //parent.alloc_multipole(Kernel<equation>::multipole_size(getLevel(parent.ICELL)));
     //parent.alloc_local(Kernel<equation>::local_size(getLevel(parent.ICELL)));
@@ -184,7 +184,7 @@ private:
 
 protected:
   //! Get cell center and radius from cell index
-  void getCenter(Cell &cell) {
+  void getCenter(Cell& cell) {
     int level = getLevel(cell.ICELL);                           // Get level from cell index
     bigint index = cell.ICELL - ((1 << 3*level) - 1) / 7;       // Subtract cell index offset of current level
     cell.R = R0 / (1 << level);                                 // Cell radius
@@ -203,7 +203,7 @@ protected:
 
 public:
   //! Group bodies into twig cells
-  void bodies2twigs(Bodies &bodies, Cells &twigs) {
+  void bodies2twigs(Bodies& bodies, Cells& twigs) {
     Log.startTimer("Bodies2twigs");                                 // Start timer
     int nleaf = 0;                                              // Initialize number of leafs
     bigint index = bodies[0].ICELL;                             // Initialize cell index
@@ -245,7 +245,7 @@ public:
   }
 
   //! Link twigs bottomup to create all cells in tree
-  void twigs2cells(Cells &twigs, Cells &cells, Cells &sticks) {
+  void twigs2cells(Cells& twigs, Cells& cells, Cells& sticks) {
     int begin = 0, end = 0;                                     // Initialize range of cell vector
     int level = getLevel(twigs.back().ICELL);                   // Initialize level of tree
     Log.startTimer("Sort resize");                                  // Start timer
@@ -392,7 +392,7 @@ public:
 
 private:
 //! Grow tree from root
-  void grow(Bodies &bodies) {
+  void grow(Bodies& bodies) {
     Log.startTimer("Grow tree");                                    // Start timer
     int octant;                                                 // In which octant is the body located?
     Node node;                                                  // Node structure

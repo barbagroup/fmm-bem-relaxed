@@ -28,6 +28,10 @@
 
 class SphericalLaplaceKernel
 {
+public:
+  typedef complex MType;
+  typedef complex LType;
+
  private:
   int P;
   real *prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
@@ -127,11 +131,36 @@ class SphericalLaplaceKernel
     Cj->RCRIT = std::min(Cj->R,Rmax);
   }
 
+  void P2M(Cell& C, Mset& M) {
+    for (size_t i=0; i<M.size(); i++) M[i]=0;
+    real Rmax = 0;
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    printf("P2M for cell: %d\n",C.ICELL);
+    for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
+      vect dist = B->X - C.X;
+      real R = std::sqrt(norm(dist));
+      if( R > Rmax ) Rmax = R;
+      real rho, alpha, beta;
+      cart2sph(rho,alpha,beta,dist);
+      evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+      for( int n=0; n!=P; ++n ) {
+        for( int m=0; m<=n; ++m ) {
+          const int nm  = n * n + n + m;
+          const int nms = n * (n + 1) / 2 + m;
+          M[nms] += B->SRC * Ynm[nm];
+        }
+      }
+    }
+    C.RMAX = Rmax;
+    C.RCRIT = std::min(C.R,Rmax);
+  }
+
   void M2M(C_iter Ci, C_iter Cj0) {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Ci->RMAX;
     for( C_iter Cj=Cj0+Ci->CHILD; Cj!=Cj0+Ci->CHILD+Ci->NCHILD; ++Cj ) {
+      // printf("M2M from: %d to %d\n",Cj->ICELL,Ci->ICELL);
       vect dist = Ci->X - Cj->X;
       real R = std::sqrt(norm(dist)) + Cj->RCRIT;
       if( R > Rmax ) Rmax = R;
@@ -171,6 +200,49 @@ class SphericalLaplaceKernel
     Ci->RCRIT = std::min(Ci->R,Rmax);
   }
 
+  void M2M(Cell& Cj, Mset& Msource, Cell& Ci, Mset& Mtarget) {
+    const complex I(0.,1.);
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    real Rmax = Ci.RMAX;
+    printf("M2M from: %d to %d\n",Cj.ICELL,Ci.ICELL);
+    vect dist = Ci.X - Cj.X;
+    real R = std::sqrt(norm(dist)) + Cj.RCRIT;
+    if (R > Rmax) Rmax = R;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+    for( int j=0; j!=P; ++j ) {
+      for( int k=0; k<=j; ++k ) {
+        const int jk = j * j + j + k;
+        const int jks = j * (j + 1) / 2 + k;
+        complex M = 0;
+        for( int n=0; n<=j; ++n ) {
+          for( int m=-n; m<=std::min(k-1,n); ++m ) {
+            if( j-n >= k-m ) {
+              const int jnkm  = (j - n) * (j - n) + j - n + k - m;
+              const int jnkms = (j - n) * (j - n + 1) / 2 + k - m;
+              const int nm    = n * n + n + m;
+              M += Msource[jnkms] * std::pow(I,real(m-abs(m))) * Ynm[nm]
+              * real(ODDEVEN(n) * Anm[nm] * Anm[jnkm] / Anm[jk]);
+            }
+          }
+          for( int m=k; m<=n; ++m ) {
+            if( j-n >= m-k ) {
+              const int jnkm  = (j - n) * (j - n) + j - n + k - m;
+              const int jnkms = (j - n) * (j - n + 1) / 2 - k + m;
+              const int nm    = n * n + n + m;
+              M += std::conj(Msource[jnkms]) * Ynm[nm]
+              * real(ODDEVEN(k+n+m) * Anm[nm] * Anm[jnkm] / Anm[jk]);
+            }
+          }
+        }
+        Mtarget[jks] += M * EPS;
+      }
+    }
+    Ci.RMAX = Rmax;
+    Ci.RCRIT = std::min(Ci.R,Rmax);
+  }
+
   void M2L(C_iter Ci, C_iter Cj) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = Ci->X - Cj->X - Xperiodic;
@@ -203,6 +275,39 @@ class SphericalLaplaceKernel
     }
   }
 
+  void M2L(Cell& Ci, Mset& Msource, Cell& Cj, Lset& Ltarget) const {
+    printf("M2L from %d to %d\n",Ci.ICELL,Cj.ICELL);
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    vect dist = Ci.X - Cj.X - Xperiodic;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalLocal(rho,alpha,beta,Ynm,YnmTheta);
+    for( int j=0; j!=P; ++j ) {
+      for( int k=0; k<=j; ++k ) {
+        const int jk = j * j + j + k;
+        const int jks = j * (j + 1) / 2 + k;
+        complex L = 0;
+        for( int n=0; n!=P; ++n ) {
+          for( int m=-n; m<0; ++m ) {
+            const int nm   = n * n + n + m;
+            const int nms  = n * (n + 1) / 2 - m;
+            const int jknm = jk * P * P + nm;
+            const int jnkm = (j + n) * (j + n) + j + n + m - k;
+            L += std::conj(Msource[nms]) * Cnm[jknm] * Ynm[jnkm];
+          }
+          for( int m=0; m<=n; ++m ) {
+            const int nm   = n * n + n + m;
+            const int nms  = n * (n + 1) / 2 + m;
+            const int jknm = jk * P * P + nm;
+            const int jnkm = (j + n) * (j + n) + j + n + m - k;
+            L += Msource[nms] * Cnm[jknm] * Ynm[jnkm];
+          }
+        }
+        Ltarget[jks] += L;
+      }
+    }
+  }
+
   void M2P(C_iter Ci, C_iter Cj) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -226,6 +331,38 @@ class SphericalLaplaceKernel
           spherical[0] -= 2 * std::real(Cj->M[nms] *Ynm[nm]) / r * (n+1);
           spherical[1] += 2 * std::real(Cj->M[nms] *YnmTheta[nm]);
           spherical[2] += 2 * std::real(Cj->M[nms] *Ynm[nm] * I) * m;
+        }
+      }
+      sph2cart(r,theta,phi,spherical,cartesian);
+      B->TRG[1] += cartesian[0];
+      B->TRG[2] += cartesian[1];
+      B->TRG[3] += cartesian[2];
+    }
+  }
+
+  void M2P(Cell& Cj, Mset& M, Cell& Ci) const {
+    const complex I(0.,1.);                                       // Imaginary unit
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NDLEAF; ++B ) {
+      vect dist = B->X - Cj.X - Xperiodic;
+      vect spherical = 0;
+      vect cartesian = 0;
+      real r, theta, phi;
+      cart2sph(r,theta,phi,dist);
+      evalLocal(r,theta,phi,Ynm,YnmTheta);
+      for( int n=0; n!=P; ++n ) {
+        int nm  = n * n + n;
+        int nms = n * (n + 1) / 2;
+        B->TRG[0] += std::real(M[nms] * Ynm[nm]);
+        spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
+        spherical[1] += std::real(M[nms] * YnmTheta[nm]);
+        for( int m=1; m<=n; ++m ) {
+          nm  = n * n + n + m;
+          nms = n * (n + 1) / 2 + m;
+          B->TRG[0] += 2 * std::real(M[nms] * Ynm[nm]);
+          spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
+          spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
+          spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * I) * m;
         }
       }
       sph2cart(r,theta,phi,spherical,cartesian);
@@ -271,6 +408,42 @@ class SphericalLaplaceKernel
     }
   }
 
+  void L2L(Cell& Cj, Lset& Lsource, Cell& Ci, Lset& Ltarget) const {
+    printf("L2L from %d to %d\n",Cj.ICELL,Ci.ICELL);
+    const complex I(0.,1.);
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    vect dist = Ci.X - Cj.X;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,beta,Ynm,YnmTheta);
+    for( int j=0; j!=P; ++j ) {
+      for( int k=0; k<=j; ++k ) {
+        const int jk = j * j + j + k;
+        const int jks = j * (j + 1) / 2 + k;
+        complex L = 0;
+        for( int n=j; n!=P; ++n ) {
+          for( int m=j+k-n; m<0; ++m ) {
+            const int jnkm = (n - j) * (n - j) + n - j + m - k;
+            const int nm   = n * n + n - m;
+            const int nms  = n * (n + 1) / 2 - m;
+            L += std::conj(Lsource[nms]) * Ynm[jnkm]
+                * real(ODDEVEN(k) * Anm[jnkm] * Anm[jk] / Anm[nm]);
+          }
+          for( int m=0; m<=n; ++m ) {
+            if( n-j >= abs(m-k) ) {
+              const int jnkm = (n - j) * (n - j) + n - j + m - k;
+              const int nm   = n * n + n + m;
+              const int nms  = n * (n + 1) / 2 + m;
+              L += Lsource[nms] * std::pow(I,real(m-k-abs(m-k)))
+                  * Ynm[jnkm] * Anm[jnkm] * Anm[jk] / Anm[nm];
+            }
+          }
+        }
+        Ltarget[jks] += L * EPS;
+      }
+    }
+  }
+
   void L2P(C_iter Ci) const {                                   //!< Evaluate L2P kernel on CPU
     const complex I(0.,1.);                                     // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -294,6 +467,38 @@ class SphericalLaplaceKernel
           spherical[0] += 2 * std::real(Ci->L[nms] * Ynm[nm]) / r * n;
           spherical[1] += 2 * std::real(Ci->L[nms] * YnmTheta[nm]);
           spherical[2] += 2 * std::real(Ci->L[nms] * Ynm[nm] * I) * m;
+        }
+      }
+      sph2cart(r,theta,phi,spherical,cartesian);
+      B->TRG[1] += cartesian[0];
+      B->TRG[2] += cartesian[1];
+      B->TRG[3] += cartesian[2];
+    }
+  }
+
+  void L2P(Cell& Ci, Lset &L) const {                                   //!< Evaluate L2P kernel on CPU
+    const complex I(0.,1.);                                     // Imaginary unit
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NCLEAF; ++B ) {
+      vect dist = B->X - Ci.X;
+      vect spherical = 0;
+      vect cartesian = 0;
+      real r, theta, phi;
+      cart2sph(r,theta,phi,dist);
+      evalMultipole(r,theta,phi,Ynm,YnmTheta);
+      for( int n=0; n!=P; ++n ) {
+        int nm  = n * n + n;
+        int nms = n * (n + 1) / 2;
+        B->TRG[0] += std::real(L[nms] * Ynm[nm]);
+        spherical[0] += std::real(L[nms] * Ynm[nm]) / r * n;
+        spherical[1] += std::real(L[nms] * YnmTheta[nm]);
+        for( int m=1; m<=n; ++m ) {
+          nm  = n * n + n + m;
+          nms = n * (n + 1) / 2 + m;
+          B->TRG[0] += 2 * std::real(L[nms] * Ynm[nm]);
+          spherical[0] += 2 * std::real(L[nms] * Ynm[nm]) / r * n;
+          spherical[1] += 2 * std::real(L[nms] * YnmTheta[nm]);
+          spherical[2] += 2 * std::real(L[nms] * Ynm[nm] * I) * m;
         }
       }
       sph2cart(r,theta,phi,spherical,cartesian);

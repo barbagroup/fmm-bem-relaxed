@@ -31,6 +31,19 @@ extern Sorter sort;
 //! Base class for tree structure
 class TreeStructure
 {
+  //! Nodes are primitive cells
+  struct Node {
+    int LEVEL;                                                  //!< Level of node
+    int ICHILD;                                                 //!< Flag of empty child nodes
+    int NLEAF;                                                  //!< Number of leafs in node
+    bigint I;                                                   //!< Cell index
+    bigint CHILD[8];                                            //!< Iterator offset of child nodes
+    B_iter LEAF[NCRIT];                                         //!< Iterator for leafs
+    vect X;                                                     //!< Node center
+    real R;                                                     //!< Node radius
+  };
+  std::vector<Node> nodes;                                      //!< Nodes in the tree
+
 private:
   vect X0;
   real R0;
@@ -49,7 +62,7 @@ public:
 
   // topdown tree construction
   template <class Kernel>
-  void topdown(Bodies& bodies, Cells& cells, Kernel& K) // Evaluator<Kernel> *eval)
+  void topdown(Bodies& bodies, Cells& cells, Kernel& K)
   {
     grow(bodies);
     setIndex();
@@ -66,7 +79,10 @@ public:
       C->alloc_multipole(K.multipole_size(level));
       C->alloc_local(K.local_size(level));
 
-      if (C->NCHILD==0) K.P2M(C);
+      if (C->NCHILD==0) {
+        // printf("P2M for cell: %d\n",(int)C->ICELL);
+        // K.P2M(C);
+      }
     }
     Log.stopTimer("P2M");
 
@@ -83,7 +99,7 @@ public:
       std::stringstream eventName;                                // Declare event name
       eventName << "evalM2M: " << level << "   ";                 // Set event name with level
       Log.startTimer(eventName.str());                                // Start timer
-      K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
+      // K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
       Log.stopTimer(eventName.str());                                 // Stop timer
     }                                                             // End loop target over cells
   }
@@ -138,15 +154,13 @@ private:
   //! Form parent-child mutual link
   void linkParent(Cells& cells, int &begin, int &end) {
     Cell parent = Cell();                                                // Parent cell
-    // parent.alloc_multipole(NTERM);
-    // parent.alloc_local(NTERM);
     Cells parents;                                              // Parent cell vector;
     int oldend = end;                                           // Save old end counter
     parent.ICELL = getParent(cells[begin].ICELL);               // Set cell index
     // parent.M = 0;                                               // Initialize multipole coefficients
-    for (size_t i=0; i<parent.M.size(); i++) parent.M[i] = 0;
+    //for (size_t i=0; i<parent.M.size(); i++) parent.M[i] = 0;
     // parent.L = 0;                                               // Initlalize local coefficients
-    for (size_t i=0; i<parent.L.size(); i++) parent.L[i] = 0;
+    //for (size_t i=0; i<parent.L.size(); i++) parent.L[i] = 0;
     parent.NCLEAF = parent.NDLEAF = parent.NCHILD = 0;          // Initialize NCLEAF, NDLEAF, & NCHILD
     parent.LEAF = cells[begin].LEAF;                            // Set pointer to first leaf
     parent.CHILD = begin;                                       // Link to child
@@ -156,10 +170,6 @@ private:
         cells.push_back(parent);                                //   Push cells into vector
         end++;                                                  //   Increment cell counter
         parent.ICELL = getParent(cells[i].ICELL);               //   Set cell index
-        // parent.M = 0;                                           //   Initialize multipole coefficients
-        //for (size_t l=0; l<parent.M.size(); l++) parent.M[l] = 0;
-        // parent.L = 0;                                           //   Initialize local coefficients
-        //for (size_t l=0; l<parent.L.size(); l++) parent.L[l] = 0;
         parent.NCLEAF = parent.NDLEAF = parent.NCHILD = 0;      //   Initialize NCLEAF, NDLEAF, & NCHILD
         parent.LEAF = cells[i].LEAF;                            //   Set pointer to first leaf
         parent.CHILD = i;                                       //   Link to child
@@ -310,18 +320,6 @@ public:
 #endif
 
   // topdown tree construction stuff
-  //! Nodes are primitive cells
-  struct Node {
-    int LEVEL;                                                  //!< Level of node
-    int ICHILD;                                                 //!< Flag of empty child nodes
-    int NLEAF;                                                  //!< Number of leafs in node
-    bigint I;                                                   //!< Cell index
-    bigint CHILD[8];                                            //!< Iterator offset of child nodes
-    B_iter LEAF[NCRIT];                                         //!< Iterator for leafs
-    vect X;                                                     //!< Node center
-    real R;                                                     //!< Node radius
-  };
-  std::vector<Node> nodes;                                      //!< Nodes in the tree
 
 //! Calculate octant from position
   int getOctant(const vect X, int i) {

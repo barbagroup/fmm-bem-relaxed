@@ -30,6 +30,11 @@ THE SOFTWARE.
 template <class Kernel>
 class Evaluator
 {
+public:
+  typedef typename Kernel::MType MType;
+  typedef typename Kernel::LType LType;
+  typedef std::vector<MType> Mset;
+  typedef std::vector<LType> Lset;
 private:
   real        timeM2L;                                          //!< M2L execution time
   real        timeM2P;                                          //!< M2P execution time
@@ -37,7 +42,7 @@ private:
   C_iter      Ci0, Cj0;
   real        R0;
 
-protected:
+private:
   C_iter      CiB;                                              //!< icells begin per call
   C_iter      CiE;                                              //!< icells end per call
   Lists       listM2L;                                          //!< M2L interaction list
@@ -54,7 +59,10 @@ protected:
   real        NM2P;                                             //!< Number of M2P kernel calls
   real        NM2L;                                             //!< Number of M2L kernel calls
 
+  // kernel & expansions
   Kernel &K;
+  std::vector<Mset> M;
+  std::vector<Lset> L;
 
 private:
   //! Approximate interaction between two cells
@@ -69,6 +77,7 @@ private:
     }                                                           // End if for kernel selection
 #elif TREECODE
     evalM2P(Ci,Cj);                                             // Evaluate on CPU, queue on GPU
+    //K.M2P(*Cj,M[Cj->ICELL],*Ci);
 #else
     evalM2L(Ci,Cj);                                             // Evalaute on CPU, queue on GPU
 #endif
@@ -192,10 +201,55 @@ protected:
 
 public:
   //! Constructor
-  Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()) {};
-  Evaluator(Kernel& k, real r0) : R0(r0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k){};
+  Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()), M(0), L(0) {};
+  Evaluator(Kernel& k, real r0) : R0(r0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
   //! Destructor
   ~Evaluator() {}
+
+  void setSize(const int N)
+  {
+    M.resize(N);
+    L.resize(N);
+  }
+
+  void upward(Cells& cells)
+  {
+    // allocate memory for the expansions
+    M.resize(cells.size());
+    L.resize(cells.size());
+
+    // P2M
+    // TODO: Only iterate after some offset
+    for (Cell& C : cells)
+    {
+      if (C.NCHILD == 0) {
+        int level = getLevel(C.ICELL);
+        M[C.ICELL].resize(K.multipole_size(level));
+        L[C.ICELL].resize(K.local_size(level));
+        //printf("call P2M on %d\n",(int)C.ICELL);
+        K.P2M(C,M[C.ICELL]);
+      }
+    }
+    // M2M
+    // TODO: iterate
+    for (Cell& C : cells) // add 
+    {
+      if (C.NCHILD) // has children
+      {
+        int level = getLevel(C.ICELL);
+        M[C.ICELL].resize(K.multipole_size(level));
+        L[C.ICELL].resize(K.local_size(level));
+        //printf("call M2M with target: %d\n",(int)C.ICELL);
+        // run through children and call M2M
+        Cj0 = cells.begin();
+        for (C_iter Cj=Cj0+C.CHILD; Cj!=Cj0+C.CHILD+C.NCHILD; ++Cj)
+        {
+          K.M2M(*Cj,M[Cj->ICELL],C,M[C.ICELL]);
+          // K.M2M(C,M[C.ICELL],*Cj,M[Cj->ICELL]);
+        }
+      }
+    }
+  }
 
   //! Add single list for kernel unit test
   void addM2L(C_iter Cj) {
@@ -372,7 +426,8 @@ void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single M2L kernel
-  K.M2L(Ci,Cj);                                                   // Perform M2L kernel
+  // K.M2L(Ci,Cj);                                                   // Perform M2L kernel
+  K.M2L(*Ci,L[Ci->ICELL],*Cj,M[Cj->ICELL]);
   NM2L++;                                                       // Count M2L kernel execution
 }
 
@@ -410,7 +465,8 @@ void Evaluator<Kernel>::evalM2L(Cells &cells) {               // Evaluate queued
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2P(C_iter Ci, C_iter Cj) {       // Evaluate single M2P kernel
-  K.M2P(Ci,Cj);                                                   // Perform M2P kernel
+  // K.M2P(Ci,Cj);                                                   // Perform M2P kernel
+  K.M2P(*Cj,M[Cj->ICELL],*Ci);
   NM2P++;                                                       // Count M2P kernel execution
 }
 
@@ -483,6 +539,7 @@ void Evaluator<Kernel>::evalP2P(Cells &cells) {               // Evaluate queued
 
 template <class Kernel>
 void Evaluator<Kernel>::evalL2L(Cells &cells) {               // Evaluate all L2L kernels
+  /*
   Ci0 = cells.begin();                                          // Set begin iterator
   for( C_iter Ci=cells.end()-2; Ci!=cells.begin()-1; --Ci ) {   // Loop over cells topdown (except root cell)
     int level = getLevel(Ci->ICELL);                            // Get current level
@@ -491,7 +548,13 @@ void Evaluator<Kernel>::evalL2L(Cells &cells) {               // Evaluate all L2
     Log.startTimer(eventName.str());                                // Start timer
     K.L2L(Ci,Ci0);                                                    // Perform L2L kernel
     Log.stopTimer(eventName.str());                                 // Stop timer
-  }                                                             // End loop over cells topdown
+  }*/                                                             // End loop over cells topdown
+  // for each cell in range, get parent & perform L2L
+  for( C_iter Ci=cells.end()-2; Ci!=cells.begin()-1; --Ci )
+  {
+    C_iter parent = cells.begin()+Ci->PARENT;
+    K.L2L(*parent,L[parent->ICELL],*Ci,L[Ci->ICELL]);
+  }                     
 }
 
 template <class Kernel>
@@ -499,7 +562,8 @@ void Evaluator<Kernel>::evalL2P(Cells &cells) {               // Evaluate all L2
   Log.startTimer("evalL2P");                                        // Start timer
   for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
     if( C->NCHILD == 0 ) {                                      //  If cell is a twig
-      K.L2P(C);                                                   //   Perform L2P kernel
+      // K.L2P(C);                                                   //   Perform L2P kernel
+      K.L2P(*C,L[C->ICELL]);
     }                                                           //  Endif for twig
   }                                                             // End loop over cells topdown
   Log.stopTimer("evalL2P");                                         // Stop timer

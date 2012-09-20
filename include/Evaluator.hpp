@@ -427,7 +427,8 @@ void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single M2L kernel
   // K.M2L(Ci,Cj);                                                   // Perform M2L kernel
-  K.M2L(*Ci,L[Ci->ICELL],*Cj,M[Cj->ICELL]);
+  //K.M2L(*Ci,L[Ci->ICELL],*Cj,M[Cj->ICELL]);
+  K.M2L(*Cj,M[Cj->ICELL],*Ci,L[Ci->ICELL]);
   NM2L++;                                                       // Count M2L kernel execution
 }
 

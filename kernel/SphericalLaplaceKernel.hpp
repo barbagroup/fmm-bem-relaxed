@@ -135,7 +135,6 @@ public:
     for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    printf("P2M for cell: %d\n",C.ICELL);
     for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
       vect dist = B->X - C.X;
       real R = std::sqrt(norm(dist));
@@ -160,7 +159,6 @@ public:
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Ci->RMAX;
     for( C_iter Cj=Cj0+Ci->CHILD; Cj!=Cj0+Ci->CHILD+Ci->NCHILD; ++Cj ) {
-      // printf("M2M from: %d to %d\n",Cj->ICELL,Ci->ICELL);
       vect dist = Ci->X - Cj->X;
       real R = std::sqrt(norm(dist)) + Cj->RCRIT;
       if( R > Rmax ) Rmax = R;
@@ -204,7 +202,6 @@ public:
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Ci.RMAX;
-    printf("M2M from: %d to %d\n",Cj.ICELL,Ci.ICELL);
     vect dist = Ci.X - Cj.X;
     real R = std::sqrt(norm(dist)) + Cj.RCRIT;
     if (R > Rmax) Rmax = R;
@@ -275,8 +272,7 @@ public:
     }
   }
 
-  void M2L(Cell& Ci, Mset& Msource, Cell& Cj, Lset& Ltarget) const {
-    printf("M2L from %d to %d\n",Ci.ICELL,Cj.ICELL);
+  void M2L(Cell& Cj, Mset& Msource, Cell& Ci, Lset& Ltarget) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = Ci.X - Cj.X - Xperiodic;
     real rho, alpha, beta;
@@ -409,7 +405,6 @@ public:
   }
 
   void L2L(Cell& Cj, Lset& Lsource, Cell& Ci, Lset& Ltarget) const {
-    printf("L2L from %d to %d\n",Cj.ICELL,Ci.ICELL);
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = Ci.X - Cj.X;
@@ -521,9 +516,7 @@ public:
 
   //! Free temporary allocations
   void postCalculation() {
-    printf("deleting prefactor\n");
     delete[] prefactor;                                         // Free sqrt( (n - |m|)! / (n + |m|)! )
-    printf("done\n");
     delete[] Anm;                                               // Free (-1)^n / sqrt( (n + m)! / (n - m)! )
     delete[] Cnm;                                               // Free M2L translation matrix Cjknm
   }

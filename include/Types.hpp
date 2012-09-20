@@ -163,8 +163,6 @@ struct Cell {
   real     R;                                                   //!< Cell radius
   real     RMAX;                                                //!< Max cell radius
   real     RCRIT;                                               //!< Critical cell radius
-  bool     Minit;
-  bool     Linit;
 };
 
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells

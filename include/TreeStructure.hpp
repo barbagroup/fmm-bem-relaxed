@@ -72,36 +72,10 @@ public:
 
     Cells twigs;
     bodies2twigs(bodies,twigs);
-    // run over twigs, init expansions & run P2M
-    Log.startTimer("P2M");
-    for (C_iter C=twigs.begin(); C!=twigs.end(); ++C) {
-      int level = getLevel(C->ICELL);
-      C->alloc_multipole(K.multipole_size(level));
-      C->alloc_local(K.local_size(level));
-
-      if (C->NCHILD==0) {
-        // printf("P2M for cell: %d\n",(int)C->ICELL);
-        // K.P2M(C);
-      }
-    }
-    Log.stopTimer("P2M");
-
     // here twigs contains all twig cells for P2M
 
     Cells sticks;
     twigs2cells(twigs,cells,sticks);
-    // Upward pass 2 (M2M)
-    C_iter Cj0 = cells.begin();
-    for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
-      int level = getLevel(Ci->ICELL);                            // Get current level
-      Ci->alloc_multipole(K.multipole_size(level));
-      Ci->alloc_local(K.local_size(level));
-      std::stringstream eventName;                                // Declare event name
-      eventName << "evalM2M: " << level << "   ";                 // Set event name with level
-      Log.startTimer(eventName.str());                                // Start timer
-      // K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
-      Log.stopTimer(eventName.str());                                 // Stop timer
-    }                                                             // End loop target over cells
   }
 
 private:
@@ -142,8 +116,6 @@ private:
           cells[c_old].LEAF = cells[c].LEAF;                    //    Copy iterator of first leaf
           sticks.push_back(cells[c_old]);                       //    Push stick into vector
         }                                                       //   Endif for collision type
-        // cells[c_old].M += cells[c].M;                           //   Accumulate multipole
-        for (size_t i=0; i<cells[c_old].M.size(); i++) cells[c_old].M[i] += cells[c].M[i];
         cells.erase(cells.begin()+c);                           //   Erase colliding cell
         c--;                                                    //   Decrement counter to account for erase
         end--;                                                  //   Decrement end to account for erase

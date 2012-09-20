@@ -144,7 +144,8 @@ protected:
                     cell.X[0]  = C->X[0] + (ix * 6 + cx * 2) * C->R;//     Set new x coordinate for periodic image
                     cell.X[1]  = C->X[1] + (iy * 6 + cy * 2) * C->R;//     Set new y cooridnate for periodic image
                     cell.X[2]  = C->X[2] + (iz * 6 + cz * 2) * C->R;//     Set new z coordinate for periodic image
-                    cell.M     = C->M;                          //         Copy multipoles to new periodic image
+                    // cell.M     = C->M;                          //         Copy multipoles to new periodic image
+                    M[cell.ICELL] = M[C->ICELL];
                     cell.NCLEAF = cell.NDLEAF = cell.NCHILD = 0;//         Initialize NCLEAF, NDLEAF, & NCHILD
                     jcells.push_back(cell);                     //         Push cell into periodic jcell vector
                   }                                             //        End loop over z periodic direction (child)
@@ -160,7 +161,8 @@ protected:
             cell.X[0] = C->X[0] + ix * 2 * C->R;                //     Set new x coordinate for periodic image
             cell.X[1] = C->X[1] + iy * 2 * C->R;                //     Set new y cooridnate for periodic image
             cell.X[2] = C->X[2] + iz * 2 * C->R;                //     Set new z coordinate for periodic image
-            cell.M = C->M;                                      //     Copy multipoles to new periodic image
+            // cell.M = C->M;                                      //     Copy multipoles to new periodic image
+            M[cell.ICELL] = M[C->ICELL];
             pjcells.push_back(cell);                            //     Push cell into periodic jcell vector
           }                                                     //    End loop over z periodic direction
         }                                                       //   End loop over y periodic direction
@@ -172,7 +174,7 @@ protected:
       C_iter Ci = pccells.end() - 1;                            //  Set current cell as target for M2M
       Ci->CHILD = 0;                                            //  Set child cells for periodic M2M
       Ci->NCHILD = 27;                                          //  Set number of child cells for periodic M2M
-      evalM2M(pccells,pjcells);                                 // Evaluate periodic M2M kernels for this sublevel
+      // evalM2M(pccells,pjcells);                                 // Evaluate periodic M2M kernels for this sublevel
       pjcells.clear();                                          // Clear periodic jcell vector
     }                                                           // End loop over sublevels of tree
   }
@@ -345,9 +347,11 @@ public:
 #if HYBRID
     timeKernels();                                              // Time all kernels for auto-tuning
 #endif
+    /*
     for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {        // Initialize local coefficients
       for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
     }
+    */
     if( IMAGES != 0 ) {                                         // If periodic boundary condition
       Log.startTimer("Upward P");                                   //  Start timer
       upwardPeriodic(jcells);                                   //  Upward phase for periodic images
@@ -402,8 +406,6 @@ void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2
   Log.startTimer("evalP2M");                                        // Start timer
   for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
     int level = getLevel(C->ICELL);
-    for (size_t i=0; i<C->M.size(); i++) C->M[i] = 0;
-    for (size_t i=0; i<C->L.size(); i++) C->L[i] = 0;
     if( C->NCHILD == 0 ) {                                      //  If cell is a twig
       K.P2M(C);                                                   //   Perform P2M kernel
     }                                                           //  Endif for twig
@@ -411,6 +413,7 @@ void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2
   Log.stopTimer("evalP2M");                                         // Stop timer
 }
 
+/*
 template <class Kernel>
 void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2M kernels
   Cj0 = jcells.begin();                                         // Set begin iterator
@@ -423,6 +426,7 @@ void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2
     Log.stopTimer(eventName.str());                                 // Stop timer
   }                                                             // End loop target over cells
 }
+*/
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single M2L kernel
@@ -451,7 +455,8 @@ void Evaluator<Kernel>::evalM2L(Cells &cells) {               // Evaluate queued
               Xperiodic[0] = ix * 2 * R0;                       //       Coordinate offset for x periodic direction
               Xperiodic[1] = iy * 2 * R0;                       //       Coordinate offset for y periodic direction
               Xperiodic[2] = iz * 2 * R0;                       //       Coordinate offset for z periodic direction
-              K.M2L(Ci,Cj);                                       //       Perform M2L kernel
+              // K.M2L(Ci,Cj);                                       //       Perform M2L kernel
+              K.M2L(*Cj,M[Cj->ICELL],*Ci,L[Ci->ICELL]);
             }                                                   //      Endif for periodic flag
           }                                                     //     End loop over x periodic direction
         }                                                       //    End loop over y periodic direction

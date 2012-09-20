@@ -104,8 +104,6 @@ const int  THREADS  = 64;                                       //!< Number of t
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
 // TODO: Move into SphericalLaplaceKernel
-typedef std::vector<complex>  Mset;                             //!< Multipole coefficient type
-typedef std::vector<complex>  Lset;                             //!< Local coefficient type
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
 
 //! Structure for pthread based trace
@@ -165,26 +163,8 @@ struct Cell {
   real     R;                                                   //!< Cell radius
   real     RMAX;                                                //!< Max cell radius
   real     RCRIT;                                               //!< Critical cell radius
-  Mset     M;                                                   //!< Multipole coefficients
-  Lset     L;                                                   //!< Local coefficients
   bool     Minit;
   bool     Linit;
-
-  Cell() : Minit(false), Linit(false) {};
-  void alloc_multipole(const int N) {
-    if (!Minit) {
-      M.resize(N);
-      for ( complex& c : M ) c = 0;
-      Minit = true;
-    }
-  };
-  void alloc_local(const int N) {
-    if (!Linit) {
-      L.resize(N);
-      for ( complex& c : L ) c = 0;
-      Linit = true;
-    }
-  };
 };
 
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells

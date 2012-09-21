@@ -83,7 +83,7 @@ public:
     printf("Tree created: %d cells\n",(int)cells.size());
 
     // initialise evaluator
-    eval = new Evaluator<Kernel>(K,R0);
+    eval = new Evaluator<Kernel>(K);
     eval->upward(cells);
   }
 

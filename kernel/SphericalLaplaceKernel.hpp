@@ -409,7 +409,7 @@ public:
   }
 
   //! Get r,theta,phi from x,y,z
-  void cart2sph(real& r, real& theta, real& phi, vect dist) const {
+  void cart2sph(real& r, real& theta, real& phi, vect dist=0) const {
     r = sqrt(norm(dist))+EPS;                                   // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps

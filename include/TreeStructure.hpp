@@ -80,7 +80,7 @@ public:
 
 private:
 
-  int getLevel(bigint index)
+  int getLevel(bigint index=0)
   {
     int i = index;                                              // Copy to dummy index
     int level = -1;                                             // Initialize level counter

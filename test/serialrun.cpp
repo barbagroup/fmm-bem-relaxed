@@ -27,25 +27,52 @@ THE SOFTWARE.
 #define TOPDOWN
 //#define BOTTOMUP
 
-int main() {
-  const int numBodies = 10000;                                  // Number of bodies
+int main(int argc, char **argv)
+{
+  int numBodies = 10000;
+  int P = 8;
+  THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
+  bool checkErrors = true;
+
+  // parse command line args
+  for (int i=1; i<argc; i++)
+  {
+    if (strcmp(argv[i],"-N")==0)
+    {
+      i++;
+      numBodies = atoi(argv[i]);
+    }
+    else if (strcmp(argv[i],"-P")==0)
+    {
+      i++;
+      P = atoi(argv[i]);
+    }
+    else if (strcmp(argv[i],"-theta")==0)
+    {
+      i++;
+      THETA = (double)atof(argv[i]);
+    }
+    else if (strcmp(argv[i],"-nocheck")==0)
+    {
+      checkErrors = false;
+    }
+    else
+    {
+      printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
+    }
+  }
+
   const int numTarget = 100;                                    // Number of target points to be used for error eval
   IMAGES = 0;                                                   // Level of periodic image tree (0 for non-periodic)
-  THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   Bodies bodies(numBodies);                                     // Define vector of bodies
 
-  SphericalLaplaceKernel K(8);
+  SphericalLaplaceKernel K(P);
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
-#if 0
-  for (int i=0; i<numBodies; i++)
-    printf("body %d: %lg\n",i,(double)bodies[i].X[0]);
-#endif
-
   FMM_options opts;
-  //FMM_plan FMM(K,bodies,opts);
   FMM_plan<SphericalLaplaceKernel> FMM(K,bodies,opts);
   FMM.execute(jbodies);
-  FMM.checkError(bodies,jbodies);
+  if (checkErrors)
+    FMM.checkError(bodies,jbodies);
 }

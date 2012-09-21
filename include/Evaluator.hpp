@@ -204,7 +204,7 @@ protected:
 public:
   //! Constructor
   Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()), M(0), L(0) {};
-  Evaluator(Kernel& k, real r0) : R0(r0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
+  Evaluator(Kernel& k) : R0(0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
   //! Destructor
   ~Evaluator() {}
 

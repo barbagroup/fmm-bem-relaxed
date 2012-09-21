@@ -63,7 +63,7 @@ public:
   // topdown tree construction
   void topdown(Bodies& bodies, Cells& cells)
   {
-    grow_topdown(bodies);
+    grow(bodies);
     setIndex_topdown();
 
     buffer.resize(bodies.size());
@@ -79,7 +79,6 @@ public:
 
   void bottomup(Bodies& bodies, Cells& cells)
   {
-    grow_bottomup(bodies);
     setIndex_bottomup(bodies);
 
     buffer.resize(bodies.size());
@@ -387,7 +386,7 @@ public:
 
 private:
 //! Grow tree from root
-  void grow_topdown(Bodies& bodies) {
+  void grow(Bodies& bodies) {
     Log.startTimer("Grow tree");                                    // Start timer
     int octant;                                                 // In which octant is the body located?
     Node node;                                                  // Node structure
@@ -483,36 +482,6 @@ private:
       }                                                         //  Endif for merging
     }                                                           // End loop over levels
     Log.stopTimer("Prune tree");                           // Stop timer
-  }
-
-//! Grow tree by splitting cells
-  void grow_bottomup(Bodies& bodies, int level=0, int begin=0, int end=0) {
-    bigint index = bodies[begin].ICELL;                         // Initialize cell index
-    int off=begin, size=0;                                      // Initialize offset, and size
-    if( level == 0 ) level = getMaxLevel(bodies);               // Max level for bottom up tree build
-    if( end == 0 ) end = bodies.size();                         // Default size is all bodies
-    for( int b=begin; b!=end; ++b ) {                           // Loop over bodies under consideration
-      if( bodies[b].ICELL != index ) {                          //  If it's a new cell
-        if( size >= NCRIT ) {                                   //   If the cell has too many bodies
-          level++;                                              //    Increment level
-          setIndex_bottomup(bodies,level,off,off+size);                  //    Set new cell index considering new level
-          sort.sortBodies(bodies,buffer,false,off,off+size);         //    Sort new cell index
-          grow_bottomup(bodies,level,off,off+size);                      //    Recursively grow tree
-          level--;                                              //    Go back to previous level
-        }                                                       //   Endif for splitting
-        off = b;                                                //   Set new offset
-        size = 0;                                               //   Reset number of bodies
-        index = bodies[b].ICELL;                                //   Set new cell
-      }                                                         //  Endif for new cell
-      size++;                                                   //  Increment body counter
-    }                                                           // End loop over bodies
-    if( size >= NCRIT ) {                                       // If last cell has too many bodies
-      level++;                                                  //  Increment level
-      setIndex_bottomup(bodies,level,off,off+size);                      //  Set new cell index considering new level
-      sort.sortBodies(bodies,buffer,false,off,off+size);             //  Sort new cell index
-      grow_bottomup(bodies,level,off,off+size);                          //  Recursively grow tree
-      level--;                                                  //  Go back to previous level
-    }                                                           // Endif for splitting
   }
 };
 

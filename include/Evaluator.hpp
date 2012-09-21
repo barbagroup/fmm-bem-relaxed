@@ -31,10 +31,11 @@ template <class Kernel>
 class Evaluator
 {
 public:
-  typedef typename Kernel::MType MType;
-  typedef typename Kernel::LType LType;
-  typedef std::vector<MType> Mset;
-  typedef std::vector<LType> Lset;
+  //! Multipole expansion type
+  typedef typename Kernel::multipole_type multipole_type;
+  //! Local expansion type
+  typedef typename Kernel::local_type local_type;
+
 private:
   real        timeM2L;                                          //!< M2L execution time
   real        timeM2P;                                          //!< M2P execution time
@@ -61,8 +62,8 @@ private:
 
   // kernel & expansions
   Kernel &K;
-  std::vector<Mset> M;
-  std::vector<Lset> L;
+  std::vector<multipole_type> M;
+  std::vector<local_type> L;
 
 private:
   //! Approximate interaction between two cells
@@ -234,7 +235,7 @@ public:
     }
     // M2M
     // TODO: iterate
-    for (Cell& C : cells) // add 
+    for (Cell& C : cells) // add
     {
       if (C.NCHILD) // has children
       {
@@ -560,7 +561,7 @@ void Evaluator<Kernel>::evalL2L(Cells &cells) {               // Evaluate all L2
   {
     C_iter parent = cells.begin()+Ci->PARENT;
     K.L2L(*parent,L[parent->ICELL],*Ci,L[Ci->ICELL]);
-  }                     
+  }
 }
 
 template <class Kernel>

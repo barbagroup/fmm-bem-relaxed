@@ -28,19 +28,40 @@
 
 class SphericalLaplaceKernel
 {
-public:
-  typedef complex MType;
-  typedef complex LType;
-  typedef std::vector<MType> Mset;
-  typedef std::vector<LType> Lset;
-
  private:
   int P;
-  real *prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
-  real *Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
-  complex *Cnm;                                                 //!< M2L translation matrix \f$ C_{jn}^{km} \f$
+  double* prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
+  double* Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
+  std::complex<double> *Cnm;                                      //!< M2L translation matrix \f$ C_{jn}^{km} \f$
+
+  typedef double real;
+  typedef std::complex<real> complex;
+
+  struct multipole {
+    std::vector<complex> M;
+    real RCRIT;
+    real RMAX;
+
+    complex& operator[](const int i) {
+      return M[i];
+    }
+    const complex& operator[](const int i) const {
+      return M[i];
+    }
+    unsigned size() {
+      return M.size();
+    }
+    void resize(unsigned sz) {
+      M.resize(sz);
+    }
+  };
 
  public:
+  //! Multipole expansion type
+  typedef multipole multipole_type;
+  //! Local expansion type
+  typedef std::vector<complex> local_type;
+
   //! Constructor
   SphericalLaplaceKernel()
       : P(5), prefactor(), Anm(), Cnm() {};
@@ -111,7 +132,7 @@ public:
     }                                                             // End loop over target bodies
   }
 
-  void P2M(Cell& C, Mset& M) {
+  void P2M(Cell& C, multipole_type& M) {
     for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -130,16 +151,16 @@ public:
         }
       }
     }
-    C.RMAX = Rmax;
-    C.RCRIT = std::min(C.R,Rmax);
+    M.RMAX = Rmax;
+    M.RCRIT = std::min(C.R,Rmax);
   }
 
-  void M2M(Cell& Cj, Mset& Msource, Cell& Ci, Mset& Mtarget) {
+  void M2M(Cell& Cj, multipole_type& Msource, Cell& Ci, multipole_type& Mtarget) {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    real Rmax = Ci.RMAX;
+    real Rmax = Mtarget.RMAX;
     vect dist = Ci.X - Cj.X;
-    real R = std::sqrt(norm(dist)) + Cj.RCRIT;
+    real R = std::sqrt(norm(dist)) + Msource.RCRIT;
     if (R > Rmax) Rmax = R;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
@@ -172,11 +193,11 @@ public:
         Mtarget[jks] += M * EPS;
       }
     }
-    Ci.RMAX = Rmax;
-    Ci.RCRIT = std::min(Ci.R,Rmax);
+    Mtarget.RMAX = Rmax;
+    Mtarget.RCRIT = std::min(Ci.R,Rmax);
   }
 
-  void M2L(Cell& Cj, Mset& Msource, Cell& Ci, Lset& Ltarget) const {
+  void M2L(Cell& Cj, multipole_type& Msource, Cell& Ci, local_type& Ltarget) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = Ci.X - Cj.X - Xperiodic;
     real rho, alpha, beta;
@@ -208,7 +229,7 @@ public:
     }
   }
 
-  void M2P(Cell& Cj, Mset& M, Cell& Ci) const {
+  void M2P(Cell& Cj, multipole_type& M, Cell& Ci) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NDLEAF; ++B ) {
@@ -240,7 +261,7 @@ public:
     }
   }
 
-  void L2L(Cell& Cj, Lset& Lsource, Cell& Ci, Lset& Ltarget) const {
+  void L2L(Cell& Cj, local_type& Lsource, Cell& Ci, local_type& Ltarget) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = Ci.X - Cj.X;
@@ -275,7 +296,7 @@ public:
     }
   }
 
-  void L2P(Cell& Ci, Lset &L) const {                                   //!< Evaluate L2P kernel on CPU
+  void L2P(Cell& Ci, local_type &L) const {                                   //!< Evaluate L2P kernel on CPU
     const complex I(0.,1.);                                     // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NCLEAF; ++B ) {

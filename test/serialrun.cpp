@@ -24,15 +24,13 @@ THE SOFTWARE.
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
 
-#define TOPDOWN
-//#define BOTTOMUP
-
 int main(int argc, char **argv)
 {
   int numBodies = 10000;
   int P = 8;
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   bool checkErrors = true;
+  FMM_options opts;
 
   // parse command line args
   for (int i=1; i<argc; i++)
@@ -56,6 +54,10 @@ int main(int argc, char **argv)
     {
       checkErrors = false;
     }
+    else if (strcmp(argv[i],"-bottomup")==0)
+    {
+      opts.tree = BOTTOMUP;
+    }
     else
     {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
@@ -70,7 +72,6 @@ int main(int argc, char **argv)
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
-  FMM_options opts;
   FMM_plan<SphericalLaplaceKernel> FMM(K,bodies,opts);
   FMM.execute(jbodies);
   if (checkErrors)

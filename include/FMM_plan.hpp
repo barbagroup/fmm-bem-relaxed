@@ -35,6 +35,7 @@ private:
   TreeStructure tree;
   Evaluator<Kernel> *eval;
   Kernel &K;
+  FMM_options& Opts;
 
   void setDomain(Bodies& bodies, vect x0=0, real r0=M_PI)
   {
@@ -69,7 +70,7 @@ private:
   }
 
 public:
-  FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts) : K(k)
+  FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts) : K(k), Opts(opts)
   {
     // set domain of problem (center & radius)
     setDomain(bodies);
@@ -79,7 +80,10 @@ public:
 
     // initialise tree & construct
     tree.init(X0,R0);
-    tree.topdown(bodies,cells,K);
+    if (opts.tree == TOPDOWN)
+      tree.topdown(bodies,cells);
+    else
+      tree.bottomup(bodies,cells);
     printf("Tree created: %d cells\n",(int)cells.size());
 
     // initialise evaluator

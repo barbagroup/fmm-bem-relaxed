@@ -24,7 +24,20 @@
 
 #define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
-// #define NO_POINTERS
+struct Point
+{
+  vec<3,real> xyz;
+
+  Point(real x, real y, real z) { xyz[0]=x; xyz[1]=y; xyz[2]=z; };
+  Point(real *XYZ) { xyz[0] = XYZ[0]; xyz[1]=XYZ[1]; xyz[2]=XYZ[2]; };
+
+  real& operator[](const int i) {
+    return xyz[i];
+  }
+  const real& operator[](const int i) const {
+    return xyz[i];
+  }
+};
 
 class SphericalLaplaceKernel
 {
@@ -64,11 +77,11 @@ class SphericalLaplaceKernel
 
   // TODO: Use these!
   //! Point type
-  typedef vec<3,real> point_type;
+  typedef Point point_type;
   //! Charge type
-  typedef vec<4,real> charge_type;
+  typedef real charge_type;
   //! Kernel result type
-  typdef vec<4,real> result_type;
+  typedef vec<4,real> result_type;
 
   //! Constructor
   SphericalLaplaceKernel()

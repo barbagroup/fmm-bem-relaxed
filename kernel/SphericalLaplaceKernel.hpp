@@ -29,13 +29,13 @@
 class SphericalLaplaceKernel
 {
  private:
-  int P;
-  double* prefactor;                                              //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
-  double* Anm;                                                    //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
-  std::complex<double> *Cnm;                                      //!< M2L translation matrix \f$ C_{jn}^{km} \f$
-
   typedef double real;
   typedef std::complex<real> complex;
+
+  const int P;
+  real* prefactor;                     //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
+  real* Anm;                           //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
+  complex* Cnm;                        //!< M2L translation matrix \f$ C_{jn}^{km} \f$
 
   struct multipole {
     std::vector<complex> M;
@@ -124,7 +124,7 @@ class SphericalLaplaceKernel
       vect F0 = 0;                                                //  Initialize force
       for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
         vect dist = Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
-        real R2 = norm(dist) + EPS2;                              //   R^2
+        real R2 = norm(dist);                                     //   R^2
         real invR2 = 1.0 / R2;                                    //   1 / R^2
         if( R2 == 0 ) invR2 = 0;                                  //   Exclude self interaction
         real invR = Bj->SRC * std::sqrt(invR2);                   //   potential
@@ -336,8 +336,6 @@ class SphericalLaplaceKernel
       B->TRG[3] += cartesian[2];
     }
   }
-
-  void finalize() {}                                            //!< Finalize kernels
 
   //! Free temporary allocations
   void postCalculation() {

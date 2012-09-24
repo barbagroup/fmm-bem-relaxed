@@ -38,12 +38,12 @@ private:
 
 //! Initialize target values
   static void initTarget(Bodies &bodies, bool IeqJ=true) {
+    (void) IeqJ;  // Quiet compiler
     srand48(0);                                                 // Set seed for random number generator
     for( B_iter B=bodies.begin(); B!=bodies.end(); ++B ) {      // Loop over bodies
       B->IBODY = B-bodies.begin();                              //  Tag body with initial index
       B->IPROC = MPIRANK;                                       //  Tag body with initial MPI rank
       B->TRG = 0;                                               //  Clear previous target values (IeqJ is dummy)
-      if( EPS2 != 0 ) B->TRG[0] = -B->SRC / std::sqrt(EPS2) * IeqJ;//  Initialize potential (0 if I != J)
     }                                                           // End loop over bodies
   }
 
@@ -124,6 +124,6 @@ public:
       norm1 = p2 * p2;                                          //  Value of total energy
     }                                                           // End if for Ewald method
   }
-#endif 
+#endif
 };
 

@@ -90,20 +90,17 @@ extern int PAPIEVENT;                                           //!< PAPI event 
 #endif
 #endif
 
-// const int  P        = 8;                                       //!< Order of expansions
 const int  NCRIT    = 100;                                      //!< Number of bodies per cell
 const int  MAXBODY  = 200000;                                   //!< Maximum number of bodies per GPU kernel
 const int  MAXCELL  = 10000000;                                 //!< Maximum number of bodies/coefs in cell per GPU kernel
 const real CLET     = 2;                                        //!< LET opening critetia
 const real EPS      = 1e-6;                                     //!< Single precision epsilon
-const real EPS2     = 0;                                        //!< Softening parameter (squared)
 const real R2MIN    = 0.25;                                     //!< Minimum value for L-J R^2
 const real R2MAX    = 64;                                       //!< Maximum value for L-J R^2
 const int  GPUS     = 3;                                        //!< Number of GPUs per node
 const int  THREADS  = 64;                                       //!< Number of threads per thread-block
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
-// TODO: Move into SphericalLaplaceKernel
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
 
 //! Structure for pthread based trace
@@ -119,6 +116,7 @@ typedef std::queue<Trace>                      Traces;          //!< Queue of tr
 typedef std::map<std::string,double>           Timer;           //!< Map of timer event name to timed value
 typedef std::map<std::string,double>::iterator TI_iter;         //!< Iterator for timer event name map
 
+// TODO: Move into Evaluator
 //! Structure of source bodies (stuff to send)
 struct JBody {
   int         IBODY;                                            //!< Initial body numbering for sorting back
@@ -130,6 +128,7 @@ struct JBody {
 typedef std::vector<JBody>             JBodies;                 //!< Vector of source bodies
 typedef std::vector<JBody>::iterator   JB_iter;                 //!< Iterator for source body vector
 
+// TODO; Separate positions from charge
 //! Structure of bodies
 struct Body : public JBody {
   vec<4,real> TRG;                                              //!< Scalar+vector target values

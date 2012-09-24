@@ -15,6 +15,7 @@ Sorter sort;
 
 typedef enum {TOPDOWN, BOTTOMUP} treeType;
 
+/** Class to define compile-time and run-time FMM options */
 class FMM_options
 {
 public:
@@ -24,18 +25,28 @@ public:
   FMM_options() : symmetric(false), tree(TOPDOWN) {};
 };
 
+
+/** Simple wrapper class for FMM_plan */
+struct fmm_wrapper
+{
+  virtual ~fmm_wrapper() {}
+  virtual void execute(Bodies& jbodies) = 0;
+};
+
+
+
 template <class Kernel>
-class FMM_plan
+class FMM_plan : public fmm_wrapper
 {
 private:
   Cells cells, jcells;
   vect X0;
   real R0;
   Bodies buffer;
-  TreeStructure tree;
-  Evaluator<Kernel> *eval;
   Kernel &K;
   FMM_options& Opts;
+  TreeStructure tree;
+  Evaluator<Kernel> evaluator;
 
   void setDomain(Bodies& bodies, vect x0=0, real r0=M_PI)
   {
@@ -70,7 +81,8 @@ private:
   }
 
 public:
-  FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts) : K(k), Opts(opts)
+  FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts)
+      : K(k), Opts(opts), evaluator(K)
   {
     // set domain of problem (center & radius)
     setDomain(bodies);
@@ -87,57 +99,42 @@ public:
     printf("Tree created: %d cells\n",(int)cells.size());
 
     // initialise evaluator
-    eval = new Evaluator<Kernel>(K);
-    eval->upward(cells);
+    evaluator.upward(cells);
   }
 
   ~FMM_plan()
   {
     // all kernel cleanup
     K.postCalculation();
-    delete eval;
   }
 
   void execute(Bodies& jbodies)
   {
     // run evaluator and traverse tree
     jcells = cells;
-    printf("executing...\n");
-    eval->downward(cells,jcells,false);
-  }
-
-  void checkError(Bodies& FMM_bodies, Bodies& sources)
-  {
-    int numTargets = 100;
-    FMM_bodies.resize(numTargets);
-    Bodies test_bodies = FMM_bodies;
-
-    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B)
-    {
-      B->IBODY = B-test_bodies.begin();
-      B->TRG = 0;
-    }
-
-    eval->evalP2P(test_bodies,sources);
-
-    B_iter B2 = FMM_bodies.begin();
-
-    real diff1=0, diff2=0, norm1=0, norm2=0;
-    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B, ++B2)
-    {
-      diff1 += (B->TRG[0] - B2->TRG[0]) * (B->TRG[0] - B2->TRG[0]);
-      norm1 += B2->TRG[0] * B2->TRG[0];
-
-      diff2 += (B->TRG[1] - B2->TRG[1]) * (B->TRG[1] - B2->TRG[1]);
-      diff2 += (B->TRG[2] - B2->TRG[2]) * (B->TRG[2] - B2->TRG[2]);
-      diff2 += (B->TRG[3] - B2->TRG[3]) * (B->TRG[3] - B2->TRG[3]);
-      norm2 += B2->TRG[1] * B2->TRG[1];
-      norm2 += B2->TRG[2] * B2->TRG[2];
-      norm2 += B2->TRG[3] * B2->TRG[3];
-    }
-
-    printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
-    printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+    printf("Executing...\n");
+    evaluator.downward(cells,jcells,false);
   }
 };
 
+
+class fmm_plan
+{
+  fmm_wrapper* plan;
+ public:
+  fmm_plan() : plan(NULL) {}
+
+  template <typename Kernel>
+  fmm_plan(Kernel K, Bodies& b, FMM_options& opts) {
+    plan = new FMM_plan<Kernel>(K, b, opts);
+  }
+
+  ~fmm_plan() {
+    delete plan;
+  }
+
+  friend void fmm_execute(fmm_plan& p, Bodies& jbodies) {
+    if (p.plan)
+      p.plan->execute(jbodies);
+  }
+};

@@ -24,6 +24,7 @@ THE SOFTWARE.
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
 
+
 int main(int argc, char **argv)
 {
   int numBodies = 10000;
@@ -64,7 +65,6 @@ int main(int argc, char **argv)
     }
   }
 
-  const int numTarget = 100;                                    // Number of target points to be used for error eval
   IMAGES = 0;                                                   // Level of periodic image tree (0 for non-periodic)
   Bodies bodies(numBodies);                                     // Define vector of bodies
 
@@ -72,8 +72,41 @@ int main(int argc, char **argv)
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
-  FMM_plan<SphericalLaplaceKernel> FMM(K,bodies,opts);
-  FMM.execute(jbodies);
-  if (checkErrors)
-    FMM.checkError(bodies,jbodies);
+  fmm_plan plan = fmm_plan(K, bodies, opts);
+  fmm_execute(plan, jbodies);
+
+  // TODO: More elegant
+  if (checkErrors) {
+    const int numTargets = 100;                                  // Number of target points to be used for error eval
+    bodies.resize(numTargets);
+    Bodies test_bodies = bodies;
+
+    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B)
+    {
+      B->IBODY = B-test_bodies.begin();
+      B->TRG = 0;
+    }
+
+    // TODO: Use a Direct class to make this more intuitive and accessible
+    Evaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies,jbodies);
+
+    B_iter B2 = bodies.begin();
+
+    real diff1=0, diff2=0, norm1=0, norm2=0;
+    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B, ++B2)
+    {
+      diff1 += (B->TRG[0] - B2->TRG[0]) * (B->TRG[0] - B2->TRG[0]);
+      norm1 += B2->TRG[0] * B2->TRG[0];
+
+      diff2 += (B->TRG[1] - B2->TRG[1]) * (B->TRG[1] - B2->TRG[1]);
+      diff2 += (B->TRG[2] - B2->TRG[2]) * (B->TRG[2] - B2->TRG[2]);
+      diff2 += (B->TRG[3] - B2->TRG[3]) * (B->TRG[3] - B2->TRG[3]);
+      norm2 += B2->TRG[1] * B2->TRG[1];
+      norm2 += B2->TRG[2] * B2->TRG[2];
+      norm2 += B2->TRG[3] * B2->TRG[3];
+    }
+
+    printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
+    printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+  }
 }

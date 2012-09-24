@@ -365,6 +365,19 @@ public:
                            << " M2L: " << NM2L << std::endl;
   }
 
+  static void evalP2P(const Kernel& K, Bodies& ibodies, Bodies& jbodies) {
+    Xperiodic = 0;                                                // Set periodic coordinate offset
+    Cells cells;                                                  // Cells to put target and source bodies
+    cells.resize(2);                                              // Resize cells to put target and source bodies
+    cells[0].LEAF = ibodies.begin();                              // Iterator of first target leaf
+    cells[0].NDLEAF = ibodies.size();                             // Number of target leafs
+    cells[1].LEAF = jbodies.begin();                              // Iterator of first source leaf
+    cells[1].NDLEAF = jbodies.size();                             // Number of source leafs
+    C_iter Ci = cells.begin(), Cj = cells.begin()+1;              // Iterator of target and source cells
+    printf("evaluating %d x %d P2P\n",(int)ibodies.size(),(int)jbodies.size());
+    K.P2P(Ci,Cj);
+  }
+
   void evalP2P(Bodies& ibodies, Bodies& jbodies, bool onCPU=false);//!< Evaluate all P2P kernels (all pairs)
   void evalP2M(Cells& cells);                                   //!< Evaluate all P2M kernels
   void evalM2M(Cells& cells, Cells& jcells);                    //!< Evaluate all M2M kernels
@@ -380,22 +393,15 @@ public:
 
 #undef splitFirst
 
+
+
 template <class Kernel>
-void Evaluator<Kernel>::evalP2P(Bodies &ibodies, Bodies &jbodies, bool) {// Evaluate all P2P kernels
-  Xperiodic = 0;                                                // Set periodic coordinate offset
-  Cells cells;                                                  // Cells to put target and source bodies
-  cells.resize(2);                                              // Resize cells to put target and source bodies
-  cells[0].LEAF = ibodies.begin();                              // Iterator of first target leaf
-  cells[0].NDLEAF = ibodies.size();                             // Number of target leafs
-  cells[1].LEAF = jbodies.begin();                              // Iterator of first source leaf
-  cells[1].NDLEAF = jbodies.size();                             // Number of source leafs
-  C_iter Ci = cells.begin(), Cj = cells.begin()+1;              // Iterator of target and source cells
-  printf("evaluating %d x %d P2P\n",(int)ibodies.size(),(int)jbodies.size());
-  K.P2P(Ci,Cj);                                                   // Perform P2P kernel
+void Evaluator<Kernel>::evalP2P(Bodies& ibodies, Bodies& jbodies, bool) {// Evaluate all P2P kernels
+  evalP2P(K, ibodies, jbodies); // Perform P2P kernel
 }
 
 template <class Kernel>
-void Evaluator<Kernel>::evalP2M(Cells &cells) {               // Evaluate all P2M kernels
+void Evaluator<Kernel>::evalP2M(Cells& cells) {               // Evaluate all P2M kernels
   Log.startTimer("evalP2M");                                        // Start timer
   for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
     int level = getLevel(C->ICELL);

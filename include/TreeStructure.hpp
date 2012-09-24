@@ -113,7 +113,7 @@ private:
     if( MPIlevel > level ) {                                    // If process hierarchy is deeper than tree
 //      std::cout << "Process hierarchy is deeper than tree @ rank" << MPIRANK << std::endl;
       level = MPIlevel;
-    }   
+    }
     return level;                                               // Return max level
   }
 

@@ -109,6 +109,15 @@ class SphericalLaplaceKernel
     printf("PreCalculation finished\n");
   }
 
+  void init_multipole(multipole_type& M, double box_size) const {
+    (void) box_size;  // Quiet warning
+    M.resize(P*(P+1)/2);
+  }
+  void init_local(local_type& L, double box_size) const {
+    (void) box_size;  // Quiet warning
+    L.resize(P*(P+1)/2);
+  }
+
   void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
     for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
       real P0 = 0;                                                //  Initialize potential
@@ -329,15 +338,6 @@ class SphericalLaplaceKernel
   }
 
   void finalize() {}                                            //!< Finalize kernels
-
-  int multipole_size(const int level=0) {
-    (void) level;  // Quiet warning
-    return P*(P+1)/2;
-  }
-  int local_size(const int level=0) {
-    (void) level;  // Quiet warning
-    return P*(P+1)/2;
-  }
 
   //! Free temporary allocations
   void postCalculation() {

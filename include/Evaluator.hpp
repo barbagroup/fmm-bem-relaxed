@@ -209,12 +209,6 @@ public:
   //! Destructor
   ~Evaluator() {}
 
-  void setSize(const int N)
-  {
-    M.resize(N);
-    L.resize(N);
-  }
-
   void upward(Cells& cells)
   {
     // allocate memory for the expansions
@@ -226,9 +220,8 @@ public:
     for (Cell& C : cells)
     {
       if (C.NCHILD == 0) {
-        int level = getLevel(C.ICELL);
-        M[C.ICELL].resize(K.multipole_size(level));
-        L[C.ICELL].resize(K.local_size(level));
+        K.init_multipole(M[C.ICELL], C.R);
+        K.init_local(L[C.ICELL], C.R);
         //printf("call P2M on %d\n",(int)C.ICELL);
         K.P2M(C,M[C.ICELL]);
       }
@@ -239,9 +232,8 @@ public:
     {
       if (C.NCHILD) // has children
       {
-        int level = getLevel(C.ICELL);
-        M[C.ICELL].resize(K.multipole_size(level));
-        L[C.ICELL].resize(K.local_size(level));
+        K.init_multipole(M[C.ICELL], C.R);
+        K.init_local(L[C.ICELL], C.R);
         //printf("call M2M with target: %d\n",(int)C.ICELL);
         // run through children and call M2M
         Cj0 = cells.begin();

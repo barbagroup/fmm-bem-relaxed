@@ -9,6 +9,7 @@
 #include <Sorter.hpp>
 #include <TreeStructure.hpp>
 #include <Evaluator.hpp>
+#include <Vec.hpp>
 
 Logger Log;
 Sorter sort;
@@ -38,6 +39,10 @@ struct fmm_wrapper
 template <class Kernel>
 class FMM_plan : public fmm_wrapper
 {
+ public:
+  // TODO: Use this as the base vector type?
+  //typedef Vec<typename Kernel::point_type, Kernel::dimension> vect;
+
 private:
   Cells cells, jcells;
   vect X0;
@@ -45,8 +50,8 @@ private:
   Bodies buffer;
   Kernel &K;
   FMM_options& Opts;
-  TreeStructure tree;
   Evaluator<Kernel> evaluator;
+  TreeStructure tree;
 
   void setDomain(Bodies& bodies, vect x0=0, real r0=M_PI)
   {

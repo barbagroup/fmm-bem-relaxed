@@ -66,4 +66,4 @@ include $(DEPFILES)
 endif
 
 # define rules that do not actually generate the corresponding file
-.PHONY: clean all always
+.PHONY: clean all

@@ -239,8 +239,9 @@ public:
         Cj0 = cells.begin();
         for (C_iter Cj=Cj0+C.CHILD; Cj!=Cj0+C.CHILD+C.NCHILD; ++Cj)
         {
-          K.M2M(*Cj,M[Cj->ICELL],C,M[C.ICELL]);
-          // K.M2M(C,M[C.ICELL],*Cj,M[Cj->ICELL]);
+          // K.M2M(*Cj,M[Cj->ICELL],C,M[C.ICELL]);
+          vect translation = C.X-Cj->X;
+          K.M2M(M[Cj->ICELL],M[C.ICELL],translation);
         }
       }
     }
@@ -429,9 +430,9 @@ void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single M2L kernel
-  // K.M2L(Ci,Cj);                                                   // Perform M2L kernel
-  //K.M2L(*Ci,L[Ci->ICELL],*Cj,M[Cj->ICELL]);
-  K.M2L(*Cj,M[Cj->ICELL],*Ci,L[Ci->ICELL]);
+  //K.M2L(*Cj,M[Cj->ICELL],*Ci,L[Ci->ICELL]);
+  vect translation = Ci->X - Cj->X;
+  K.M2L(M[Cj->ICELL],L[Ci->ICELL],translation);
   NM2L++;                                                       // Count M2L kernel execution
 }
 
@@ -470,8 +471,8 @@ void Evaluator<Kernel>::evalM2L(Cells &cells) {               // Evaluate queued
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2P(C_iter Ci, C_iter Cj) {       // Evaluate single M2P kernel
-  // K.M2P(Ci,Cj);                                                   // Perform M2P kernel
-  K.M2P(*Cj,M[Cj->ICELL],*Ci);
+  // K.M2P(*Cj,M[Cj->ICELL],*Ci);
+  K.M2P(Cj->X,M[Cj->ICELL],*Ci);
   NM2P++;                                                       // Count M2P kernel execution
 }
 
@@ -558,7 +559,9 @@ void Evaluator<Kernel>::evalL2L(Cells &cells) {               // Evaluate all L2
   for( C_iter Ci=cells.end()-2; Ci!=cells.begin()-1; --Ci )
   {
     C_iter parent = cells.begin()+Ci->PARENT;
-    K.L2L(*parent,L[parent->ICELL],*Ci,L[Ci->ICELL]);
+    // K.L2L(*parent,L[parent->ICELL],*Ci,L[Ci->ICELL]);
+    vect dist = Ci->X-parent->X;
+    K.L2L(L[parent->ICELL],L[Ci->ICELL],dist);
   }
 }
 

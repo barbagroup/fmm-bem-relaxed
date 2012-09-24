@@ -185,15 +185,15 @@ class SphericalLaplaceKernel
     M.RCRIT = std::min(C.R,Rmax);
   }
 
-  void M2M(Cell& Cj, multipole_type& Msource, Cell& Ci, multipole_type& Mtarget) {
+  // void M2M(Cell& Cj, multipole_type& Msource, Cell& Ci, multipole_type& Mtarget) {
+  void M2M(multipole_type& Msource, multipole_type& Mtarget, const vect& translation) {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
-    vect dist = Ci.X - Cj.X;
-    real R = std::sqrt(norm(dist)) + Msource.RCRIT;
+    real R = std::sqrt(norm(translation)) + Msource.RCRIT;
     if (R > Rmax) Rmax = R;
     real rho, alpha, beta;
-    cart2sph(rho,alpha,beta,dist);
+    cart2sph(rho,alpha,beta,translation);
     evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
     for( int j=0; j!=P; ++j ) {
       for( int k=0; k<=j; ++k ) {
@@ -224,12 +224,13 @@ class SphericalLaplaceKernel
       }
     }
     Mtarget.RMAX = Rmax;
-    Mtarget.RCRIT = std::min(Ci.R,Rmax);
+    Mtarget.RCRIT = std::min(R,Rmax);
   }
 
-  void M2L(Cell& Cj, multipole_type& Msource, Cell& Ci, local_type& Ltarget) const {
+  // void M2L(Cell& Cj, multipole_type& Msource, Cell& Ci, local_type& Ltarget) const {
+  void M2L(multipole_type& Msource, local_type& Ltarget, const vect& translation) {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    vect dist = Ci.X - Cj.X - Xperiodic;
+    vect dist = translation - Xperiodic;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
     evalLocal(rho,alpha,beta,Ynm,YnmTheta);
@@ -259,11 +260,12 @@ class SphericalLaplaceKernel
     }
   }
 
-  void M2P(Cell& Cj, multipole_type& M, Cell& Ci) const {
+  // void M2P(Cell& Cj, multipole_type& M, Cell& Ci) const {
+  void M2P(vect& Mcenter, multipole_type& M, Cell& Ci) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NDLEAF; ++B ) {
-      vect dist = B->X - Cj.X - Xperiodic;
+      vect dist = B->X - Mcenter - Xperiodic;
       vect spherical = 0;
       vect cartesian = 0;
       real r, theta, phi;
@@ -291,12 +293,12 @@ class SphericalLaplaceKernel
     }
   }
 
-  void L2L(Cell& Cj, local_type& Lsource, Cell& Ci, local_type& Ltarget) const {
+  // void L2L(Cell& Cj, local_type& Lsource, Cell& Ci, local_type& Ltarget) const {
+  void L2L(local_type& Lsource, local_type& Ltarget, const vect& translation) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    vect dist = Ci.X - Cj.X;
     real rho, alpha, beta;
-    cart2sph(rho,alpha,beta,dist);
+    cart2sph(rho,alpha,beta,translation);
     evalMultipole(rho,alpha,beta,Ynm,YnmTheta);
     for( int j=0; j!=P; ++j ) {
       for( int k=0; k<=j; ++k ) {

@@ -76,6 +76,7 @@ class SphericalLaplaceKernel
   typedef std::vector<complex> local_type;
 
   // TODO: Use these!
+  static constexpr unsigned dimension = 3;
   //! Point type
   typedef Point point_type;
   //! Charge type

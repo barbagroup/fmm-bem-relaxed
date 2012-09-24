@@ -62,6 +62,14 @@ class SphericalLaplaceKernel
   //! Local expansion type
   typedef std::vector<complex> local_type;
 
+  // TODO: Use these!
+  //! Point type
+  typedef vec<3,real> point_type;
+  //! Charge type
+  typedef vec<4,real> charge_type;
+  //! Kernel result type
+  typdef vec<4,real> result_type;
+
   //! Constructor
   SphericalLaplaceKernel()
       : P(5), prefactor(), Anm(), Cnm() {};

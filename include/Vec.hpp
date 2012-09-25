@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <math.h>
+#include <stdarg.h>
 
 // TODO: Remove!
 #include "vec.h"
@@ -11,21 +12,28 @@
  * a class that only requires the [const] operator[]
  */
 
+#define for_i for(unsigned i=0; i!=dimension; ++i)
+
 /** @class Vec
  * @brief Class representing ND points and vectors.
  *
  * Vec contains methods that support use as points in ND space.
  */
+template <unsigned dim, typename point>
+class Vec;
 
-#define for_i for(unsigned i=0; i!=dimension; ++i)
-
-template <typename point, unsigned dim>
-class Vec {
+/** @class Vec
+ * @brief Class representing 3D points and vectors.
+ *
+ * Vec contains methods that support use as points in 3D space.
+ */
+template <typename point>
+class Vec<3, point> {
  private:
   point a;
 
  public:
-  static constexpr unsigned dimension = dim;
+  static constexpr unsigned dimension = 3;
   typedef point point_type;
   typedef typename std::remove_reference<decltype(a[0])>::type value_type;
 
@@ -40,12 +48,16 @@ class Vec {
   Vec(const Vec& b) {                                              // Copy constructor (vector)
     for_i a[i] = b[i];
   }
-  Vec(const value_type& b) {                                       // Copy constructor (scalar)
+  Vec(value_type b) {                                             // Copy constructor (scalar)
     for_i a[i] = b;
   }
+  Vec(value_type b0, value_type b1, value_type b2) {
+    a[0] = b0; a[1] = b1; a[2] = b2;
+  }
+
 
   // TODO: Remove!
-  template<int N, typename T>
+  template <int N, typename T>
   Vec(const vec<N,T>& v) {
     for_i a[i] = v[i];
   }

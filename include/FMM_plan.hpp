@@ -42,8 +42,10 @@ template <class Kernel>
 class FMM_plan : public fmm_wrapper
 {
  public:
-  // TODO: Use this as the base vector type
-  typedef Vec<typename Kernel::point_type, Kernel::dimension> point_type;
+  //typedef typename Kernel::point_type point_type;
+  // TODO: Use this as the base vector type?
+  typedef Vec<Kernel::dimension, typename Kernel::point_type> point_type;
+
 
 private:
   Cells cells, jcells;

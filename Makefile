@@ -58,7 +58,7 @@ serialrun: serialrun.o
 
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
-	-$(RM) *.o *~
+	-$(RM) *.o *~ */*~
 	-$(RM) serialrun
 	$(RM) -r $(DEPSDIR)
 

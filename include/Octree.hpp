@@ -26,7 +26,6 @@ class Octree
   typedef MortonCoder<point_type> Coder;
   // Morton Coder
   Coder coder_;
-
   // Code type
   typedef typename Coder::code_type code_type;
   typedef unsigned uint;
@@ -37,16 +36,20 @@ class Octree
   std::vector<unsigned> permute_;
 
   struct box_data {
-    static constexpr unsigned leaf_mask = (1<<31);
-    static constexpr unsigned max_key_marker = (1<<30);
+    static constexpr unsigned leaf_bit = (1<<31);
+    static constexpr unsigned max_marker_bit = (1<<30);
 
+    //! key_ = leaf_bit 0* marker_bit morton_code
     unsigned key_;
+    unsigned parent_;
     // These can be either point offsets or box offsets depending on is_leaf
     unsigned child_begin_;
     unsigned child_end_;
 
-    box_data(unsigned key, unsigned child_begin=0, unsigned child_end=0)
-        : key_(key), child_begin_(child_begin), child_end_(child_end) {
+    box_data(unsigned key, unsigned parent,
+             unsigned child_begin=0, unsigned child_end=0)
+        : key_(key), parent_(parent),
+          child_begin_(child_begin), child_end_(child_end) {
     }
 
     unsigned num_children() const {
@@ -61,7 +64,7 @@ class Octree
                                         3, 4, 5, 6, 7, 8, 1, 10,
                                         2, 4, 6, 9, 5, 5, 8, 2,
                                         6, 9, 7, 2, 8, 1, 1, 10};
-      unsigned v = key_ & ~leaf_mask;
+      unsigned v = key_ & ~leaf_bit;
       v |= v >> 1;
       v |= v >> 2;
       v |= v >> 4;
@@ -70,34 +73,34 @@ class Octree
       return lookup[(v * 0X07C4ACDD) >> 27];
     }
 
-    /** Returns the minimum Morton code in this box
+    /** Returns the minimum possible Morton code in this box
      * TODO: this is a stupid way of doing this
      */
     code_type get_mc_lower_bound() const {
       code_type mc_mask = key_;
-      while (!(mc_mask & max_key_marker))
+      while (!(mc_mask & max_marker_bit))
         mc_mask = mc_mask << 3;
-      return mc_mask & ~max_key_marker;
+      return mc_mask & ~max_marker_bit;
     }
-    /** Returns the maximum Morton code in this box
+    /** Returns the maximum possible Morton code in this box
      * TODO: this is a stupid way of doing this
      */
     code_type get_mc_upper_bound() const {
       code_type mc_mask = key_;
-      while (!(mc_mask & max_key_marker))
+      while (!(mc_mask & max_marker_bit))
         mc_mask = (mc_mask << 3) | 7;
-      return mc_mask & ~max_key_marker;
+      return mc_mask & ~max_marker_bit;
     }
 
     void set_leaf(bool b) {
       if (b)
-        key_ |= leaf_mask;
+        key_ |= leaf_bit;
       else
-        key_ &= ~leaf_mask;
+        key_ &= ~leaf_bit;
     }
 
     bool is_leaf() const {
-      return key_ & leaf_mask;
+      return key_ & leaf_bit;
     }
   };
 
@@ -157,6 +160,18 @@ class Octree
     }
     bool is_leaf() const {
       return tree_->box_data_[idx_].is_leaf();
+    }
+    // TODO: optimize
+    point_type center() const {
+      BoundingBox<point_type> bb = tree_->coder_.cell(tree_->box_data_[idx_].get_mc_lower_bound());
+      point_type p = bb.min();
+      p += (bb.max() - bb.min()) * (1 << (10-tree_->box_data_[idx_].get_level()-1));
+      return p;
+    }
+
+    /** The parent box of this box */
+    Box parent() const {
+      return Box(tree_->box_data_[idx_].parent_, tree_);
     }
 
     // TODO
@@ -281,8 +296,15 @@ class Octree
     friend class Octree;
   };
 
+  //! Construct an octree encompassing a bounding box
   Octree(const BoundingBox<Point>& bb)
       : coder_(bb) {
+  }
+
+  /** Return the Bounding Box that this Octree encompasses
+   */
+  BoundingBox<point_type> bounding_box() const {
+    return coder_.bounding_box();
   }
 
   /** The number of points contained in this tree
@@ -318,7 +340,7 @@ class Octree
     unsigned NCRIT = 1;
 
     // Push the root box which contains all points
-    box_data_.push_back( box_data(1, 0, point_.size()) );
+    box_data_.push_back( box_data(1, 0, 0, point_.size()) );
 
     // For every box that is created
     // TODO: Can do this in one scan through the morton codes...
@@ -341,7 +363,7 @@ class Octree
           // Construct the new box key
           code_type key_c = (key_p << 3) | oct;
           // Construct a temporary child box
-          box_data box_c(key_c);
+          box_data box_c(key_c, k);
 
           // Find the morton start and end of this child
           // TODO: Can do this MUCH better

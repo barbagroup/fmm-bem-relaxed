@@ -35,6 +35,8 @@
  * with respect to a bounding box and the number of equal-volume boxes (8^L).
  * These mappings are performed in O(1) time.
  */
+
+// TODO: absorb into Octree...
 template <typename Point>
 class MortonCoder {
   // Using a 32-bit unsigned int for the code_type
@@ -43,6 +45,8 @@ class MortonCoder {
   static_assert(1 <= L && L <= 10, "L (LEVELS) must be between 1 and 10");
 
  public:
+
+  typedef Point point_type;
 
   typedef unsigned code_type;
 
@@ -54,33 +58,33 @@ class MortonCoder {
   static constexpr code_type end_code = code_type(1) << (3*L);
 
   /** Construct a MortonCoder with a bounding box. */
-  MortonCoder(const BoundingBox<Point>& bb)
+  MortonCoder(const BoundingBox<point_type>& bb)
     : pmin_(bb.min()),
       cell_size_((bb.max() - bb.min()) / cells_per_side) {
     assert(!bb.empty());
   }
 
   /** Return the MortonCoder's bounding box. */
-  BoundingBox<Point> bounding_box() const {
-    return BoundingBox<Point>(pmin_, pmin_ + (cell_size_ * cells_per_side));
+  BoundingBox<point_type> bounding_box() const {
+    return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
   }
 
   /** Return the bounding box of the cell with Morton code @a c.
    * @pre c < end_code */
-  BoundingBox<Point> cell(code_type c) const {
+  BoundingBox<point_type> cell(code_type c) const {
     assert(c < end_code);
-    Point p = deinterleave(c);
+    point_type p = deinterleave(c);
     p *= cell_size_;
     p += pmin_;
-    return BoundingBox<Point>(p, p + cell_size_);
+    return BoundingBox<point_type>(p, p + cell_size_);
   }
 
   /** Return the Morton code of Point @a p.
    * @pre bounding_box().contains(@a p)
    * @post cell(result).contains(@a p) */
-  code_type code(const Point& p) const {
+  code_type code(const point_type& p) const {
     assert(bounding_box().contains(p));
-    Point s = (p - pmin_) / cell_size_;
+    point_type s = (p - pmin_) / cell_size_;
     return interleave((unsigned) s[0], (unsigned) s[1], (unsigned) s[2]);
   }
 
@@ -149,9 +153,9 @@ class MortonCoder {
  private:
 
   /** The minimum of the MortonCoder bounding box. */
-  Point pmin_;
+  point_type pmin_;
   /** The extent of a single cell. */
-  Point cell_size_;
+  point_type cell_size_;
 
   /** Spreads the bits of a 10-bit number so that there are two 0s
    *  in between each bit.
@@ -198,8 +202,11 @@ class MortonCoder {
    * @post result.y = [... n_7 n_4 n_1]
    * @post result.z = [... n_8 n_5 n_2]
    */
-  inline Point deinterleave(code_type c) const {
-    return Point(compact_bits(c), compact_bits(c >> 1), compact_bits(c >> 2));
+  inline point_type deinterleave(code_type c) const {
+    typedef typename point_type::value_type value_type;
+    return point_type(value_type(compact_bits(c)),
+                      value_type(compact_bits(c >> 1)),
+                      value_type(compact_bits(c >> 2)));
   }
 
 

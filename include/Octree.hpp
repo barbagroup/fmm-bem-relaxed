@@ -26,7 +26,6 @@ class Octree
   typedef MortonCoder<point_type> Coder;
   // Morton Coder
   Coder coder_;
-
   // Code type
   typedef typename Coder::code_type code_type;
   typedef unsigned uint;
@@ -37,16 +36,21 @@ class Octree
   std::vector<unsigned> permute_;
 
   struct box_data {
-    static constexpr unsigned leaf_mask = (1<<31);
-    static constexpr unsigned max_key_marker = (1<<30);
+    static constexpr unsigned leaf_bit = (1<<31);
+    static constexpr unsigned max_marker_bit = (1<<30);
 
-    unsigned key_;
+    //! key_ = leaf_bit 0* marker_bit morton_code
+    unsigned key_;   // TODO: use level + leaf_bit instead of key
+    unsigned parent_;
     // These can be either point offsets or box offsets depending on is_leaf
     unsigned child_begin_;
     unsigned child_end_;
+    // TODO: body_begin_ and body_end_?
 
-    box_data(unsigned key, unsigned child_begin=0, unsigned child_end=0)
-        : key_(key), child_begin_(child_begin), child_end_(child_end) {
+    box_data(unsigned key, unsigned parent,
+             unsigned child_begin=0, unsigned child_end=0)
+        : key_(key), parent_(parent),
+          child_begin_(child_begin), child_end_(child_end) {
     }
 
     unsigned num_children() const {
@@ -61,7 +65,7 @@ class Octree
                                         3, 4, 5, 6, 7, 8, 1, 10,
                                         2, 4, 6, 9, 5, 5, 8, 2,
                                         6, 9, 7, 2, 8, 1, 1, 10};
-      unsigned v = key_ & ~leaf_mask;
+      unsigned v = key_ & ~leaf_bit;
       v |= v >> 1;
       v |= v >> 2;
       v |= v >> 4;
@@ -70,34 +74,34 @@ class Octree
       return lookup[(v * 0X07C4ACDD) >> 27];
     }
 
-    /** Returns the minimum Morton code in this box
+    /** Returns the minimum possible Morton code in this box
      * TODO: this is a stupid way of doing this
      */
     code_type get_mc_lower_bound() const {
       code_type mc_mask = key_;
-      while (!(mc_mask & max_key_marker))
+      while (!(mc_mask & max_marker_bit))
         mc_mask = mc_mask << 3;
-      return mc_mask & ~max_key_marker;
+      return mc_mask & ~max_marker_bit;
     }
-    /** Returns the maximum Morton code in this box
+    /** Returns the maximum possible Morton code in this box
      * TODO: this is a stupid way of doing this
      */
     code_type get_mc_upper_bound() const {
       code_type mc_mask = key_;
-      while (!(mc_mask & max_key_marker))
+      while (!(mc_mask & max_marker_bit))
         mc_mask = (mc_mask << 3) | 7;
-      return mc_mask & ~max_key_marker;
+      return mc_mask & ~max_marker_bit;
     }
 
     void set_leaf(bool b) {
       if (b)
-        key_ |= leaf_mask;
+        key_ |= leaf_bit;
       else
-        key_ &= ~leaf_mask;
+        key_ &= ~leaf_bit;
     }
 
     bool is_leaf() const {
-      return key_ & leaf_mask;
+      return key_ & leaf_bit;
     }
   };
 
@@ -147,39 +151,63 @@ class Octree
       return idx_;
     }
     code_type morton_index() const {
-      return tree_->box_data_[idx_].key_;
+      return data().key_;
     }
     uint level() const {
-      return tree_->box_data_[idx_].get_level();
+      return data().get_level();
     }
     uint num_children() const {
-      return tree_->box_data_[idx_].num_children();
+      return data().num_children();
     }
     bool is_leaf() const {
-      return tree_->box_data_[idx_].is_leaf();
+      return data().is_leaf();
+    }
+    // TODO: optimize
+    point_type center() const {
+      BoundingBox<point_type> bb = tree_->coder_.cell(data().get_mc_lower_bound());
+      point_type p = bb.min();
+      p += bb.dimensions() * (1 << (10-data().get_level()-1));
+      return p;
     }
 
-    // TODO
+    /** The parent box of this box */
+    Box parent() const {
+      return Box(data().parent_, tree_);
+    }
+
     /** The begin iterator to the Points contained in this box */
     body_iterator body_begin() const {
-      assert(is_leaf());
-      return body_iterator(tree_->box_data_[idx_].child_begin_, tree_);
+      if (is_leaf()) {
+        return body_iterator(data().child_begin_, tree_);
+      } else {
+        unsigned body_begin_idx = data().child_begin_;
+        while (!tree_->box_data_[body_begin_idx].is_leaf()) {
+          body_begin_idx = tree_->box_data_[body_begin_idx].child_begin_;
+        }
+        return body_iterator(tree_->box_data_[body_begin_idx].child_begin_, tree_);
+      }
     }
     /** The end iterator to the Points contained in this box */
     body_iterator body_end() const {
-      assert(is_leaf());
-      return body_iterator(tree_->box_data_[idx_].child_end_, tree_);
+      if (is_leaf()) {
+        return body_iterator(data().child_end_, tree_);
+      } else {
+        unsigned body_end_idx = data().child_end_ - 1;
+        while (!tree_->box_data_[body_end_idx].is_leaf())
+          body_end_idx = tree_->box_data_[body_end_idx].child_end_ - 1;
+        return body_iterator(tree_->box_data_[body_end_idx].child_end_, tree_);
+      }
     }
 
     /** The begin iterator to the child Boxes contained in this box */
     box_iterator child_begin() const {
       assert(!is_leaf());
-      return box_iterator(tree_->box_data_[idx_].child_begin_, tree_);
+      return box_iterator(data().child_begin_, tree_);
     }
     /** The end iterator to the child Boxes contained in this box */
     box_iterator child_end() const {
       assert(!is_leaf());
-      return box_iterator(tree_->box_data_[idx_].child_end_, tree_);
+      return box_iterator(data().child_end_, tree_);
     }
 
    private:
@@ -187,6 +215,9 @@ class Octree
     tree_type* tree_;
     Box(uint idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
+    }
+    inline box_data& data() const {
+      return tree_->box_data_[idx_];
     }
     friend class Octree;
   };
@@ -213,6 +244,14 @@ class Octree
 
     box_iterator& operator++() {
       ++idx_;
+      return *this;
+    }
+    box_iterator& operator+(int n) {
+      idx_ += n;
+      return *this;
+    }
+    box_iterator& operator-(int n) {
+      idx_ -= n;
       return *this;
     }
     Box operator*() const {
@@ -260,6 +299,14 @@ class Octree
       ++idx_;
       return *this;
     }
+    body_iterator& operator+(int n) {
+      idx_ += n;
+      return *this;
+    }
+    body_iterator& operator-(int n) {
+      idx_ -= n;
+      return *this;
+    }
     Body operator*() const {
       return Body(idx_, tree_);
     }
@@ -281,8 +328,15 @@ class Octree
     friend class Octree;
   };
 
+  //! Construct an octree encompassing a bounding box
   Octree(const BoundingBox<Point>& bb)
       : coder_(bb) {
+  }
+
+  /** Return the Bounding Box that this Octree encompasses
+   */
+  BoundingBox<point_type> bounding_box() const {
+    return coder_.bounding_box();
   }
 
   /** The number of points contained in this tree
@@ -318,7 +372,7 @@ class Octree
     unsigned NCRIT = 1;
 
     // Push the root box which contains all points
-    box_data_.push_back( box_data(1, 0, point_.size()) );
+    box_data_.push_back( box_data(1, 0, 0, point_.size()) );
 
     // For every box that is created
     // TODO: Can do this in one scan through the morton codes...
@@ -341,7 +395,7 @@ class Octree
           // Construct the new box key
           code_type key_c = (key_p << 3) | oct;
           // Construct a temporary child box
-          box_data box_c(key_c);
+          box_data box_c(key_c, k);
 
           // Find the morton start and end of this child
           // TODO: Can do this MUCH better

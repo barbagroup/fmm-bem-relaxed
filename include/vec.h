@@ -30,6 +30,7 @@ private:
   T a[N];
 public:
   static constexpr unsigned dimension = N;
+  typedef T value_type;
 
   vec(){}                                                          // Default constructor
   vec(const T& b) {                                                // Copy constructor (scalar)

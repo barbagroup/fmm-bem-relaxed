@@ -28,7 +28,7 @@ struct Point
 {
   vec<3,real> xyz;
 
-  Point(real x, real y, real z) { xyz[0]=x; xyz[1]=y; xyz[2]=z; };
+  Point(real x=0, real y=0, real z=0) { xyz[0]=x; xyz[1]=y; xyz[2]=z; };
   Point(real *XYZ) { xyz[0] = XYZ[0]; xyz[1]=XYZ[1]; xyz[2]=XYZ[2]; };
 
   real& operator[](const int i) {

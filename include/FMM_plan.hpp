@@ -10,6 +10,8 @@
 #include <TreeStructure.hpp>
 #include <Evaluator.hpp>
 #include <Vec.hpp>
+#include "BoundingBox.hpp"
+#include "Octree.hpp"
 
 Logger Log;
 Sorter sort;
@@ -40,21 +42,28 @@ template <class Kernel>
 class FMM_plan : public fmm_wrapper
 {
  public:
-  // TODO: Use this as the base vector type?
-  //typedef Vec<typename Kernel::point_type, Kernel::dimension> vect;
+  // TODO: Use this as the base vector type
+  typedef Vec<typename Kernel::point_type, Kernel::dimension> point_type;
 
 private:
   Cells cells, jcells;
-  vect X0;
-  real R0;
   Bodies buffer;
   Kernel &K;
   FMM_options& Opts;
   Evaluator<Kernel> evaluator;
-  TreeStructure tree;
+  TreeStructure<point_type> tree;
+  Octree<point_type> otree;
 
-  void setDomain(Bodies& bodies, vect x0=0, real r0=M_PI)
-  {
+  BoundingBox<point_type> get_boundingbox(Bodies& bodies) {
+    BoundingBox<point_type> result;
+    for (B_iter B = bodies.begin(); B != bodies.end(); ++B) {
+      result |= point_type(B->X);
+    }
+    std::cout << result << "\n";
+    return result;
+  }
+
+  void setDomain(Bodies& bodies, point_type& X0, double& R0) {
     vect xmin,xmax;                                             // Min,Max of domain
     B_iter B = bodies.begin();                                  // Reset body iterator
     xmin = xmax = B->X;                                         // Initialize xmin,xmax
@@ -64,39 +73,31 @@ private:
         else if(B->X[d] > xmax[d]) xmax[d] = B->X[d];           //   Determine xmax
       }                                                         //  End loop over each dimension
     }                                                           // End loop over bodies
-    if( IMAGES != 0 ) {                                         // If periodic boundary condition
-      if( xmin[0] < x0[0]-r0 || x0[0]+r0 < xmax[0]              //  Check for outliers in x direction
-       || xmin[1] < x0[1]-r0 || x0[1]+r0 < xmax[1]              //  Check for outliers in y direction
-       || xmin[2] < x0[2]-r0 || x0[2]+r0 < xmax[2] ) {          //  Check for outliers in z direction
-         std::cout << "Error: Particles located outside periodic domain : " << std::endl;// Print error message
-         std::cout << xmin << std::endl;
-         std::cout << xmax << std::endl;
-      }                                                         //  End if for outlier checking
-      X0 = x0;                                                  //  Center is [0, 0, 0]
-      R0 = r0;                                                  //  Radius is r0
-    } else {
-      for( int d=0; d!=3; ++d ) {                               // Loop over each dimension
-        X0[d] = (xmax[d] + xmin[d]) / 2;                        // Calculate center of domain
-        X0[d] = int(X0[d]+.5);                                  //  Shift center to nearest integer
-        R0 = std::max(xmax[d] - X0[d], R0);                     //  Calculate max distance from center
-        R0 = std::max(X0[d] - xmin[d], R0);                     //  Calculate max distance from center
-      }                                                         // End loop over each dimension
-      R0 *= 1.000001;                                           // Add some leeway to root radius
-    }                                                           // Endif for periodic boundary condition
+
+    for( int d=0; d!=3; ++d ) {                               // Loop over each dimension
+      X0[d] = (xmax[d] + xmin[d]) / 2;                        // Calculate center of domain
+      X0[d] = int(X0[d]+.5);                                  //  Shift center to nearest integer
+      R0 = std::max(xmax[d] - X0[d], R0);                     //  Calculate max distance from center
+      R0 = std::max(X0[d] - xmin[d], R0);                     //  Calculate max distance from center
+    }                                                         // End loop over each dimension
+    R0 *= 1.000001;                                           // Add some leeway to root radius
   }
 
 public:
   FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts)
-      : K(k), Opts(opts), evaluator(K)
+      : K(k), Opts(opts), evaluator(K), otree(get_boundingbox(bodies))
   {
-    // set domain of problem (center & radius)
-    setDomain(bodies);
-
     // do all kernel precomputation
     K.preCalculation();
 
+    // Construct the Octree
+    // ... Need point iterator
+
     // initialise tree & construct
-    tree.init(X0,R0);
+    point_type X0;
+    double R0;
+    setDomain(bodies, X0, R0);
+    tree.init(X0, R0);
     if (opts.tree == TOPDOWN)
       tree.topdown(bodies,cells);
     else

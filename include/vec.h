@@ -29,6 +29,8 @@ class vec {
 private:
   T a[N];
 public:
+  static constexpr unsigned dimension = N;
+
   vec(){}                                                          // Default constructor
   vec(const T& b) {                                                // Copy constructor (scalar)
     for_i a[i] = b;

@@ -40,11 +40,12 @@ class Octree
     static constexpr unsigned max_marker_bit = (1<<30);
 
     //! key_ = leaf_bit 0* marker_bit morton_code
-    unsigned key_;
+    unsigned key_;   // TODO: use level + leaf_bit instead of key
     unsigned parent_;
     // These can be either point offsets or box offsets depending on is_leaf
     unsigned child_begin_;
     unsigned child_end_;
+    // TODO: body_begin_ and body_end_?
 
     box_data(unsigned key, unsigned parent,
              unsigned child_begin=0, unsigned child_end=0)
@@ -150,51 +151,63 @@ class Octree
       return idx_;
     }
     code_type morton_index() const {
-      return tree_->box_data_[idx_].key_;
+      return data().key_;
     }
     uint level() const {
-      return tree_->box_data_[idx_].get_level();
+      return data().get_level();
     }
     uint num_children() const {
-      return tree_->box_data_[idx_].num_children();
+      return data().num_children();
     }
     bool is_leaf() const {
-      return tree_->box_data_[idx_].is_leaf();
+      return data().is_leaf();
     }
     // TODO: optimize
     point_type center() const {
-      BoundingBox<point_type> bb = tree_->coder_.cell(tree_->box_data_[idx_].get_mc_lower_bound());
+      BoundingBox<point_type> bb = tree_->coder_.cell(data().get_mc_lower_bound());
       point_type p = bb.min();
-      p += (bb.max() - bb.min()) * (1 << (10-tree_->box_data_[idx_].get_level()-1));
+      p += bb.dimensions() * (1 << (10-data().get_level()-1));
       return p;
     }
 
     /** The parent box of this box */
     Box parent() const {
-      return Box(tree_->box_data_[idx_].parent_, tree_);
+      return Box(data().parent_, tree_);
     }
 
-    // TODO
     /** The begin iterator to the Points contained in this box */
     body_iterator body_begin() const {
-      assert(is_leaf());
-      return body_iterator(tree_->box_data_[idx_].child_begin_, tree_);
+      if (is_leaf()) {
+        return body_iterator(data().child_begin_, tree_);
+      } else {
+        unsigned body_begin_idx = data().child_begin_;
+        while (!tree_->box_data_[body_begin_idx].is_leaf()) {
+          body_begin_idx = tree_->box_data_[body_begin_idx].child_begin_;
+        }
+        return body_iterator(tree_->box_data_[body_begin_idx].child_begin_, tree_);
+      }
     }
     /** The end iterator to the Points contained in this box */
     body_iterator body_end() const {
-      assert(is_leaf());
-      return body_iterator(tree_->box_data_[idx_].child_end_, tree_);
+      if (is_leaf()) {
+        return body_iterator(data().child_end_, tree_);
+      } else {
+        unsigned body_end_idx = data().child_end_ - 1;
+        while (!tree_->box_data_[body_end_idx].is_leaf())
+          body_end_idx = tree_->box_data_[body_end_idx].child_end_ - 1;
+        return body_iterator(tree_->box_data_[body_end_idx].child_end_, tree_);
+      }
     }
 
     /** The begin iterator to the child Boxes contained in this box */
     box_iterator child_begin() const {
       assert(!is_leaf());
-      return box_iterator(tree_->box_data_[idx_].child_begin_, tree_);
+      return box_iterator(data().child_begin_, tree_);
     }
     /** The end iterator to the child Boxes contained in this box */
     box_iterator child_end() const {
       assert(!is_leaf());
-      return box_iterator(tree_->box_data_[idx_].child_end_, tree_);
+      return box_iterator(data().child_end_, tree_);
     }
 
    private:
@@ -202,6 +215,9 @@ class Octree
     tree_type* tree_;
     Box(uint idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
+    }
+    inline box_data& data() const {
+      return tree_->box_data_[idx_];
     }
     friend class Octree;
   };
@@ -228,6 +244,14 @@ class Octree
 
     box_iterator& operator++() {
       ++idx_;
+      return *this;
+    }
+    box_iterator& operator+(int n) {
+      idx_ += n;
+      return *this;
+    }
+    box_iterator& operator-(int n) {
+      idx_ -= n;
       return *this;
     }
     Box operator*() const {
@@ -273,6 +297,14 @@ class Octree
 
     body_iterator& operator++() {
       ++idx_;
+      return *this;
+    }
+    body_iterator& operator+(int n) {
+      idx_ += n;
+      return *this;
+    }
+    body_iterator& operator-(int n) {
+      idx_ -= n;
       return *this;
     }
     Body operator*() const {

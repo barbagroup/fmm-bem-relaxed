@@ -3,6 +3,9 @@
 #include <iostream>
 #include <math.h>
 
+// TODO: Remove!
+#include "vec.h"
+
 /** @file Vec.hpp
  * @brief A wrapper class to provide simple vector operators for
  * a class that only requires the [const] operator[]
@@ -14,24 +17,22 @@
  * Vec contains methods that support use as points in ND space.
  */
 
-#define for_i for(int i=0; i!=dimension; ++i)
+#define for_i for(unsigned i=0; i!=dimension; ++i)
 
-template <typename point, unsigned N>
+template <typename point, unsigned dim>
 class Vec {
  private:
   point a;
 
  public:
-  static constexpr unsigned dimension = N;
+  static constexpr unsigned dimension = dim;
   typedef point point_type;
   typedef typename std::remove_reference<decltype(a[0])>::type value_type;
 
+  // CONSTRUCTORS
+
   Vec() {                                                          // Default constructor
     for_i a[i] = value_type(0);
-  }
-  template <typename T>
-  Vec(const T& b) {                                                // Copy constructor (scalar)
-    for_i a[i] = b;
   }
   Vec(const point_type& b) {                                       // Copy constructor (vector)
     for_i a[i] = b[i];
@@ -39,6 +40,18 @@ class Vec {
   Vec(const Vec& b) {                                              // Copy constructor (vector)
     for_i a[i] = b[i];
   }
+  Vec(const value_type& b) {                                       // Copy constructor (scalar)
+    for_i a[i] = b;
+  }
+
+  // TODO: Remove!
+  template<int N, typename T>
+  Vec(const vec<N,T>& v) {
+    for_i a[i] = v[i];
+  }
+
+  // MODIFIERS
+
   const Vec& operator=(const value_type b) {                       // Scalar assignment
     for_i a[i] = b;
     return *this;
@@ -137,7 +150,7 @@ class Vec {
   //operator const point_type() const { return a; }                  // Type-casting (rvalue)
 
   friend std::ostream& operator<<(std::ostream& s, const Vec& a) { // Component-wise output stream
-    for_i s << a[i] << ' ';
+    for_i s << a[i] << " ";
     return s;
   }
   friend auto norm(const Vec& b) -> decltype(a[0]) {                                    // L2 norm squared

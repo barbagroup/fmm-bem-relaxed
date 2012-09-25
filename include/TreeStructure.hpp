@@ -29,6 +29,7 @@ extern Logger Log;
 extern Sorter sort;
 
 //! Base class for tree structure
+template <typename Point>
 class TreeStructure
 {
   //! Nodes are primitive cells
@@ -39,22 +40,22 @@ class TreeStructure
     bigint I;                                                   //!< Cell index
     bigint CHILD[8];                                            //!< Iterator offset of child nodes
     B_iter LEAF[NCRIT];                                         //!< Iterator for leafs
-    vect X;                                                     //!< Node center
+    Point X;                                                    //!< Node center
     real R;                                                     //!< Node radius
   };
   std::vector<Node> nodes;                                      //!< Nodes in the tree
 
 private:
-  vect X0;
+  Point X0;
   real R0;
 
 public:
   Bodies buffer;                                                //!< Buffer for MPI communication & sorting
 
   TreeStructure() : X0(0), R0(0) {};
-  TreeStructure(vect& X, real& R) : X0(X), R0(R) {};
+  TreeStructure(Point& X, real& R) : X0(X), R0(R) {};
 
-  void init(vect& x, real& r)
+  void init(Point& x, real& r)
   {
     X0 = x;
     R0 = r;
@@ -332,7 +333,7 @@ public:
   void addChild(const int octant, int i) {
     bigint pOff = ((1 << 3* nodes[i].LEVEL   ) - 1) / 7;        // Parent cell index offset
     bigint cOff = ((1 << 3*(nodes[i].LEVEL+1)) - 1) / 7;        // Current cell index offset
-    vect x = nodes[i].X;                                        // Initialize new center position with old center
+    Point x = nodes[i].X;                                       // Initialize new center position with old center
     real r = nodes[i].R/2;                                      // Initialize new size
     for( int d=0; d!=3; ++d ) {                                 // Loop over dimensions
       x[d] += r * (((octant & 1 << d) >> d) * 2 - 1);           //  Calculate new center position

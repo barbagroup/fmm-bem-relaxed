@@ -209,6 +209,8 @@ public:
   //! Destructor
   ~Evaluator() {}
 
+  // TODO:
+  // move to using new tree structure
   void upward(Cells& cells)
   {
     // allocate memory for the expansions
@@ -216,25 +218,29 @@ public:
     L.resize(cells.size());
 
     // P2M
-    // TODO: Only iterate after some offset
+    // Iterate over lowest level of the tree
+    //   call P2M on each box
     for (Cell& C : cells)
     {
       if (C.NCHILD == 0) {
         K.init_multipole(M[C.ICELL], C.R);
         K.init_local(L[C.ICELL], C.R);
-        //printf("call P2M on %d\n",(int)C.ICELL);
+
+        // call P2M
         K.P2M(C,M[C.ICELL]);
       }
     }
     // M2M
-    // TODO: iterate
+    // for each (not lowest) level of the tree
+    //   iterate over each box
+    //     for each child, call M2M
     for (Cell& C : cells) // add
     {
       if (C.NCHILD) // has children
       {
         K.init_multipole(M[C.ICELL], C.R);
         K.init_local(L[C.ICELL], C.R);
-        //printf("call M2M with target: %d\n",(int)C.ICELL);
+
         // run through children and call M2M
         Cj0 = cells.begin();
         for (C_iter Cj=Cj0+C.CHILD; Cj!=Cj0+C.CHILD+C.NCHILD; ++Cj)
@@ -380,8 +386,6 @@ public:
   }
 
   void evalP2P(Bodies& ibodies, Bodies& jbodies, bool onCPU=false);//!< Evaluate all P2P kernels (all pairs)
-  void evalP2M(Cells& cells);                                   //!< Evaluate all P2M kernels
-  void evalM2M(Cells& cells, Cells& jcells);                    //!< Evaluate all M2M kernels
   void evalM2L(C_iter Ci, C_iter Cj);                           //!< Evaluate on CPU, queue on GPU
   void evalM2L(Cells& cells);                                   //!< Evaluate queued M2L kernels
   void evalM2P(C_iter Ci, C_iter Cj);                           //!< Evaluate on CPU, queue on GPU
@@ -400,33 +404,6 @@ template <class Kernel>
 void Evaluator<Kernel>::evalP2P(Bodies& ibodies, Bodies& jbodies, bool) {// Evaluate all P2P kernels
   evalP2P(K, ibodies, jbodies); // Perform P2P kernel
 }
-
-template <class Kernel>
-void Evaluator<Kernel>::evalP2M(Cells& cells) {               // Evaluate all P2M kernels
-  Log.startTimer("evalP2M");                                        // Start timer
-  for( C_iter C=cells.begin(); C!=cells.end(); ++C ) {          // Loop over cells
-    int level = getLevel(C->ICELL);
-    if( C->NCHILD == 0 ) {                                      //  If cell is a twig
-      K.P2M(C);                                                   //   Perform P2M kernel
-    }                                                           //  Endif for twig
-  }                                                             // End loop over cells
-  Log.stopTimer("evalP2M");                                         // Stop timer
-}
-
-/*
-template <class Kernel>
-void Evaluator<Kernel>::evalM2M(Cells &cells, Cells &jcells) {// Evaluate all M2M kernels
-  Cj0 = jcells.begin();                                         // Set begin iterator
-  for( C_iter Ci=cells.begin(); Ci!=cells.end(); ++Ci ) {       // Loop over target cells bottomup
-    int level = getLevel(Ci->ICELL);                            // Get current level
-    std::stringstream eventName;                                // Declare event name
-    eventName << "evalM2M: " << level << "   ";                 // Set event name with level
-    Log.startTimer(eventName.str());                                // Start timer
-    K.M2M(Ci,Cj0);                                                    // Perform M2M kernel
-    Log.stopTimer(eventName.str());                                 // Stop timer
-  }                                                             // End loop target over cells
-}
-*/
 
 template <class Kernel>
 void Evaluator<Kernel>::evalM2L(C_iter Ci, C_iter Cj) {       // Evaluate single M2L kernel

@@ -432,10 +432,6 @@ class Octree
     }
 
     level_offset_.push_back(box_data_.size());
-
-    for (int k = 0; k < level_offset_.size(); ++k) {
-      std::cout << level_offset_[k] << "\n";
-    }
   }
 
 

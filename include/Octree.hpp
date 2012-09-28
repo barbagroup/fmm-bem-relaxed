@@ -47,7 +47,7 @@ class Octree
     unsigned child_end_;
     // TODO: body_begin_ and body_end_?
 
-    box_data(unsigned key, unsigned parent,
+    box_data(unsigned key, unsigned parent=0,
              unsigned child_begin=0, unsigned child_end=0)
         : key_(key), parent_(parent),
           child_begin_(child_begin), child_end_(child_end) {
@@ -272,6 +272,9 @@ class Octree
     box_iterator(uint idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
     }
+    box_iterator(Box b)
+        : idx_(b.idx_), tree_(b.tree_) {
+    }
     friend class Octree;
   };
 
@@ -430,6 +433,30 @@ class Octree
   }
   box_iterator box_end() {
     return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
+  }
+
+  Box root() {
+    return Box(0, const_cast<tree_type*>(this));
+  }
+
+  // TODO: optimize to O(1)
+  box_iterator box_begin(unsigned L) {
+    box_data b(1 << (3*L));
+    auto it = std::lower_bound(box_data_.begin(), box_data_.end(), b,
+                               [](const box_data& a, const box_data& b) {
+                                 return a.key_ < b.key_;
+                               });
+    return box_iterator(it - box_data_.begin(), const_cast<tree_type*>(this));
+  }
+
+  // TODO: optimize to O(1)
+  box_iterator box_end(unsigned L) {
+    box_data b( ~(unsigned(-1) << (3*L+1)) );
+    auto it = std::upper_bound(box_data_.begin(), box_data_.end(), b,
+                               [](const box_data& a, const box_data& b) {
+                                 return a.key_ < b.key_;
+                               });
+    return box_iterator(it - box_data_.begin(), const_cast<tree_type*>(this));
   }
 
   friend std::ostream& operator<<(std::ostream& os, const tree_type& t) {

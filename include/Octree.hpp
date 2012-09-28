@@ -61,7 +61,7 @@ class Octree
     /** Gets the level from the key
      * TODO: optimize
      */
-    unsigned get_level() const {
+    unsigned level() const {
       constexpr static uint lookup[] = {0, 3, 0, 3, 4, 7, 0, 9,
                                         3, 4, 5, 6, 7, 8, 1, 10,
                                         2, 4, 6, 9, 5, 5, 8, 2,
@@ -155,7 +155,7 @@ class Octree
       return data().key_;
     }
     uint level() const {
-      return data().get_level();
+      return data().level();
     }
     uint num_children() const {
       return data().num_children();
@@ -167,7 +167,7 @@ class Octree
     point_type center() const {
       BoundingBox<point_type> bb = tree_->coder_.cell(data().get_mc_lower_bound());
       point_type p = bb.min();
-      p += bb.dimensions() * (1 << (10-data().get_level()-1));
+      p += bb.dimensions() * (1 << (10-data().level()-1));
       return p;
     }
 
@@ -349,8 +349,22 @@ class Octree
     return point_.size();
   }
 
-  inline uint num_boxes() const {
+  /** The number of points contained in this tree
+   */
+  inline uint bodies() const {
+    return size();
+  }
+
+  /** The number of boxes contained in this tree
+   */
+  inline uint boxes() const {
     return box_data_.size();
+  }
+
+  /** The maximum level of any box in this tree
+   */
+  inline uint levels() const {
+    return level_offset_.size() - 1;
   }
 
   template <typename IT>
@@ -419,8 +433,8 @@ class Octree
 
             // TODO: Optimize on key
             // If this is starting a new level, record it
-            if (box_c.get_level() > box_data_[level_offset_.back()].get_level()) {
-              std::cout << box_c.get_level() << " > " << box_data_[level_offset_.back()].get_level() << "\n";
+            if (box_c.level() > box_data_[level_offset_.back()].level()) {
+              std::cout << box_c.level() << " > " << box_data_[level_offset_.back()].level() << "\n";
               level_offset_.push_back(box_data_.size());
             }
 
@@ -438,37 +452,41 @@ class Octree
     level_offset_.push_back(box_data_.size());
   }
 
-
-  body_iterator body_begin() {
-    return body_iterator(0, const_cast<tree_type*>(this));
-  }
-  body_iterator body_end() {
-    return body_iterator(point_.size(), const_cast<tree_type*>(this));
-  }
-
-  box_iterator box_begin() {
-    return box_iterator(0, const_cast<tree_type*>(this));
-  }
-  box_iterator box_end() {
-    return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
-  }
-
+  /** Return the root box of this tree
+   */
   Box root() {
     return Box(0, const_cast<tree_type*>(this));
   }
 
+  /** Return an iterator to the first body in this tree */
+  body_iterator body_begin() {
+    return body_iterator(0, const_cast<tree_type*>(this));
+  }
+  /** Return an iterator one past the last body in this tree */
+  body_iterator body_end() {
+    return body_iterator(point_.size(), const_cast<tree_type*>(this));
+  }
+  /** Return an iterator to the first box in this tree */
+  box_iterator box_begin() {
+    return box_iterator(0, const_cast<tree_type*>(this));
+  }
+  /** Return an iterator one past the last box in this tree */
+  box_iterator box_end() {
+    return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
+  }
+  /** Return an iterator to the first box at level L in this tree
+   * @pre L < levels()
+   */
   box_iterator box_begin(unsigned L) {
-    assert(L+1 < level_offset_.size());
+    assert(L < levels());
     return box_iterator(level_offset_[L], const_cast<tree_type*>(this));
   }
-
+  /** Return an iterator one past the last box at level L in this tree
+   * @pre L < levels()
+   */
   box_iterator box_end(unsigned L) {
-    assert(L+1 < level_offset_.size());
+    assert(L < levels());
     return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
-  }
-
-  friend std::ostream& operator<<(std::ostream& os, const tree_type& t) {
-    return os;
   }
 };
 

@@ -34,6 +34,7 @@ class Octree
   std::vector<point_type> point_;
   std::vector<code_type> mc_;
   std::vector<unsigned> permute_;
+  std::vector<unsigned> level_offset_;
 
   struct box_data {
     static constexpr unsigned leaf_bit = (1<<31);
@@ -47,7 +48,7 @@ class Octree
     unsigned child_end_;
     // TODO: body_begin_ and body_end_?
 
-    box_data(unsigned key, unsigned parent,
+    box_data(unsigned key, unsigned parent=0,
              unsigned child_begin=0, unsigned child_end=0)
         : key_(key), parent_(parent),
           child_begin_(child_begin), child_end_(child_end) {
@@ -272,6 +273,9 @@ class Octree
     box_iterator(uint idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
     }
+    box_iterator(Box b)
+        : idx_(b.idx_), tree_(b.tree_) {
+    }
     friend class Octree;
   };
 
@@ -373,6 +377,7 @@ class Octree
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );
+    level_offset_.push_back(0);
 
     // For every box that is created
     // TODO: Can do this in one scan through the morton codes...
@@ -394,6 +399,7 @@ class Octree
         for (int oct = 0; oct < 8; ++oct) {
           // Construct the new box key
           code_type key_c = (key_p << 3) | oct;
+
           // Construct a temporary child box
           box_data box_c(key_c, k);
 
@@ -406,15 +412,26 @@ class Octree
           if (end_c - begin_c > 0) {
             // Increment parent child offset
             ++box_data_[k].child_end_;
+
+            // TODO: Optimize on key
+            // If this is starting a new level, record it
+            if (box_c.get_level() > box_data_[level_offset_.back()].get_level()) {
+              std::cout << box_c.get_level() << " > " << box_data_[level_offset_.back()].get_level() << "\n";
+              level_offset_.push_back(box_data_.size());
+            }
+
             // Set the child body offsets
             box_c.child_begin_ = begin_c - mc_.begin();
             box_c.child_end_ = end_c - mc_.begin();
+
             // Add the child
             box_data_.push_back(box_c);
           }
         }
       }
     }
+
+    level_offset_.push_back(box_data_.size());
   }
 
 
@@ -430,6 +447,20 @@ class Octree
   }
   box_iterator box_end() {
     return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
+  }
+
+  Box root() {
+    return Box(0, const_cast<tree_type*>(this));
+  }
+
+  box_iterator box_begin(unsigned L) {
+    assert(L+1 < level_offset_.size());
+    return box_iterator(level_offset_[L], const_cast<tree_type*>(this));
+  }
+
+  box_iterator box_end(unsigned L) {
+    assert(L+1 < level_offset_.size());
+    return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
   }
 
   friend std::ostream& operator<<(std::ostream& os, const tree_type& t) {

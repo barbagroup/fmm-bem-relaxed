@@ -51,9 +51,9 @@ int main(int argc, char** argv)
   otree.construct_tree(points.begin(), points.end());
 
   std::string padding = "";
-  //print_box(*otree.box_begin());
+  print_box(*otree.box_begin());
 
-  int L = 2;
+  int L = 5;
   for (auto bi = otree.box_begin(L); bi != otree.box_end(L); ++bi) {
     auto b = *bi;
     std::cout << padding << "Box " << b.index()

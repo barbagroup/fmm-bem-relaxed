@@ -349,6 +349,10 @@ class Octree
     return point_.size();
   }
 
+  inline uint num_boxes() const {
+    return box_data_.size();
+  }
+
   template <typename IT>
   void construct_tree(IT begin, IT end) {
     // Create a code-idx pair vector

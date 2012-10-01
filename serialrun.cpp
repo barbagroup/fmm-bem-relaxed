@@ -24,10 +24,18 @@ THE SOFTWARE.
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
 
+template <typename charge_type>
+void chargesFromBodies(std::vector<charge_type>& charges, Bodies& bodies)
+{
+  for (size_t i=0; i<bodies.size(); i++)
+  {
+    charges[i] = charge_type(bodies[i].SRC);
+  }
+}
 
 int main(int argc, char **argv)
 {
-  int numBodies = 10000;
+  int numBodies = 100;
   int P = 8;
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   bool checkErrors = true;
@@ -72,8 +80,16 @@ int main(int argc, char **argv)
   Dataset::cube(bodies,time(NULL));
   Bodies jbodies = bodies;                                               // Define vector of source bodies
 
-  fmm_plan plan = fmm_plan(K, bodies, opts);
-  fmm_execute(plan, jbodies);
+  //fmm_plan plan = fmm_plan(K, bodies, opts);
+  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, bodies, opts);
+
+  std::vector<typename SphericalLaplaceKernel::charge_type> charges(numBodies);
+
+  // get charges from initialised bodies
+  chargesFromBodies(charges,bodies);
+
+  //fmm_execute(plan, charges, jbodies);
+  plan.execute(charges, jbodies);
 
   // TODO: More elegant
   if (checkErrors) {

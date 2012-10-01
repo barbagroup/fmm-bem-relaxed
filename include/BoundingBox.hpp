@@ -93,10 +93,11 @@ class BoundingBox {
 
   /** Test if point @a p is in the bounding box. */
   bool contains(const Point& p) const {
+    double eps= 1e-4;
     if (empty())
       return false;
     for (unsigned i=0; i!=Point::dimension; ++i)
-      if (p[i] < min_[i] || p[i] > max_[i])
+      if (p[i] < min_[i]-eps || p[i] > max_[i]+eps)
         return false;
     return true;
   }

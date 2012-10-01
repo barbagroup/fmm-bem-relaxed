@@ -23,6 +23,8 @@ THE SOFTWARE.
 #pragma once
 
 #include <Types.hpp>
+#include <Vec.hpp>
+#include <Octree.hpp>
 
 #define splitFirst(Ci,Cj) Cj->NCHILD == 0 || (Ci->NCHILD != 0 && Ci->R > Cj->R)
 
@@ -31,10 +33,14 @@ template <class Kernel>
 class Evaluator
 {
 public:
+  //! Point type
+  typedef typename Kernel::point_type point_type;
   //! Multipole expansion type
   typedef typename Kernel::multipole_type multipole_type;
   //! Local expansion type
   typedef typename Kernel::local_type local_type;
+  //! Kernel source type
+  typedef typename Kernel::charge_type charge_type;
 
 private:
   real        timeM2L;                                          //!< M2L execution time
@@ -209,6 +215,7 @@ public:
   //! Destructor
   ~Evaluator() {}
 
+  #if 0
   // TODO:
   // move to using new tree structure
   void upward(Cells& cells)
@@ -248,6 +255,43 @@ public:
           // K.M2M(*Cj,M[Cj->ICELL],C,M[C.ICELL]);
           vect translation = C.X-Cj->X;
           K.M2M(M[Cj->ICELL],M[C.ICELL],translation);
+        }
+      }
+    }
+  }
+  #endif
+
+  // upward sweep using new tree structure
+  void upward(Octree<point_type>& otree, std::vector<charge_type>& charges)
+  {
+    M.resize(otree.boxes());
+    L.resize(otree.boxes());
+
+    unsigned lowest_level = otree.levels();
+    printf("lowest level in tree: %d\n",(int)lowest_level);
+
+    // P2M calls
+    for (auto it=otree.box_begin(); it!=otree.box_end(); ++it)
+    {
+      if (it->is_leaf()) {
+        K.init_multipole(M[it->index()], 0.);
+        K.init_local(L[it->index()],0.);
+
+        K.P2M(it->body_begin(),it->body_end(),charges.begin()+it->body_begin()->index(),it->center(),M[it->index()]);
+      }
+    }
+
+    // M2M calls
+    for (auto it=otree.box_begin(); it!=otree.box_end(); ++it)
+    {
+      if (!it->is_leaf()) {
+        K.init_multipole(M[it->index()],0.);
+        K.init_local(L[it->index()],0.);
+  
+        for (auto child_it=it->child_begin(); child_it!=it->child_end(); ++child_it)
+        {
+          auto translation = it->center() - child_it->center();
+          // K.M2M(M[child_it->index()],M[it->index()],translation);
         }
       }
     }

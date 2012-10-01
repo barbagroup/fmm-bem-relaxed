@@ -30,21 +30,29 @@ public:
 
 
 /** Simple wrapper class for FMM_plan */
+/*
 struct fmm_wrapper
 {
   virtual ~fmm_wrapper() {}
-  virtual void execute(Bodies& jbodies) = 0;
+  
+  template <typename charge_type>
+  virtual void execute(std::vector<charge_type>& charges, Bodies& jbodies) = 0;
 };
-
+*/
 
 
 template <class Kernel>
-class FMM_plan : public fmm_wrapper
+class FMM_plan//  : public fmm_wrapper
 {
  public:
   //typedef typename Kernel::point_type point_type;
   // TODO: Use this as the base vector type?
-  typedef Vec<Kernel::dimension, typename Kernel::point_type> point_type;
+  typedef typename Kernel::point_type point_type;
+  typedef std::vector<point_type> Points;
+  typedef typename Kernel::charge_type charge_type;
+  typedef std::vector<charge_type> Charges;
+  typedef typename Kernel::result_type result_type;
+  typedef std::vector<result_type> Results;
 
 
 private:
@@ -55,6 +63,9 @@ private:
   Evaluator<Kernel> evaluator;
   TreeStructure<point_type> tree;
   Octree<point_type> otree;
+  Points source_points;
+  Charges charges;
+  Results results;
 
   BoundingBox<point_type> get_boundingbox(Bodies& bodies) {
     BoundingBox<point_type> result;
@@ -85,7 +96,34 @@ private:
     R0 *= 1.000001;                                           // Add some leeway to root radius
   }
 
+  void sortCharges(Charges& charges, std::vector<unsigned>& permute)
+  {
+    Charges temp_charges = charges;
+
+    for (unsigned i=0; i<charges.size(); i++)
+    {
+      charges[i] = temp_charges[permute[i]];
+    }
+  }
+
 public:
+
+  void bodies2points(Bodies& bodies, std::vector<point_type>& points)
+  {
+    points.resize(bodies.size());
+
+    int idx = 0;
+    for (auto it=bodies.begin(); it!=bodies.end(); ++it)
+    {
+      point_type p;
+      p[0] = it->X[0];
+      p[1] = it->X[1];
+      p[2] = it->X[2];
+      points[idx] = p;
+      idx++;
+    }
+  }
+
   FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts)
       : K(k), Opts(opts), evaluator(K), otree(get_boundingbox(bodies))
   {
@@ -94,7 +132,11 @@ public:
 
     // Construct the Octree
     // ... Need point iterator
+    // create copy of bodies into array of points
+    bodies2points(bodies,source_points);
+    otree.construct_tree(source_points.begin(),source_points.end());
 
+#if 0
     // initialise tree & construct
     point_type X0;
     double R0;
@@ -105,9 +147,7 @@ public:
     else
       tree.bottomup(bodies,cells);
     printf("Tree created: %d cells\n",(int)cells.size());
-
-    // initialise evaluator
-    evaluator.upward(cells);
+#endif
   }
 
   ~FMM_plan()
@@ -116,20 +156,27 @@ public:
     K.postCalculation();
   }
 
-  void execute(Bodies& jbodies)
+  void execute(std::vector<charge_type>& charges, Bodies& jbodies)
   {
+    // sort charges to match sorted body array
+    sortCharges(charges, otree.getPermutation());
+
+    // run upward sweep based on body charges
+    evaluator.upward(otree,charges);
+
     // run evaluator and traverse tree
     jcells = cells;
     printf("Executing...\n");
-    evaluator.downward(cells,jcells,false);
+    // evaluator.downward(cells,jcells,false);
   }
 };
 
-
+/*
 class fmm_plan
 {
   fmm_wrapper* plan;
  public:
+  // typedef typename Kernel::charge_type charge_type;
   fmm_plan() : plan(NULL) {}
 
   template <typename Kernel>
@@ -141,8 +188,10 @@ class fmm_plan
     delete plan;
   }
 
-  friend void fmm_execute(fmm_plan& p, Bodies& jbodies) {
+  template <typename charge_type>
+  friend void fmm_execute(fmm_plan& p, std::vector<charge_type>& charges, Bodies& jbodies) {
     if (p.plan)
-      p.plan->execute(jbodies);
+      p.plan->execute(charges, jbodies);
   }
 };
+*/

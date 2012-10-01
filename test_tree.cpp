@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   std::string padding = "";
   print_box(*otree.box_begin());
 
-  int L = 5;
+  int L = 3;
   for (auto bi = otree.box_begin(L); bi != otree.box_end(L); ++bi) {
     auto b = *bi;
     std::cout << padding << "Box " << b.index()

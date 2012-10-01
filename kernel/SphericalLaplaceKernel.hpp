@@ -63,11 +63,15 @@ class SphericalLaplaceKernel
   // TODO: Use these!
   static constexpr unsigned dimension = 3;
   //! Point type
-  typedef vec<dimension,real> point_type;
+  // typedef vec<dimension,real> point_type;
+  typedef Vec<dimension,vec<dimension,real>> point_type;
+  typedef std::vector<point_type>::iterator point_iter;
   //! Charge type
   typedef real charge_type;
+  typedef std::vector<charge_type>::iterator charge_iter;
   //! Kernel result type
   typedef vec<4,real> result_type;
+  typedef std::vector<result_type>::iterator result_iter;
 
   //! Constructor
   SphericalLaplaceKernel()
@@ -148,6 +152,34 @@ class SphericalLaplaceKernel
     }                                                             // End loop over target bodies
   }
 
+  void P2P(point_iter s_begin, point_iter s_end, charge_iter c_begin,
+           point_iter t_begin, point_iter t_end, result_iter r_begin) const 
+  {
+    for( ; t_begin!=t_end; ++t_begin, ++r_begin) {    // Loop over target bodies
+      result_type R = 0;
+      // for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
+      charge_iter c = c_begin;
+      for(auto s = s_begin ; s!=s_end; ++s) {  //  Loop over source bodies
+        auto dist = *t_begin - *s; // Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
+        real R2 = norm(dist);                                     //   R^2
+        real invR2 = 1.0 / R2;                                    //   1 / R^2
+        if( R2 == 0 ) invR2 = 0;                                  //   Exclude self interaction
+        real invR = (*c) * std::sqrt(invR2);                   //   potential
+        dist *= invR2 * invR;                                     //   force
+        R[0] += invR;                                               //   accumulate potential
+        R[1] += dist[0];                                               //   accumulate force
+        R[2] += dist[1];                                               //   accumulate force
+        R[3] += dist[2];                                               //   accumulate force
+      }                                                           //  End loop over source bodies
+
+      (*r_begin)[0] += R[0];                                           //  potential
+      (*r_begin)[1] -= R[1];                                        //  x component of force
+      (*r_begin)[2] -= R[2];                                        //  y component of force
+      (*r_begin)[3] -= R[3];                                        //  z component of force
+      // printf("setting: %lg\n",Bi->TRG[0]);
+    }                                                             // End loop over target bodies
+  }
+
   void P2M(Cell& C, multipole_type& M) {
     for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
@@ -171,8 +203,33 @@ class SphericalLaplaceKernel
     M.RCRIT = std::min(C.R,Rmax);
   }
 
+  // void P2M(Cell& C, multipole_type& M) {
+  void P2M(point_iter start, point_iter end, charge_iter charge, point_type center, multipole_type& M) {
+    for (size_t i=0; i<M.size(); i++) M[i]=0;
+    real Rmax = 0;
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    // for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
+    for ( ; start != end; ++start, ++charge) {
+      vect dist = *start - center;
+      real R = std::sqrt(norm(dist));
+      if( R > Rmax ) Rmax = R;
+      real rho, alpha, beta;
+      cart2sph(rho,alpha,beta,dist);
+      evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+      for( int n=0; n!=P; ++n ) {
+        for( int m=0; m<=n; ++m ) {
+          const int nm  = n * n + n + m;
+          const int nms = n * (n + 1) / 2 + m;
+          M[nms] += (*charge) * Ynm[nm];
+        }
+      }
+    }
+    M.RMAX = Rmax;
+    M.RCRIT = std::min(R,Rmax);
+  }
+
   // void M2M(Cell& Cj, multipole_type& Msource, Cell& Ci, multipole_type& Mtarget) {
-  void M2M(multipole_type& Msource, multipole_type& Mtarget, const vect& translation) {
+  void M2M(multipole_type& Msource, multipole_type& Mtarget, const point_type& translation) {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
@@ -437,7 +494,7 @@ class SphericalLaplaceKernel
   }
 
   //! Get r,theta,phi from x,y,z
-  void cart2sph(real& r, real& theta, real& phi, vect dist=0) const {
+  void cart2sph(real& r, real& theta, real& phi, point_type dist=0) const {
     r = sqrt(norm(dist))+EPS;                                   // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps

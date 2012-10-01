@@ -353,6 +353,11 @@ class Octree
     return box_data_.size();
   }
 
+  std::vector<unsigned>& getPermutation(void)
+  {
+    return permute_;
+  }
+
   template <typename IT>
   void construct_tree(IT begin, IT end) {
     // Create a code-idx pair vector
@@ -377,7 +382,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 1;
+    unsigned NCRIT = 10;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );
@@ -438,6 +443,9 @@ class Octree
     level_offset_.push_back(box_data_.size());
   }
 
+  unsigned num_levels() {
+    return level_offset_.size();
+  }
 
   body_iterator body_begin() {
     return body_iterator(0, const_cast<tree_type*>(this));

@@ -52,6 +52,8 @@ private:
 public:
   Bodies buffer;                                                //!< Buffer for MPI communication & sorting
 
+  typedef Point point_type;
+
   TreeStructure() : X0(0), R0(0) {};
   TreeStructure(Point& X, real& R) : X0(X), R0(R) {};
 
@@ -196,7 +198,7 @@ protected:
     bigint index = cell.ICELL - ((1 << 3*level) - 1) / 7;       // Subtract cell index offset of current level
     cell.R = R0 / (1 << level);                                 // Cell radius
     int d = level = 0;                                          // Initialize dimension and level
-    vec<3,int> nx = 0;                                          // Initialize 3-D cell index
+    Vec<3,int[3]> nx(0,0,0);                                    // Initialize 3-D cell index
     while( index != 0 ) {                                       // Deinterleave bits while index is nonzero
       nx[d] += (index % 2) * (1 << level);                      //  Add deinterleaved bit to 3-D cell index
       index >>= 1;                                              //  Right shift the bits
@@ -426,7 +428,7 @@ private:
     if( level == -1 ) level = getMaxLevel(bodies);              // Decide max level
     bigint off = ((1 << 3*level) - 1) / 7;                      // Offset for each level
     real r = R0 / (1 << (level-1));                             // Radius at finest level
-    vec<3,int> nx;                                              // 3-D cell index
+    Vec<3,int[3]> nx(0,0,0);                                    // 3-D cell index
     if( end == 0 ) end = bodies.size();                         // Default size is all bodies
     for( int b=begin; b!=end; ++b ) {                           // Loop over bodies
       for( int d=0; d!=3; ++d ) {                               //  Loop over dimension

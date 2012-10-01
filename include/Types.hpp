@@ -42,7 +42,7 @@ THE SOFTWARE.
 #include <string>
 #include <utility>
 #include <vector>
-#include "vec.h"                                                //!< My vector type with operator overloading
+#include "Vec.hpp"
 #include <xmmintrin.h>
 #if PAPI
 #include <papi.h>
@@ -65,7 +65,7 @@ typedef unsigned           bigint;                              //!< Big integer
 typedef double              real;                                //!< Real number type on CPU
 typedef double              gpureal;                             //!< Real number type on GPU
 typedef std::complex<real> complex;                             //!< Complex number type
-typedef vec<3,real>        vect;                                //!< 3-D vector type
+//typedef vec<3,real>        vect;                                //!< 3-D vector type
 
 
 #ifndef KERNEL
@@ -74,7 +74,7 @@ int MPISIZE    = 1;                                             //!< MPI comm si
 int DEVICE     = 0;                                             //!< GPU device ID
 int IMAGES     = 0;                                             //!< Number of periodic image sublevels
 real THETA     = .5;                                            //!< Multipole acceptance criteria
-vect Xperiodic = 0;                                             //!< Coordinate offset of periodic image
+vect Xperiodic = vect(0.0);                                     //!< Coordinate offset of periodic image
 #if PAPI
 int PAPIEVENT  = PAPI_NULL;                                     //!< PAPI event handle
 #endif
@@ -131,7 +131,8 @@ typedef std::vector<JBody>::iterator   JB_iter;                 //!< Iterator fo
 // TODO; Separate positions from charge
 //! Structure of bodies
 struct Body : public JBody {
-  vec<4,real> TRG;                                              //!< Scalar+vector target values
+  //vec<4,real> TRG;                                              //!< Scalar+vector target values
+  Vec<4,double[4]> TRG;
   bool operator<(const Body &rhs) const {                       //!< Overload operator for comparing body index
     return this->IBODY < rhs.IBODY;                             //!< Comparison function for body index
   }

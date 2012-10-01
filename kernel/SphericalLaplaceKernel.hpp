@@ -63,11 +63,11 @@ class SphericalLaplaceKernel
   // TODO: Use these!
   static constexpr unsigned dimension = 3;
   //! Point type
-  typedef vec<dimension,real> point_type;
+  typedef Vec<dimension,real[dimension]> point_type;
   //! Charge type
   typedef real charge_type;
   //! Kernel result type
-  typedef vec<4,real> result_type;
+  typedef Vec<4,real[4]> result_type;
 
   //! Constructor
   SphericalLaplaceKernel()
@@ -127,8 +127,8 @@ class SphericalLaplaceKernel
 
   void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
     for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
-      real P0 = 0;                                                //  Initialize potential
-      vect F0 = 0;                                                //  Initialize force
+      real P0 = real(0);                                          //  Initialize potential
+      vect F0 = vect(0);                                          //  Initialize force
       for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
         vect dist = Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
         real R2 = norm(dist);                                     //   R^2
@@ -250,8 +250,8 @@ class SphericalLaplaceKernel
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NDLEAF; ++B ) {
       vect dist = B->X - Cj.X - Xperiodic;
-      vect spherical = 0;
-      vect cartesian = 0;
+      vect spherical = vect(0);
+      vect cartesian = vect(0);
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalLocal(r,theta,phi,Ynm,YnmTheta);
@@ -317,8 +317,8 @@ class SphericalLaplaceKernel
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NCLEAF; ++B ) {
       vect dist = B->X - Ci.X;
-      vect spherical = 0;
-      vect cartesian = 0;
+      vect spherical = vect(0);
+      vect cartesian = vect(0);
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalMultipole(r,theta,phi,Ynm,YnmTheta);

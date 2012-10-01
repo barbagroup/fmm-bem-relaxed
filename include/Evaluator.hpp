@@ -291,7 +291,7 @@ public:
         for (auto child_it=it->child_begin(); child_it!=it->child_end(); ++child_it)
         {
           auto translation = it->center() - child_it->center();
-          // K.M2M(M[child_it->index()],M[it->index()],translation);
+          K.M2M(M[child_it->index()],M[it->index()],translation);
         }
       }
     }

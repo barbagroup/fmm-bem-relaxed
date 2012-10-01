@@ -64,14 +64,14 @@ class SphericalLaplaceKernel
   static constexpr unsigned dimension = 3;
   //! Point type
   // typedef vec<dimension,real> point_type;
-  typedef Vec<dimension,vec<dimension,real>> point_type;
-  typedef std::vector<point_type>::iterator point_iter;
+  typedef Vec<dimension,real[dimension]> point_type;
+  //typedef std::vector<point_type>::iterator point_iter;
   //! Charge type
   typedef real charge_type;
-  typedef std::vector<charge_type>::iterator charge_iter;
+  //typedef std::vector<charge_type>::iterator charge_iter;
   //! Kernel result type
   typedef Vec<4,real[4]> result_type;
-  typedef std::vector<result_type>::iterator result_iter;
+  //typedef std::vector<result_type>::iterator result_iter;
 
   //! Constructor
   SphericalLaplaceKernel()
@@ -152,11 +152,12 @@ class SphericalLaplaceKernel
     }                                                             // End loop over target bodies
   }
 
+  template <typename point_iter, typename charge_iter, typename result_iter>
   void P2P(point_iter s_begin, point_iter s_end, charge_iter c_begin,
            point_iter t_begin, point_iter t_end, result_iter r_begin) const 
   {
     for( ; t_begin!=t_end; ++t_begin, ++r_begin) {    // Loop over target bodies
-      result_type R = 0;
+      result_type R(0);
       // for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
       charge_iter c = c_begin;
       for(auto s = s_begin ; s!=s_end; ++s) {  //  Loop over source bodies
@@ -204,13 +205,14 @@ class SphericalLaplaceKernel
   }
 
   // void P2M(Cell& C, multipole_type& M) {
+  template <typename point_iter, typename charge_iter>
   void P2M(point_iter start, point_iter end, charge_iter charge, point_type center, multipole_type& M) {
     for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     // for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
     for ( ; start != end; ++start, ++charge) {
-      vect dist = *start - center;
+      auto dist = *start - center;
       real R = std::sqrt(norm(dist));
       if( R > Rmax ) Rmax = R;
       real rho, alpha, beta;
@@ -225,7 +227,7 @@ class SphericalLaplaceKernel
       }
     }
     M.RMAX = Rmax;
-    M.RCRIT = std::min(R,Rmax);
+    M.RCRIT = std::min(M.RCRIT,Rmax);
   }
 
   // void M2M(Cell& Cj, multipole_type& Msource, Cell& Ci, multipole_type& Mtarget) {

@@ -3,9 +3,7 @@
 #include <type_traits>
 
 template <class UnaryFunction,
-          class Iterator,
-          class Reference = use_default,
-          class Value = use_default>
+          class Iterator>
 class transform_iterator
 {
 public:

@@ -70,7 +70,7 @@ private:
   BoundingBox<point_type> get_boundingbox(Bodies& bodies) {
     BoundingBox<point_type> result;
     for (B_iter B = bodies.begin(); B != bodies.end(); ++B) {
-      result |= point_type(B->X);
+      result |= point_type(B->X[0], B->X[1], B->X[2]);
     }
     std::cout << result << "\n";
     return result;

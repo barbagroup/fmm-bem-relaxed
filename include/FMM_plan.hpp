@@ -35,7 +35,7 @@ public:
 struct fmm_wrapper
 {
   virtual ~fmm_wrapper() {}
-  
+
   template <typename charge_type>
   virtual void execute(std::vector<charge_type>& charges, Bodies& jbodies) = 0;
 };
@@ -73,7 +73,11 @@ private:
     for (B_iter B = bodies.begin(); B != bodies.end(); ++B) {
       result |= point_type(B->X[0], B->X[1], B->X[2]);
     }
-    std::cout << result << "\n";
+    // Make sure the bounding box is square for now TODO: improve
+    auto dim = result.dimensions();
+    auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
+    result |= result.min() + point_type(maxdim, maxdim, maxdim);
+    std::cout << "Bounding Box: " << result << "\n";
     return result;
   }
 

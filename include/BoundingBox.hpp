@@ -192,7 +192,7 @@ inline std::ostream& operator<<(std::ostream& s, const BoundingBox<P>& box) {
   if (box.empty())
     return (s << '[' << ']');
   else
-    return (s << '[' << box.min() << ':' << box.max() << ']');
+    return (s << '[' << box.min() << ':' << box.max() << "] (" << box.dimensions() << ')');
 }
 
 /** Return a bounding box that contains @a box and @a p. */

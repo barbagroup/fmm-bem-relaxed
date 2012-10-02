@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BoundingBox.hpp"
-#include "MortonCoder.hpp"
+//#include "MortonCoder.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -23,12 +23,114 @@ class Octree
 
  private:
   // The Coder this tree is based on
-  typedef MortonCoder<point_type> Coder;
-  // Morton Coder
-  Coder coder_;
+  class MortonCoder {
+   public:
+    // Using a 32-bit unsigned int for the code_type
+    // means we can only resolve 10 3D levels
+    typedef unsigned code_type;
+
+    /** The number of bits per dimension [octree subdivisions]. #cells = 8^L. */
+    static constexpr unsigned levels = 10;
+    /** The number of cells per side of the bounding box (2^L). */
+    static constexpr code_type cells_per_side = code_type(1) << levels;
+    /** One more than the largest code (8^L). */
+    static constexpr code_type end_code = code_type(1) << (3*levels);
+
+    /** Construct a MortonCoder with a bounding box. */
+    MortonCoder(const BoundingBox<point_type>& bb)
+        : pmin_(bb.min()),
+          cell_size_((bb.max() - bb.min()) / cells_per_side) {
+      assert(!bb.empty());
+    }
+
+    /** Return the MortonCoder's bounding box. */
+    BoundingBox<point_type> bounding_box() const {
+      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
+    }
+
+    /** Return the bounding box of the cell with Morton code @a c.
+     * @pre c < end_code */
+    BoundingBox<point_type> cell(code_type c) const {
+      assert(c < end_code);
+      point_type p = deinterleave(c);
+      p *= cell_size_;
+      p += pmin_;
+      return BoundingBox<point_type>(p, p + cell_size_);
+    }
+
+    /** Return the Morton code of Point @a p.
+     * @pre bounding_box().contains(@a p)
+     * @post cell(result).contains(@a p) */
+    code_type code(const point_type& p) const {
+      assert(bounding_box().contains(p));
+      point_type s = (p - pmin_) / cell_size_;
+      return interleave((unsigned) s[0], (unsigned) s[1], (unsigned) s[2]);
+    }
+
+   private:
+    /** The minimum of the MortonCoder bounding box. */
+    point_type pmin_;
+    /** The extent of a single cell. */
+    point_type cell_size_;
+
+    /** Spreads the bits of a 10-bit number so that there are two 0s
+     *  in between each bit.
+     * @param x 10-bit integer
+     * @return 28-bit integer of form 0b0000X00X00X00X00X00X00X00X00X00X,
+     * where the X's are the original bits of @a x
+     */
+    inline unsigned spread_bits(unsigned x) const {
+      x = (x | (x << 16)) & 0b00000011000000000000000011111111;
+      x = (x | (x <<  8)) & 0b00000011000000001111000000001111;
+      x = (x | (x <<  4)) & 0b00000011000011000011000011000011;
+      x = (x | (x <<  2)) & 0b00001001001001001001001001001001;
+      return x;
+    }
+
+    /** Interleave the bits of n into x, y, and z.
+     * @pre x = [... x_2 x_1 x_0]
+     * @pre y = [... y_2 y_1 y_0]
+     * @pre z = [... z_2 z_1 z_0]
+     * @post n = [... z_1 y_1 x_1 z_0 y_0 x_0]
+     */
+    inline code_type interleave(unsigned x, unsigned y, unsigned z) const {
+      return spread_bits(x) | (spread_bits(y) << 1) | (spread_bits(z) << 2);
+    }
+
+    /** Does the inverse of spread_bits, extracting a 10-bit number from
+     * a 28-bit number.
+     * @param x 28-bit integer of form 0bYYYYXYYXYYXYYXYYXYYXYYXYYXYYXYYX
+     * @return 10-bit integer of form 0b00...000XXXXXXXXXX,
+     * where the X's are every third bit of @a x
+     */
+    inline unsigned compact_bits(unsigned x) const {
+      x &= 0b00001001001001001001001001001001;
+      x = (x | (x >>  2)) & 0b00000011000011000011000011000011;
+      x = (x | (x >>  4)) & 0b00000011000000001111000000001111;
+      x = (x | (x >>  8)) & 0b00000011000000000000000011111111;
+      x = (x | (x >> 16)) & 0b00000000000000000000001111111111;
+      return x;
+    }
+
+    /** Deinterleave the bits from n into a Point.
+     * @pre n = [... n_2 n_1 n_0]
+     * @post result.x = [... n_6 n_3 n_0]
+     * @post result.y = [... n_7 n_4 n_1]
+     * @post result.z = [... n_8 n_5 n_2]
+     */
+    inline point_type deinterleave(code_type c) const {
+      typedef typename point_type::value_type value_type;
+      return point_type(value_type(compact_bits(c)),
+                        value_type(compact_bits(c >> 1)),
+                        value_type(compact_bits(c >> 2)));
+    }
+  };
+
   // Code type
-  typedef typename Coder::code_type code_type;
-  typedef unsigned uint;
+  typedef typename MortonCoder::code_type code_type;
+
+  // Morton coder to use for the points
+  MortonCoder coder_;
 
   // Morton coded objects this Tree holds.
   std::vector<point_type> point_;
@@ -62,7 +164,7 @@ class Octree
      * TODO: optimize
      */
     unsigned level() const {
-      constexpr static uint lookup[] = {0, 3, 0, 3, 4, 7, 0, 9,
+      constexpr static unsigned lookup[] = {0, 3, 0, 3, 4, 7, 0, 9,
                                         3, 4, 5, 6, 7, 8, 1, 10,
                                         2, 4, 6, 9, 5, 5, 8, 2,
                                         6, 9, 7, 2, 8, 1, 1, 10};
@@ -124,7 +226,7 @@ class Octree
     Point point() const {
       return tree_->point_[idx_];
     }
-    uint index() const {
+    unsigned index() const {
       return idx_;
     }
     code_type morton_index() const {
@@ -132,9 +234,9 @@ class Octree
     }
 
    private:
-    uint idx_;
+    unsigned idx_;
     tree_type* tree_;
-    Body(uint idx, tree_type* tree)
+    Body(unsigned idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
       assert(idx_ < tree_->size());
     }
@@ -148,20 +250,19 @@ class Octree
         : tree_(NULL) {
     }
 
-    uint index() const {
+    unsigned index() const {
       return idx_;
     }
     code_type morton_index() const {
       return data().key_;
     }
-    uint level() const {
+    unsigned level() const {
       return data().level();
     }
     double side_length() const {
-      //return tree_->coder_.dimensions()[0] / (1 << (3*level()));
-      return 1. / (1 << (3*level()));
+      return tree_->coder_.bounding_box().dimensions()[0] / (1 << (3*level()));
     }
-    uint num_children() const {
+    unsigned num_children() const {
       return data().num_children();
     }
     bool is_leaf() const {
@@ -222,9 +323,9 @@ class Octree
     }
 
    private:
-    uint idx_;
+    unsigned idx_;
     tree_type* tree_;
-    Box(uint idx, tree_type* tree)
+    Box(unsigned idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
     }
     inline box_data& data() const {
@@ -277,10 +378,10 @@ class Octree
     }
 
    private:
-    uint idx_;
+    unsigned idx_;
     tree_type* tree_;
     mutable Box placeholder_;
-    box_iterator(uint idx, tree_type* tree)
+    box_iterator(unsigned idx, tree_type* tree)
         : idx_(idx), tree_(tree) {
     }
     box_iterator(Box b)
@@ -331,15 +432,15 @@ class Octree
     bool operator==(const body_iterator& it) const {
       return tree_ == it.tree_ && idx_ == it.idx_;
     }
-    uint index() const {
+    unsigned index() const {
       return idx_;
     }
 
    private:
-    uint idx_;
+    unsigned idx_;
     tree_type* tree_;
     mutable Body placeholder_;
-    body_iterator(uint idx, tree_type* tree)
+    body_iterator(unsigned idx, tree_type* tree)
         :idx_(idx), tree_(tree) {
     }
     friend class Octree;
@@ -358,25 +459,25 @@ class Octree
 
   /** The number of points contained in this tree
    */
-  inline uint size() const {
+  inline unsigned size() const {
     return point_.size();
   }
 
   /** The number of points contained in this tree
    */
-  inline uint bodies() const {
+  inline unsigned bodies() const {
     return size();
   }
 
   /** The number of boxes contained in this tree
    */
-  inline uint boxes() const {
+  inline unsigned boxes() const {
     return box_data_.size();
   }
 
   /** The maximum level of any box in this tree
    */
-  inline uint levels() const {
+  inline unsigned levels() const {
     return level_offset_.size() - 1;
   }
 

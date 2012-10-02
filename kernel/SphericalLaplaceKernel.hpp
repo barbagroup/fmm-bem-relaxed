@@ -153,7 +153,7 @@ class SphericalLaplaceKernel
     }                                                             // End loop over target bodies
   }
 
-  /** Kernel vectorized P2P operation
+  /** Kernel vectorized non-symmetric P2P operation
    *
    */
   template <typename point_iter, typename charge_iter, typename result_iter>
@@ -183,6 +183,15 @@ class SphericalLaplaceKernel
       (*r_begin)[3] -= R[3];                                        //  z component of force
       // printf("setting: %lg\n",Bi->TRG[0]);
     }                                                             // End loop over target bodies
+  }
+
+  /** Kernel vectorized symmetric P2P operation
+   */
+  template <typename point_iter, typename charge_iter, typename result_iter>
+  void P2P(point_iter p1_begin, point_iter p1_end, charge_iter c1_begin,
+           point_iter p2_begin, point_iter p2_end, charge_iter c2_begin,
+           result_iter r1_begin, result_iter r2_begin) const {
+    // TODO...
   }
 
   void P2M(Cell& C, multipole_type& M) {

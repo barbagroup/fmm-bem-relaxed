@@ -110,17 +110,17 @@ public:
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
       if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest
-        evalP2P(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+        evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else if ( timeM2P < timeP2P*Cj->NDLEAF && timeM2P*Ci->NDLEAF < timeM2L ) {// If M2P is fastest
-        evalM2P(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+        evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else {                                                    // If M2L is fastest
-        evalM2L(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+        evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      evalM2P(Ci,Cj);                                             // Evaluate on CPU, queue on GPU
+      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
       //K.M2P(*Cj,M[Cj->ICELL],*Ci);
 #else
-      evalM2L(Ci,Cj);                                             // Evalaute on CPU, queue on GPU
+      evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
       evalP2P(b1,b2);
@@ -191,5 +191,22 @@ public:
         }
       }
     }
+  }
+
+  void evalP2P(const Octree<point_type>::Box& b1,
+               const Octree<point_type>::Box& b2) {
+    auto body2point = [](Octree<point_type>::Body& b) { return b.point(); }
+
+    auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
+    auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
+    auto p2_begin = make_transform_iterator(b2.body_begin(), body2point);
+    auto p2_end   = make_transform_iterator(b2.body_end(),   body2point);
+
+    // Charge iters
+    // Result iters
+
+    //K.P2P(p1_begin, p1_end, c1_begin,
+    //      p2_begin, p2_end, c2_begin,
+    //      r1_begin, r2_begin)
   }
 };

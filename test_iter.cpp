@@ -24,8 +24,8 @@ int main(int argc, char** argv)
 
   std::cout << "\n";
 
-  auto begin = make_transform_iter(vec.begin(), MyOp());
-  auto end = make_transform_iter(vec.end(), MyOp());
+  auto begin = make_transform_iterator(vec.begin(), MyOp());
+  auto end = make_transform_iterator(vec.end(), MyOp());
 
   for ( ; begin != end; ++begin)
     std::cout << *begin << "\n";
@@ -33,8 +33,8 @@ int main(int argc, char** argv)
   std::cout << "\n";
 
   auto lambda = [](int& a) { return a*a; };
-  auto begin2 = make_transform_iter(vec.begin(), lambda);
-  auto end2 = make_transform_iter(vec.end(), lambda);
+  auto begin2 = make_transform_iterator(vec.begin(), lambda);
+  auto end2 = make_transform_iterator(vec.end(), lambda);
 
   for ( ; begin2 != end2; ++begin2)
     std::cout << *begin2 << "\n";

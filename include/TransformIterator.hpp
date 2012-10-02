@@ -7,12 +7,15 @@
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;
 
-template <class UnaryFunction,
-          class Iterator>
+
+template <class Iterator,
+          class UnaryFunction>
 class transform_iterator
 {
+  typedef typename std::iterator_traits<Iterator>::reference it_reference;
 public:
-  typedef typename std::result_of<const UnaryFunction(typename std::iterator_traits<Iterator>::reference)>::type reference;
+  //!
+  typedef typename std::result_of<const UnaryFunction(it_reference)>::type reference;
   typedef typename std::remove_cv<std::remove_reference<reference>>::type value_type;
   typedef typename std::add_pointer<value_type>::type pointer;
 
@@ -24,18 +27,18 @@ public:
   // Construct an invalid iterator
   transform_iterator() {}
   // Construct a valid iterator
-  transform_iterator(const Iterator& x, UnaryFunction f)
+  transform_iterator(const Iterator& x, const UnaryFunction& f)
       : it_(x), f_(f) {
   }
 
-  template<class F2, class I2>
-  transform_iterator(const transform_iterator<F2, I2>& t)
+  template <class I2, class F2>
+  transform_iterator(const transform_iterator<I2, F2>& t)
       : it_(t.it_), f_(t.f_) {
   }
 
   // ACCESSORS
 
-  UnaryFunction functor() const {
+  const UnaryFunction& functor() const {
     return f_;
   }
   const Iterator& base() const {
@@ -66,6 +69,6 @@ private:
 
 
 template <typename IT, class F>
-transform_iterator<F,IT> make_transform_iter(IT it, F f) {
-  return transform_iterator<F,IT>(it, f);
+transform_iterator<IT,F> make_transform_iterator(IT it, F f) {
+  return transform_iterator<IT,F>(it, f);
 }

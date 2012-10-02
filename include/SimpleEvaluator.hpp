@@ -26,8 +26,6 @@ THE SOFTWARE.
 #include <Vec.hpp>
 #include <Octree.hpp>
 
-#define splitFirst(Ci,Cj) Cj->NCHILD == 0 || (Ci->NCHILD != 0 && Ci->R > Cj->R)
-
 //! Interface between tree and kernel
 template <class Kernel>
 class SimpleEvaluator
@@ -48,7 +46,151 @@ private:
   std::vector<multipole_type> M;
   std::vector<local_type> L;
 
-private:
+public:
+  //! Constructor
+  Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()), M(0), L(0) {};
+  Evaluator(Kernel& k) : R0(0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
+  //! Destructor
+  ~Evaluator() {}
+
+  // upward sweep using new tree structure
+  void upward(Octree<point_type>& otree, std::vector<charge_type>& charges)
+  {
+    M.resize(otree.boxes());
+    L.resize(otree.boxes());
+
+    unsigned lowest_level = otree.levels();
+    printf("lowest level in tree: %d\n",(int)lowest_level);
+
+    // For the lowest level up to the highest level
+    for (unsigned L = otree.levels()-1; L != 1; --L) {
+      // For all boxes at this level
+      auto b_end = otree.box_end(L);
+      for (auto bit = otree.box_begin(L); bit != b_end; ++bit) {
+        auto box = *bit;
+
+        // Initialize box data
+        unsigned idx = box.index();
+        double box_size = box.side_length();
+        K.init_multipole(M[idx], box_size);
+        K.init_local(L[idx], box_size);
+
+        if (box.is_leaf()) {
+          // If leaf, make P2M calls
+
+          // For all the bodies, P2M
+          auto p_begin = box.body_begin();
+          K.P2M(p_begin, box.body_end(),
+                charges.begin() + p_begin->index(),
+                box.center(),
+                M[idx]);
+        } else {
+          // If not leaf, make M2M calls
+
+          // For all the children, M2M
+          auto c_end = box.child_end();
+          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
+            auto cbox = *cit;
+            auto translation = box.center() - cbox.center();
+
+            K.M2M(M[cbox.index()], M[idx], translation);
+          }
+        }
+      }
+    }
+  }
+
+  template <typename BOX, typename Q>
+  void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
+    point_type r0 = b1.center() - b2.center();
+    double r0_norm = std::sqrt(norm(r0));
+    if (r0_norm * THETA > b1.side_length() + b2.side_length()) {
+      // These boxes satisfy the multipole acceptance criteria
+#if HYBRID
+      if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest
+        evalP2P(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+      } else if ( timeM2P < timeP2P*Cj->NDLEAF && timeM2P*Ci->NDLEAF < timeM2L ) {// If M2P is fastest
+        evalM2P(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+      } else {                                                    // If M2L is fastest
+        evalM2L(Ci,Cj);                                           //  Evaluate on CPU, queue on GPU
+      }                                                           // End if for kernel selection
+#elif TREECODE
+      evalM2P(Ci,Cj);                                             // Evaluate on CPU, queue on GPU
+      //K.M2P(*Cj,M[Cj->ICELL],*Ci);
+#else
+      evalM2L(Ci,Cj);                                             // Evalaute on CPU, queue on GPU
+#endif
+    } else if(b1.is_leaf() && b2.is_leaf()) {
+      evalP2P(b1,b2);
+    } else {
+      pairQ.push_back(std::make_pair(b1,b2));
+    }
+  }
+
+
+  void downward(Octree<point_type>& octree) {
+
+    typedef Octree<point_type>::Box Box;
+    typedef std::pair<Box, Box> box_pair;
+    std::deque<box_pair> pairQ;
+
+    // Queue based tree traversal for P2P, M2P, and/or M2L operations
+    pairQ.push_back(box_pair(octree.root(), octree.root()));
+
+    while (!pairQ.empty()) {
+      box_pair boxes = pairQ.front();
+      pairQ.pop_front();
+      bool is_leaf1 = boxes.first.is_leaf();
+      bool is_leaf2 = boxes.second.is_leaf();
+
+      if (is_leaf2 || (!is_leaf1 && boxes.first > boxes.second)) {
+        // Split the first box into children and interact
+        auto c_end = boxes.first.child_end();
+        for (auto cit = boxes.first.child_begin(); cit != c_end; ++cit)
+          interact(*cit, boxes.second, pairQ);
+      } else {
+        // Split the second box into children and interact
+        auto c_end = boxes.second.child_end();
+        for (auto cit = boxes.second.child_begin(); cit != c_end; ++cit)
+          interact(boxes.first, *cit, pairQ);
+      }
+    }
+
+    //
+
+    // For the highest level down to the lowest level
+    for (unsigned L = 2; L < octree.levels(); ++L) {
+      // For all boxes at this level
+      auto b_end = otree.box_end(L);
+      for (auto bit = otree.box_begin(L); bit != b_end; ++bit) {
+        auto box = *bit;
+        unsigned idx = box.index();
+
+        // Initialize box data
+        if (box.is_leaf()) {
+          // If leaf, make L2P calls
+
+          // For all the bodies, L2P
+          auto p_begin = box.body_begin();
+          K.L2P(p_begin, box.body_end(),
+                box.center(),
+                L[idx]);
+        } else {
+          // If not leaf, make L2L calls
+
+          // For all the children, L2L
+          auto c_end = box.child_end();
+          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
+            auto cbox = *cit;
+            auto translation = cbox.center() - box.center();
+
+            K.L2L(L[idx], L[cbox.index()], translation);
+          }
+        }
+      }
+    }
+  }
+
   //! Approximate interaction between two cells
   inline void approximate(C_iter Ci, C_iter Cj) {
 #if HYBRID
@@ -67,81 +209,6 @@ private:
 #endif
   }
 
-  //! Traverse a pair of trees using a queue
-  void traverseQueue(Pair pair) {
-    PairQueue pairQueue;                                        // Queue of interacting cell pairs
-    pairQueue.push_back(pair);                                  // Push pair to queue
-    while( !pairQueue.empty() ) {                               // While dual traversal queue is not empty
-      pair = pairQueue.front();                                 //  Get interaction pair from front of queue
-      pairQueue.pop_front();                                    //  Pop dual traversal queue
-      if(splitFirst(pair.first,pair.second)) {                  //  If first cell is larger
-        C_iter C = pair.first;                                  //   Split the first cell
-        for( C_iter Ci=Ci0+C->CHILD; Ci!=Ci0+C->CHILD+C->NCHILD; ++Ci ) {// Loop over first cell's children
-          interact(Ci,pair.second,pairQueue);                   //    Calculate interaction between cells
-        }                                                       //   End loop over fist cell's children
-      } else {                                                  //  Else if second cell is larger
-        C_iter C = pair.second;                                 //   Split the second cell
-        for( C_iter Cj=Cj0+C->CHILD; Cj!=Cj0+C->CHILD+C->NCHILD; ++Cj ) {// Loop over second cell's children
-          interact(pair.first,Cj,pairQueue);                    //    Calculate interaction betwen cells
-        }                                                       //   End loop over second cell's children
-      }                                                         //  End if for which cell to split
-    }                                                           // End while loop for dual traversal queue
-  }
-
-protected:
-  //! Get level from cell index
-  int getLevel(bigint index) {
-    int i = index;                                              // Copy to dummy index
-    int level = -1;                                             // Initialize level counter
-    while( i >= 0 ) {                                           // While cell index is non-negative
-      level++;                                                  //  Increment level
-      i -= 1 << 3*level;                                        //  Subtract number of cells in that level
-    }                                                           // End while loop for cell index
-    return level;                                               // Return the level
-  }
-
-public:
-  //! Constructor
-  Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()), M(0), L(0) {};
-  Evaluator(Kernel& k) : R0(0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
-  //! Destructor
-  ~Evaluator() {}
-
-  // upward sweep using new tree structure
-  void upward(Octree<point_type>& otree, std::vector<charge_type>& charges)
-  {
-    M.resize(otree.boxes());
-    L.resize(otree.boxes());
-
-    unsigned lowest_level = otree.levels();
-    printf("lowest level in tree: %d\n",(int)lowest_level);
-
-    // P2M calls
-    for (auto it=otree.box_begin(); it!=otree.box_end(); ++it)
-    {
-      if (it->is_leaf()) {
-        K.init_multipole(M[it->index()], 0.);
-        K.init_local(L[it->index()],0.);
-
-        K.P2M(it->body_begin(),it->body_end(),charges.begin()+it->body_begin()->index(),it->center(),M[it->index()]);
-      }
-    }
-
-    // M2M calls
-    for (auto it=otree.box_begin(); it!=otree.box_end(); ++it)
-    {
-      if (!it->is_leaf()) {
-        K.init_multipole(M[it->index()],0.);
-        K.init_local(L[it->index()],0.);
-  
-        for (auto child_it=it->child_begin(); child_it!=it->child_end(); ++child_it)
-        {
-          auto translation = it->center() - child_it->center();
-          K.M2M(M[child_it->index()],M[it->index()],translation);
-        }
-      }
-    }
-  }
 
   //! Use multipole acceptance criteria to determine whether to approximate, do P2P, or subdivide
   void interact(C_iter Ci, C_iter Cj, PairQueue& pairQueue) {
@@ -161,9 +228,6 @@ public:
   void traverse(Cells& cells, Cells& jcells) {
     C_iter root = cells.end() - 1;                              // Iterator for root target cell
     C_iter jroot = jcells.end() - 1;                            // Iterator for root source cell
-    if( IMAGES != 0 ) {                                         // If periodic boundary condition
-      jroot = jcells.end() - 1 - 26 * 27 * (IMAGES - 1);        //  The root is not at the end
-    }                                                           // Endif for periodic boundary condition
     Ci0 = cells.begin();                                        // Set begin iterator for target cells
     Cj0 = jcells.begin();                                       // Set begin iterator for source cells
     // Non-periodic
@@ -171,6 +235,28 @@ public:
     Xperiodic = 0;                                            //  Set periodic coordinate offset
     Pair pair(root,jroot);                                    //  Form pair of root cells
     traverseQueue(pair);                                      //  Traverse a pair of trees
+  }
+
+  //! Traverse a pair of trees using a queue
+  void traverseQueue(Pair pair) {
+    PairQueue pairQueue;                                        // Queue of interacting cell pairs
+    pairQueue.push_back(pair);                                  // Push pair to queue
+    while( !pairQueue.empty() ) {                               // While dual traversal queue is not empty
+      pair = pairQueue.front();                                 //  Get interaction pair from front of queue
+      pairQueue.pop_front();                                    //  Pop dual traversal queue
+      if(splitFirst(pair.first,pair.second)) {                  //  If first cell is larger
+        // Cj->NCHILD == 0 || (Ci->NCHILD != 0 && Ci->R > Cj->R)
+        C_iter C = pair.first;                                  //   Split the first cell
+        for( C_iter Ci=Ci0+C->CHILD; Ci!=Ci0+C->CHILD+C->NCHILD; ++Ci ) {// Loop over first cell's children
+          interact(Ci,pair.second,pairQueue);                   //    Calculate interaction between cells
+        }                                                       //   End loop over fist cell's children
+      } else {                                                  //  Else if second cell is larger
+        C_iter C = pair.second;                                 //   Split the second cell
+        for( C_iter Cj=Cj0+C->CHILD; Cj!=Cj0+C->CHILD+C->NCHILD; ++Cj ) {// Loop over second cell's children
+          interact(pair.first,Cj,pairQueue);                    //    Calculate interaction betwen cells
+        }                                                       //   End loop over second cell's children
+      }                                                         //  End if for which cell to split
+    }                                                           // End while loop for dual traversal queue
   }
 
   //! Downward phase (M2L,M2P,P2P,L2L,L2P evaluation)
@@ -196,8 +282,6 @@ public:
     K.P2P(Ci,Cj);
   }
 };
-
-#undef splitFirst
 
 template <class Kernel>
 void Evaluator<Kernel>::evalP2P(Bodies& ibodies, Bodies& jbodies, bool) {// Evaluate all P2P kernels

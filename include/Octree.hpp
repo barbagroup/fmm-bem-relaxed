@@ -157,6 +157,9 @@ class Octree
     uint level() const {
       return data().level();
     }
+    double side_length() const {
+      return tree_->coder_.dimensions()[0] / (1 << (3*level()));
+    }
     uint num_children() const {
       return data().num_children();
     }
@@ -407,7 +410,7 @@ class Octree
 
     // For every box that is created
     // TODO: Can do this in one scan through the morton codes...
-    for (int k = 0; k != box_data_.size(); ++k) {
+    for (unsigned k = 0; k != box_data_.size(); ++k) {
 
       if (box_data_[k].num_children() <= NCRIT) {
         box_data_[k].set_leaf(true);

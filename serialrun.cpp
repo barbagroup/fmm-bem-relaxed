@@ -104,7 +104,7 @@ int main(int argc, char **argv)
     }
 
     // TODO: Use a Direct class to make this more intuitive and accessible
-    Evaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies,jbodies);
+    SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies,jbodies);
 
     B_iter B2 = bodies.begin();
 

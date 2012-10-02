@@ -8,7 +8,8 @@
 #include <Logger.hpp>
 #include <Sorter.hpp>
 #include <TreeStructure.hpp>
-#include <Evaluator.hpp>
+// #include <Evaluator.hpp>
+#include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
 #include "Octree.hpp"
@@ -60,7 +61,7 @@ private:
   Bodies buffer;
   Kernel &K;
   FMM_options& Opts;
-  Evaluator<Kernel> evaluator;
+  SimpleEvaluator<Kernel> evaluator;
   TreeStructure<point_type> tree;
   Octree<point_type> otree;
   Points source_points;
@@ -168,6 +169,9 @@ public:
     jcells = cells;
     printf("Executing...\n");
     // evaluator.downward(cells,jcells,false);
+    Results results;
+    results.resize(charges.size());
+    evaluator.downward(otree,charges, results);
   }
 };
 

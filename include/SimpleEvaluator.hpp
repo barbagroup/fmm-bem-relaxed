@@ -25,6 +25,7 @@ THE SOFTWARE.
 #include <Types.hpp>
 #include <Vec.hpp>
 #include <Octree.hpp>
+#include <TransformIterator.hpp>
 
 //! Interface between tree and kernel
 template <class Kernel>
@@ -39,6 +40,8 @@ public:
   typedef typename Kernel::local_type local_type;
   //! Kernel source type
   typedef typename Kernel::charge_type charge_type;
+  //! Kernel result type
+  typedef typename Kernel::result_type result_type;
 
 private:
   //! Kernel
@@ -48,12 +51,15 @@ private:
   //! Local expansions corresponding to Box indices in Octree
   std::vector<local_type> L;
 
+  typename std::vector<result_type>::iterator results_begin;
+  typename std::vector<charge_type>::iterator charges_begin;
+
 public:
   //! Constructor
-  Evaluator() : R0(0), Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(Kernel()), M(0), L(0) {};
-  Evaluator(Kernel& k) : R0(0),  Icenter(1 << 13), NP2P(0), NM2P(0), NM2L(0), K(k), M(0), L(0) {};
+  SimpleEvaluator() : K(Kernel()), M(0), L(0) {};
+  SimpleEvaluator(Kernel& k) : K(k), M(0), L(0) {};
   //! Destructor
-  ~Evaluator() {}
+  ~SimpleEvaluator() {}
 
   // upward sweep using new tree structure
   void upward(Octree<point_type>& otree, std::vector<charge_type>& charges)
@@ -65,10 +71,10 @@ public:
     printf("lowest level in tree: %d\n",(int)lowest_level);
 
     // For the lowest level up to the highest level
-    for (unsigned L = otree.levels()-1; L != 1; --L) {
+    for (unsigned l = otree.levels()-1; l != 1; --l) {
       // For all boxes at this level
-      auto b_end = otree.box_end(L);
-      for (auto bit = otree.box_begin(L); bit != b_end; ++bit) {
+      auto b_end = otree.box_end(l);
+      for (auto bit = otree.box_begin(l); bit != b_end; ++bit) {
         auto box = *bit;
 
         // Initialize box data
@@ -79,13 +85,15 @@ public:
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls
+          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
 
-          // For all the bodies, P2M
-          auto p_begin = box.body_begin();
-          K.P2M(p_begin, box.body_end(),
-                charges.begin() + p_begin->index(),
-                box.center(),
-                M[idx]);
+          auto p_begin = make_transform_iterator(box.body_begin(), body2point);
+          auto p_end   = make_transform_iterator(box.body_end(),   body2point);
+          auto c_begin = charges.begin()+box.body_begin()->index();
+
+          printf("P2M: box: %d\n",(int)box.index());
+          K.P2M(p_begin, p_end, c_begin, box.center(), M[idx]);
+
         } else {
           // If not leaf, make M2M calls
 
@@ -95,6 +103,7 @@ public:
             auto cbox = *cit;
             auto translation = box.center() - cbox.center();
 
+            printf("M2M: %d to %d\n",cbox.index(),idx);
             K.M2M(M[cbox.index()], M[idx], translation);
           }
         }
@@ -110,30 +119,33 @@ public:
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
       if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest
-        evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        //evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else if ( timeM2P < timeP2P*Cj->NDLEAF && timeM2P*Ci->NDLEAF < timeM2L ) {// If M2P is fastest
-        evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        //evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else {                                                    // If M2L is fastest
-        evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
       evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
-      //K.M2P(*Cj,M[Cj->ICELL],*Ci);
 #else
-      evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
+      //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      evalP2P(b1,b2);
+      //evalP2P(b1,b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
   }
 
 
-  void downward(Octree<point_type>& octree) {
+  void downward(Octree<point_type>& octree, std::vector<charge_type>& charges, std::vector<result_type>& results) {
 
-    typedef Octree<point_type>::Box Box;
-    typedef std::pair<Box, Box> box_pair;
+    // keep references to charges & results
+    charges_begin = charges.begin();
+    results_begin = results.begin();
+
+    typedef typename Octree<point_type>::Box Box;
+    typedef typename std::pair<Box, Box> box_pair;
     std::deque<box_pair> pairQ;
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
@@ -161,10 +173,10 @@ public:
     //
 
     // For the highest level down to the lowest level
-    for (unsigned L = 2; L < octree.levels(); ++L) {
+    for (unsigned l = 2; l < octree.levels(); ++l) {
       // For all boxes at this level
-      auto b_end = otree.box_end(L);
-      for (auto bit = otree.box_begin(L); bit != b_end; ++bit) {
+      auto b_end = octree.box_end(l);
+      for (auto bit = octree.box_begin(l); bit != b_end; ++bit) {
         auto box = *bit;
         unsigned idx = box.index();
 
@@ -174,7 +186,13 @@ public:
 
           // For all the bodies, L2P
           auto p_begin = box.body_begin();
-          K.L2P(p_begin, box.body_end(),
+
+          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
+          auto t_begin = make_transform_iterator(box.body_begin(), body2point);
+          auto t_end   = make_transform_iterator(box.body_end(), body2point);
+          auto r_begin = results_begin + box.index();
+
+          K.L2P(t_begin, t_end, r_begin,
                 box.center(),
                 L[idx]);
         } else {
@@ -193,9 +211,9 @@ public:
     }
   }
 
-  void evalP2P(const Octree<point_type>::Box& b1,
-               const Octree<point_type>::Box& b2) {
-    auto body2point = [](Octree<point_type>::Body& b) { return b.point(); }
+  void evalP2P(const typename Octree<point_type>::Box& b1,
+               const typename Octree<point_type>::Box& b2) {
+    auto body2point = [](typename Octree<point_type>::Body& b) { return b.point(); };
 
     auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
     auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
@@ -203,10 +221,37 @@ public:
     auto p2_end   = make_transform_iterator(b2.body_end(),   body2point);
 
     // Charge iters
-    // Result iters
+    auto c1_begin = charges_begin + b1.index();
+    auto c2_begin = charges_begin + b2.index();
 
-    //K.P2P(p1_begin, p1_end, c1_begin,
-    //      p2_begin, p2_end, c2_begin,
-    //      r1_begin, r2_begin)
+    // Result iters
+    auto r1_begin = results_begin + b1.index();
+    auto r2_begin = results_begin + b2.index();
+
+    K.P2P(p1_begin, p1_end, c1_begin,
+          p2_begin, p2_end, c2_begin,
+          r1_begin, r2_begin);
+  }
+
+  void evalM2P(const typename Octree<point_type>::Box& b1,
+               const typename Octree<point_type>::Box& b2)
+  {
+    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
+
+    auto t_begin = make_transform_iterator(b2.body_begin(), body2point);
+    auto t_end   = make_transform_iterator(b2.body_end(), body2point);
+    auto r_begin = results_begin + b2.body_begin()->index();
+
+    auto idx = b1.index();
+    printf("calling K.M2P\n");
+    K.M2P(b1.center(), M[idx], t_begin, t_end, r_begin);
+  }
+
+  static void evalP2P(Kernel& K, Bodies& sources, Bodies& targets)
+  {
+    // quiet warnings
+    (void)K;
+    (void)sources;
+    (void)targets;
   }
 };

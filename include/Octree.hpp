@@ -158,7 +158,8 @@ class Octree
       return data().level();
     }
     double side_length() const {
-      return tree_->coder_.dimensions()[0] / (1 << (3*level()));
+      //return tree_->coder_.dimensions()[0] / (1 << (3*level()));
+      return 1. / (1 << (3*level()));
     }
     uint num_children() const {
       return data().num_children();
@@ -212,6 +213,12 @@ class Octree
     box_iterator child_end() const {
       assert(!is_leaf());
       return box_iterator(data().child_end_, tree_);
+    }
+
+    // operators for < and ==
+    bool operator<(const Box& b) const
+    {
+      return this->side_length() < b.side_length();
     }
 
    private:
@@ -402,7 +409,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 10;
+    unsigned NCRIT = 5;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );

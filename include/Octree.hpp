@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BoundingBox.hpp"
-//#include "MortonCoder.hpp"
 
 #include <iostream>
 #include <iomanip>

@@ -374,15 +374,15 @@ class SphericalLaplaceKernel
   }
 
   template <typename point_iter, typename result_iter>
-  void M2P(const point_type& Mcenter, multipole_type& M, 
+  void M2P(const point_type& Mcenter, multipole_type& M,
            point_iter t_begin, point_iter t_end, result_iter r_begin) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    printf("evaluating particle...\n");
+    //printf("evaluating particle...\n");
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
+      vect dist = *t_begin - Mcenter;
       std::cout << "target: " << *t_begin << std::endl;
       std::cout << "result: " << *r_begin << std::endl;
-      vect dist = *t_begin - Mcenter;
       std::cout << "dist: " << dist << std::endl;
       vect spherical = vect(0);
       vect cartesian = vect(0);
@@ -390,17 +390,16 @@ class SphericalLaplaceKernel
       cart2sph(r,theta,phi,dist);
       evalLocal(r,theta,phi,Ynm,YnmTheta);
       for( int n=0; n!=P; ++n ) {
-        printf("  n: %d, Y[nm]: %lg, %lg\n",n,Ynm[n*n+n].real(),Ynm[n*n+n].imag());
+        //printf("  n: %d, Y[nm]: %lg, %lg\n",n,Ynm[n*n+n].real(),Ynm[n*n+n].imag());
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         //B->TRG[0] += std::real(M[nms] * Ynm[nm]);
-        std::cout << "accessing M[nms]..." << std::endl;
-        std::cout << "M[nms]: " << M[nms] << std::endl;
+        //std::cout << "accessing M[nms]..." << std::endl;
+        //std::cout << "M[nms]: " << M[nms] << std::endl;
         (*r_begin)[0] += std::real(M[nms] * Ynm[nm]);
         spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
         spherical[1] += std::real(M[nms] * YnmTheta[nm]);
         for( int m=1; m<=n; ++m ) {
-          printf("    m: %d\n",m);
           nm  = n * n + n + m;
           nms = n * (n + 1) / 2 + m;
           //B->TRG[0] += 2 * std::real(M[nms] * Ynm[nm]);

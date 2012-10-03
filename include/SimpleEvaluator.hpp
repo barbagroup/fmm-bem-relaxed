@@ -71,7 +71,7 @@ public:
     printf("lowest level in tree: %d\n",(int)lowest_level);
 
     // For the lowest level up to the highest level
-    for (unsigned l = otree.levels()-1; l != 1; --l) {
+    for (unsigned l = otree.levels()-1; l != 0; --l) {
       // For all boxes at this level
       auto b_end = otree.box_end(l);
       for (auto bit = otree.box_begin(l); bit != b_end; ++bit) {
@@ -131,7 +131,7 @@ public:
       //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      //evalP2P(b1,b2);
+      evalP2P(b1,b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -213,7 +213,7 @@ public:
 
   void evalP2P(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2) {
-    auto body2point = [](typename Octree<point_type>::Body& b) { return b.point(); };
+    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
 
     auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
     auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
@@ -228,6 +228,7 @@ public:
     auto r1_begin = results_begin + b1.index();
     auto r2_begin = results_begin + b2.index();
 
+    printf("P2P from %d to %d\n",b1.index(),b2.index());
     K.P2P(p1_begin, p1_end, c1_begin,
           p2_begin, p2_end, c2_begin,
           r1_begin, r2_begin);
@@ -243,7 +244,7 @@ public:
     auto r_begin = results_begin + b2.body_begin()->index();
 
     auto idx = b1.index();
-    printf("calling K.M2P\n");
+    printf("M2P from %d to %d\n",b1.index(),b2.index());
     K.M2P(b1.center(), M[idx], t_begin, t_end, r_begin);
   }
 

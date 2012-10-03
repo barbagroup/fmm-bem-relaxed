@@ -130,7 +130,7 @@ class SphericalLaplaceKernel
     L.resize(P*(P+1)/2);
   }
 
-  void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
+  void P2P(C_iter Ci, C_iter Cj) const {
     for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
       real P0 = real(0);                                          //  Initialize potential
       vect F0 = vect(0);                                          //  Initialize force
@@ -192,6 +192,9 @@ class SphericalLaplaceKernel
            point_iter p2_begin, point_iter p2_end, charge_iter c2_begin,
            result_iter r1_begin, result_iter r2_begin) const {
     // TODO...
+    (void) c2_begin;
+    (void) r1_begin;
+    P2P(p1_begin, p1_end, c1_begin, p2_begin, p2_end, r2_begin);
   }
 
   void P2M(Cell& C, multipole_type& M) {
@@ -378,29 +381,21 @@ class SphericalLaplaceKernel
            point_iter t_begin, point_iter t_end, result_iter r_begin) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    printf("evaluating particle...\n");
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
-      std::cout << "target: " << *t_begin << std::endl;
-      std::cout << "result: " << *r_begin << std::endl;
       vect dist = *t_begin - Mcenter;
-      std::cout << "dist: " << dist << std::endl;
       vect spherical = vect(0);
       vect cartesian = vect(0);
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalLocal(r,theta,phi,Ynm,YnmTheta);
       for( int n=0; n!=P; ++n ) {
-        printf("  n: %d, Y[nm]: %lg, %lg\n",n,Ynm[n*n+n].real(),Ynm[n*n+n].imag());
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         //B->TRG[0] += std::real(M[nms] * Ynm[nm]);
-        std::cout << "accessing M[nms]..." << std::endl;
-        std::cout << "M[nms]: " << M[nms] << std::endl;
         (*r_begin)[0] += std::real(M[nms] * Ynm[nm]);
         spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
         spherical[1] += std::real(M[nms] * YnmTheta[nm]);
         for( int m=1; m<=n; ++m ) {
-          printf("    m: %d\n",m);
           nm  = n * n + n + m;
           nms = n * (n + 1) / 2 + m;
           //B->TRG[0] += 2 * std::real(M[nms] * Ynm[nm]);

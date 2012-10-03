@@ -111,6 +111,16 @@ private:
     }
   }
 
+  void desortResults(Results& results, std::vector<unsigned>& permute)
+  {
+    Results temp_results = results;
+
+    for (unsigned i=0; i<results.size(); i++)
+    {
+      results[permute[i]] = temp_results[i];
+    }
+  }
+
 public:
 
   void bodies2points(Bodies& bodies, std::vector<point_type>& points)
@@ -140,19 +150,6 @@ public:
     // create copy of bodies into array of points
     bodies2points(bodies,source_points);
     otree.construct_tree(source_points.begin(),source_points.end());
-
-#if 0
-    // initialise tree & construct
-    point_type X0;
-    double R0;
-    setDomain(bodies, X0, R0);
-    tree.init(X0, R0);
-    if (opts.tree == TOPDOWN)
-      tree.topdown(bodies,cells);
-    else
-      tree.bottomup(bodies,cells);
-    printf("Tree created: %d cells\n",(int)cells.size());
-#endif
   }
 
   ~FMM_plan()
@@ -173,9 +170,20 @@ public:
     jcells = cells;
     printf("Executing...\n");
     // evaluator.downward(cells,jcells,false);
-    Results results;
     results.resize(charges.size());
-    evaluator.downward(otree,charges, results);
+    evaluator.downward(otree,charges,results);
+
+    // de-sort the results
+    desortResults(results,otree.getPermutation());
+  }
+
+  template <typename results_iter>
+  void getResults(results_iter r_begin)
+  {
+    for (auto it = results.begin(); it!=results.end(); ++it, ++r_begin)
+    {
+      *r_begin = *it;
+    }
   }
 };
 

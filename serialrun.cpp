@@ -91,6 +91,9 @@ int main(int argc, char **argv)
   //fmm_execute(plan, charges, jbodies);
   plan.execute(charges, jbodies);
 
+  std::vector<typename SphericalLaplaceKernel::result_type> results(charges.size());
+  plan.getResults(results.begin());
+
   // TODO: More elegant
   if (checkErrors) {
     const int numTargets = 100;                                  // Number of target points to be used for error eval
@@ -103,9 +106,49 @@ int main(int argc, char **argv)
       B->TRG = 0;
     }
 
-    // TODO: Use a Direct class to make this more intuitive and accessible
-    SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies,jbodies);
+    std::vector<typename SphericalLaplaceKernel::charge_type> source_charges(numBodies);
+    std::vector<typename SphericalLaplaceKernel::point_type> source_points, test_points;
+    std::vector<typename SphericalLaplaceKernel::result_type> test_results(numTargets);
 
+    printf("Assembling test data\n");
+    chargesFromBodies(source_charges, bodies);
+    plan.bodies2points(jbodies, source_points);
+    plan.bodies2points(test_bodies, test_points);
+    printf("...done\n");
+
+    printf("performing direct P2P\n");
+    SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K,
+                                                     source_points.begin(), source_points.end(), source_charges.begin(),
+                                                     test_points.begin(), test_points.end(), test_results.begin());
+    printf("...done\n");
+
+    // TODO: Use a Direct class to make this more intuitive and accessible
+
+    printf("checking errors\n");
+    real diff1=0, diff2=0, norm1=0, norm2=0;
+    auto fmm_it = results.begin();
+    for (auto it=test_results.begin(); it!=test_results.end(); ++it, ++fmm_it)
+    {
+      printf("checking point..\n");
+      std::cout << "Direct: " << *it << std::endl;
+      std::cout << "FMM   : " << *fmm_it << std::endl;
+      //printf("%lg\n",(*it)[0]);
+      //printf("%lg\n",(*fmm_it)[0]);
+      diff1 += ((*fmm_it)[0] - (*it)[0]) * ((*fmm_it)[0] - (*it)[0]);
+      norm1 += (*it)[0] * (*it)[0];
+
+      diff2 += ((*fmm_it)[1] - (*it)[1]) * ((*fmm_it)[1] - (*it)[1]);
+      diff2 += ((*fmm_it)[2] - (*it)[2]) * ((*fmm_it)[2] - (*it)[2]);
+      diff2 += ((*fmm_it)[3] - (*it)[3]) * ((*fmm_it)[3] - (*it)[3]);
+      norm2 += (*it)[1]*(*it)[1];
+      norm2 += (*it)[2]*(*it)[2];
+      norm2 += (*it)[3]*(*it)[3];
+    }
+    printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
+    printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+    
+
+    #if 0
     B_iter B2 = bodies.begin();
 
     real diff1=0, diff2=0, norm1=0, norm2=0;
@@ -124,5 +167,6 @@ int main(int argc, char **argv)
 
     printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
     printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+    #endif
   }
 }

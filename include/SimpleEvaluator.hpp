@@ -248,11 +248,10 @@ public:
     K.M2P(b1.center(), M[idx], t_begin, t_end, r_begin);
   }
 
-  static void evalP2P(Kernel& K, Bodies& sources, Bodies& targets)
+  template <typename point_iter, typename charge_iter, typename result_iter>
+  static void evalP2P(Kernel& K, point_iter s_begin, point_iter s_end, charge_iter c_begin,
+                                 point_iter t_begin, point_iter t_end, result_iter r_begin)
   {
-    // quiet warnings
-    (void)K;
-    (void)sources;
-    (void)targets;
+    K.P2P(s_begin,s_end,c_begin,t_begin,t_end,r_begin);
   }
 };

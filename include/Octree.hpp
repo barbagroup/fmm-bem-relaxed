@@ -61,8 +61,10 @@ class Octree
      * @pre bounding_box().contains(@a p)
      * @post cell(result).contains(@a p) */
     code_type code(const point_type& p) const {
-      assert(bounding_box().contains(p));
       point_type s = (p - pmin_) / cell_size_;
+      assert((unsigned) s[0] < cells_per_side &&
+             (unsigned) s[1] < cells_per_side &&
+             (unsigned) s[2] < cells_per_side);
       return interleave((unsigned) s[0], (unsigned) s[1], (unsigned) s[2]);
     }
 

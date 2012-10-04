@@ -126,7 +126,8 @@ public:
         //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
+      // evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
+      evalP2P(b1,b2);
 #else
       //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif

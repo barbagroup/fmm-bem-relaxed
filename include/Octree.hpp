@@ -426,6 +426,7 @@ class Octree
       return Body(idx_, tree_);
     }
     Body* operator->() const {
+      printf("idx_ : %d\n",idx_);
       placeholder_ = operator*();
       return &placeholder_;
     }
@@ -510,7 +511,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 5;
+    unsigned NCRIT = 50;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );

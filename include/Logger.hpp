@@ -25,6 +25,21 @@ THE SOFTWARE.
 #include <sys/time.h>
 #include <Types.hpp>
 
+
+//! Structure for pthread based trace
+struct Trace {
+  pthread_t thread;
+  double    begin;
+  double    end;
+  int       color;
+};
+typedef std::map<pthread_t,double>             ThreadTrace;     //!< Map of pthread id to traced value
+typedef std::map<pthread_t,int>                ThreadMap;       //!< Map of pthread id to thread id
+typedef std::queue<Trace>                      Traces;          //!< Queue of traces
+typedef std::map<std::string,double>           Timer;           //!< Map of timer event name to timed value
+typedef std::map<std::string,double>::iterator TI_iter;         //!< Iterator for timer event name map
+
+
 //! Timer and Trace logger
 class Logger {
 private:
@@ -147,7 +162,8 @@ public:
 //! Write traces of all events
   inline void writeTrace() {
     char fname[256];                                            // File name
-    sprintf(fname,"trace%4.4d.svg",MPIRANK);                    // Create file name for trace
+    // TODO
+    //sprintf(fname,"trace%4.4d.svg",MPIRANK);                    // Create file name for trace
     std::ofstream traceFile(fname);                             // Open trace log file
     traceFile << "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" // Header statements for trace log file
         << "<!DOCTYPE svg PUBLIC \"-_W3C_DTD SVG 1.0_EN\" \"http://www.w3.org/TR/SVG/DTD/svg10.dtd\">\n"
@@ -176,7 +192,7 @@ public:
           << "\" height=\"90.0\" fill=\"#"<< std::setfill('0') << std::setw(6) << std::hex << color// height of bar
           << "\" stroke=\"#000000\" stroke-width=\"1\"/>\n";    //  stroke color and width
     }                                                           // End while loop for queue of traces
-    traceFile << "  </g>\n" "</svg>\n";                         // Footer for trace log file 
+    traceFile << "  </g>\n" "</svg>\n";                         // Footer for trace log file
     traceFile.close();                                          // Close trace log file
   }
 };

@@ -61,6 +61,8 @@ int omp_get_thread_num() {
 #define OMP_NUM_THREADS 12
 #endif
 
+
+
 typedef unsigned           bigint;                              //!< Big integer type
 typedef double              real;                                //!< Real number type on CPU
 typedef double              gpureal;                             //!< Real number type on GPU
@@ -90,6 +92,7 @@ extern int PAPIEVENT;                                           //!< PAPI event 
 #endif
 #endif
 
+/*
 const int  NCRIT    = 100;                                      //!< Number of bodies per cell
 const int  MAXBODY  = 200000;                                   //!< Maximum number of bodies per GPU kernel
 const int  MAXCELL  = 10000000;                                 //!< Maximum number of bodies/coefs in cell per GPU kernel
@@ -102,19 +105,6 @@ const int  THREADS  = 64;                                       //!< Number of t
 const int  PTHREADS = 4;                                        //!< Number of pthreads in quark
 
 typedef std::vector<bigint>                    Bigints;         //!< Vector of big integer types
-
-//! Structure for pthread based trace
-struct Trace {
-  pthread_t thread;
-  double    begin;
-  double    end;
-  int       color;
-};
-typedef std::map<pthread_t,double>             ThreadTrace;     //!< Map of pthread id to traced value
-typedef std::map<pthread_t,int>                ThreadMap;       //!< Map of pthread id to thread id
-typedef std::queue<Trace>                      Traces;          //!< Queue of traces
-typedef std::map<std::string,double>           Timer;           //!< Map of timer event name to timed value
-typedef std::map<std::string,double>::iterator TI_iter;         //!< Iterator for timer event name map
 
 // TODO: Move into Evaluator
 //! Structure of source bodies (stuff to send)
@@ -163,6 +153,7 @@ struct Cell {
   real     R;                                                   //!< Cell radius
 };
 
+
 typedef std::vector<Cell>              Cells;                   //!< Vector of cells
 typedef std::vector<Cell>::iterator    C_iter;                  //!< Iterator for cell vector
 typedef std::queue<C_iter>             CellQueue;               //!< Queue of cell iterators
@@ -176,4 +167,4 @@ typedef std::vector<List>              Lists;                   //!< Vector of i
 typedef std::map<C_iter,int>           Map;                     //!< Map of interaction lists
 typedef std::map<C_iter,int>::iterator MC_iter;                 //!< Iterator for interation list map
 typedef std::vector<Map>               Maps;                    //!< Vector of map of interaction lists
-
+*/

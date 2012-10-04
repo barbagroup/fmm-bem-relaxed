@@ -24,6 +24,9 @@
 
 #define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
+
+const real EPS      = 1e-6;                                     //!< Single precision epsilon
+
 class SphericalLaplaceKernel
 {
  private:
@@ -134,6 +137,7 @@ class SphericalLaplaceKernel
     L.resize(P*(P+1)/2);
   }
 
+  /*
   void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
     for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
       real P0 = real(0);                                          //  Initialize potential
@@ -156,6 +160,7 @@ class SphericalLaplaceKernel
       // printf("setting: %lg\n",Bi->TRG[0]);
     }                                                             // End loop over target bodies
   }
+  */
 
   /** Kernel vectorized non-symmetric P2P operation
    *
@@ -201,6 +206,7 @@ class SphericalLaplaceKernel
     P2P(p1_begin, p1_end, c1_begin, p2_begin, p2_end, r2_begin);
   }
 
+  /*
   void P2M(Cell& C, multipole_type& M) {
     for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
@@ -223,6 +229,7 @@ class SphericalLaplaceKernel
     M.RMAX = Rmax;
     M.RCRIT = std::min(C.R,Rmax);
   }
+  */
 
   /** Kernel P2M operation
    * M += sum_i Op(p_i) where M is the multipole and p_i are the points
@@ -317,7 +324,7 @@ class SphericalLaplaceKernel
            local_type& Ltarget,
            const point_type& translation) {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    vect dist = translation - Xperiodic;
+    vect dist = translation;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
     evalLocal(rho,alpha,beta,Ynm,YnmTheta);
@@ -347,6 +354,7 @@ class SphericalLaplaceKernel
     }
   }
 
+  /*
   // void M2P(Cell& Cj, multipole_type& M, Cell& Ci) const {
   void M2P(const point_type& Mcenter, multipole_type& M, Cell& Ci) const {
     const complex I(0.,1.);                                       // Imaginary unit
@@ -379,6 +387,7 @@ class SphericalLaplaceKernel
       B->TRG[3] += cartesian[2];
     }
   }
+  */
 
   template <typename point_iter, typename result_iter>
   void M2P(const point_type& Mcenter, multipole_type& M,
@@ -465,6 +474,7 @@ class SphericalLaplaceKernel
     }
   }
 
+  /*
   void L2P(Cell& Ci, local_type &L) const {                                   //!< Evaluate L2P kernel on CPU
     const complex I(0.,1.);                                     // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -496,10 +506,12 @@ class SphericalLaplaceKernel
       B->TRG[3] += cartesian[2];
     }
   }
+  */
 
   // void L2P(Cell& Ci, local_type &L) const {
   template <typename point_iter, typename result_iter>
-  void L2P(point_iter t_begin, point_iter t_end, result_iter r_begin, point_type center, local_type& L) const {
+  void L2P(point_iter t_begin, point_iter t_end, result_iter r_begin,
+           const point_type& center, local_type& L) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( ; t_begin!=t_end; ++t_begin, ++r_begin ) {
@@ -538,6 +550,7 @@ class SphericalLaplaceKernel
 
  private:
 
+  /*
   real getBmax(vect const&X, C_iter C) const {
     real rad = C->R;
     real dx = rad+std::abs(X[0]-C->X[0]);
@@ -545,6 +558,7 @@ class SphericalLaplaceKernel
     real dz = rad+std::abs(X[2]-C->X[2]);
     return std::sqrt( dx*dx + dy*dy + dz*dz );
   }
+  */
 
   //! Evaluate solid harmonics \f$ r^n Y_{n}^{m} \f$
   void evalMultipole(real rho, real alpha, real beta, complex *Ynm, complex *YnmTheta) const {

@@ -22,6 +22,7 @@ THE SOFTWARE.
 
 #pragma once
 
+#if 0
 //! Contains all the different datasets
 class Dataset
 {
@@ -95,7 +96,6 @@ public:
     initTarget(bodies);                                         // Initialize target values
   }
 
-#if 0
 //! Evaluate relative L2 norm error
   void evalError(Bodies &bodies, Bodies &bodies2,
                  real &diff1, real &norm1, real &diff2, real &norm2, bool ewald=false) {
@@ -124,6 +124,6 @@ public:
       norm1 = p2 * p2;                                          //  Value of total energy
     }                                                           // End if for Ewald method
   }
-#endif
-};
 
+};
+#endif

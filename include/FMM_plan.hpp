@@ -6,8 +6,6 @@
 // FMM includes
 #include <Types.hpp>
 #include <Logger.hpp>
-#include <Sorter.hpp>
-#include <TreeStructure.hpp>
 // #include <Evaluator.hpp>
 #include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
@@ -15,7 +13,6 @@
 #include "Octree.hpp"
 
 Logger Log;
-Sorter sort;
 
 typedef enum {TOPDOWN, BOTTOMUP} treeType;
 

@@ -253,12 +253,4 @@ public:
     printf("calling K.M2P: %d to %d\n", b1.index(), b2.index());
     K.M2P(b1.center(), M[b1.index()], t_begin, t_end, r_begin);
   }
-
-  static void evalP2P(Kernel& K, Bodies& sources, Bodies& targets)
-  {
-    // quiet warnings
-    (void)K;
-    (void)sources;
-    (void)targets;
-  }
 };

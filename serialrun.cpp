@@ -54,33 +54,21 @@ int main(int argc, char **argv)
   FMM_options opts;
 
   // parse command line args
-  for (int i=1; i<argc; i++)
-  {
-    if (strcmp(argv[i],"-N")==0)
-    {
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i],"-N") == 0) {
       i++;
       numBodies = atoi(argv[i]);
-    }
-    else if (strcmp(argv[i],"-P")==0)
-    {
+    } else if (strcmp(argv[i],"-P") == 0) {
       i++;
       P = atoi(argv[i]);
-    }
-    else if (strcmp(argv[i],"-theta")==0)
-    {
+    } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
       THETA = (double)atof(argv[i]);
-    }
-    else if (strcmp(argv[i],"-nocheck")==0)
-    {
+    } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
-    }
-    else if (strcmp(argv[i],"-bottomup")==0)
-    {
+    } else if (strcmp(argv[i],"-bottomup") == 0) {
       opts.tree = BOTTOMUP;
-    }
-    else
-    {
+    } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
     }
   }

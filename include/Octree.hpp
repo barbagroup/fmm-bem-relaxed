@@ -259,7 +259,7 @@ class Octree
       return data().level();
     }
     double side_length() const {
-      return tree_->coder_.bounding_box().dimensions()[0] / (1 << (3*level()));
+      return tree_->coder_.bounding_box().dimensions()[0] / (1 << level());
     }
     unsigned num_children() const {
       return data().num_children();
@@ -509,7 +509,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 50;
+    unsigned NCRIT = 15;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );

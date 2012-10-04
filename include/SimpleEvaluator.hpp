@@ -116,8 +116,8 @@ public:
     point_type r0 = b1.center() - b2.center();
     double r0_norm = std::sqrt(norm(r0));
     //printf("r0_norm = %f, THETA = %f, D = %f\n", r0_norm, THETA, b1.side_length() + b2.side_length());
-    printf("r0_norm*THETA: %lg, rhs: %lg\n",r0_norm*THETA,b1.side_length() + b2.side_length());
-    if (r0_norm * THETA > b1.side_length() + b2.side_length()) {
+    //printf("r0_norm*THETA: %lg, rhs: %lg\n",r0_norm*THETA,b1.side_length()/2 + b2.side_length()/2);
+    if (r0_norm * THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
       if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest

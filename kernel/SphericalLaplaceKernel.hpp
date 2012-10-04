@@ -384,9 +384,9 @@ class SphericalLaplaceKernel
     //printf("evaluating particle...\n");
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
       vect dist = *t_begin - Mcenter;
-      std::cout << "target: " << *t_begin << std::endl;
-      std::cout << "result: " << *r_begin << std::endl;
-      std::cout << "dist: " << dist << std::endl;
+      //std::cout << "target: " << *t_begin << std::endl;
+      //std::cout << "dist: " << dist << std::endl;
+      //std::cout << "result: " << *r_begin << std::endl;
       vect spherical = vect(0);
       vect cartesian = vect(0);
       real r, theta, phi;
@@ -414,7 +414,7 @@ class SphericalLaplaceKernel
       (*r_begin)[1] += cartesian[0];
       (*r_begin)[2] += cartesian[1];
       (*r_begin)[3] += cartesian[2];
-      std::cout << "result: " << *r_begin << std::endl;
+      //std::cout << "result: " << *r_begin << std::endl;
     }
   }
 

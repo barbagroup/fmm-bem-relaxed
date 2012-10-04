@@ -137,7 +137,7 @@ class Vec {
 
 /** Unary plus: Return @a p. ("+p" should work if "-p" works.) */
 template <unsigned D, typename P>
-inline Vec<D,P> operator+(const Vec<D,P> &p) {
+inline Vec<D,P> operator+(const Vec<D,P>& p) {
   return p;
 }
 template <unsigned D, typename P>

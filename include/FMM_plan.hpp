@@ -198,8 +198,8 @@ public:
     // sort charges to match sorted body array
     auto pcharges = permute(charges, otree.getPermutation());
 
-    // run upward sweep based on body charges
-    evaluator.upward(otree, charges);
+    // run upward sweep based on (permuted) body charges
+    evaluator.upward(otree, pcharges);
 
     // run evaluator and traverse tree
     jcells = cells;
@@ -207,8 +207,9 @@ public:
     // evaluator.downward(cells,jcells,false);
     std::vector<result_type> results;
     results.resize(charges.size());
-    evaluator.downward(otree, charges, results);
+    evaluator.downward(otree, pcharges, results);
 
+    // inverse permute results
     auto ipresults = ipermute(results,otree.getPermutation());
     // TODO, don't return this
     return ipresults;

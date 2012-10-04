@@ -100,6 +100,7 @@ int main(int argc, char **argv)
   print_box(plan.otree.root());
 
   std::vector<charge_type> charges(numBodies, charge_type(1));
+  std::vector<charge_type> charges_copy = charges;
 
   //fmm_execute(plan, charges, jbodies);
   std::vector<result_type> result = plan.execute(charges, jpoints);
@@ -110,15 +111,18 @@ int main(int argc, char **argv)
 
     // TODO: Use a Direct class to make this more intuitive and accessible
     //SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies, jbodies);
-    K.P2P(points.begin(), points.end(), charges.begin(),
+    K.P2P(points.begin(), points.end(), charges_copy.begin(),
           jpoints.begin(), jpoints.end(),
           exact_result.begin());
 
     double diff1=0, diff2=0, norm1=0, norm2=0;
+    int i=0;
     for (auto r1i = exact_result.begin(), r2i = result.begin();
              r1i != exact_result.end(); ++r1i, ++r2i) {
+
       result_type exact = *r1i;
       result_type r = *r2i;
+      printf("[%03d] exact: %lg, FMM: %lg\n",i++,exact[0],r[0]);
 
       diff1 += (r[0] - exact[0]) * (r[0] - exact[0]);
       norm1 += exact[0] * exact[0];

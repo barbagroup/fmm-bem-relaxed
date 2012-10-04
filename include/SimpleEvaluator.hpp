@@ -116,6 +116,7 @@ public:
     point_type r0 = b1.center() - b2.center();
     double r0_norm = std::sqrt(norm(r0));
     //printf("r0_norm = %f, THETA = %f, D = %f\n", r0_norm, THETA, b1.side_length() + b2.side_length());
+    printf("r0_norm*THETA: %lg, rhs: %lg\n",r0_norm*THETA,b1.side_length() + b2.side_length());
     if (r0_norm * THETA > b1.side_length() + b2.side_length()) {
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
@@ -127,9 +128,7 @@ public:
         //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      // evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
-      printf("(M2P) P2P: %d to %d\n",b1.index(),b2.index());
-      evalP2P(b1,b2);
+      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
 #else
       //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
@@ -236,12 +235,9 @@ public:
     auto r1_begin = results_begin + b1.body_begin()->index();
     auto r2_begin = results_begin + b2.body_begin()->index();
 
-    //K.P2P(p1_begin, p1_end, c1_begin,
-    //      p2_begin, p2_end, c2_begin,
-    //      r1_begin, r2_begin);
-    K.P2P(p2_begin, p2_end, c2_begin,
-          p1_begin, p1_end, c1_begin,
-          r2_begin, r1_begin);
+    K.P2P(p1_begin, p1_end, c1_begin,
+          p2_begin, p2_end, c2_begin,
+          r1_begin, r2_begin);
   }
 
   void evalM2P(const typename Octree<point_type>::Box& b1,

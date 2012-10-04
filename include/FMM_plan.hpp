@@ -46,15 +46,14 @@ template <class Kernel>
 class FMM_plan//  : public fmm_wrapper
 {
  public:
-  typedef typename Kernel::point_type point_type;    // TODO: Better
+  typedef typename Kernel::point_type point_type;    // TODO: Better point support
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 
   //private:
-  Kernel &K;
+  Kernel& K;
   FMM_options& Opts;
   SimpleEvaluator<Kernel> evaluator;
-  TreeStructure<point_type> tree;
   Octree<point_type> otree;
 
   template <typename PointIter>
@@ -92,6 +91,8 @@ class FMM_plan//  : public fmm_wrapper
 
 public:
 
+  // CONSTRUCTOR
+
   FMM_plan(Kernel& k, const std::vector<point_type>& points, FMM_options& opts)
       : K(k), Opts(opts), evaluator(K),
         otree(get_boundingbox(points.begin(), points.end()))
@@ -102,6 +103,8 @@ public:
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
   }
+
+  // EXECUTE
 
   std::vector<result_type> execute(const std::vector<charge_type>& charges,
                                    const std::vector<point_type>& t_points)
@@ -120,7 +123,7 @@ public:
     evaluator.downward(otree, pcharges, results);
 
     // inverse permute results
-    auto ipresults = ipermute(results,otree.getPermutation());
+    auto ipresults = ipermute(results, otree.getPermutation());
     // TODO, don't return this
     return ipresults;
   }

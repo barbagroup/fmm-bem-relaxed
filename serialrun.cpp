@@ -48,7 +48,7 @@ inline double drand() {
 int main(int argc, char **argv)
 {
   int numBodies = 100;
-  int P = 8;
+  int P = 5;
   THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   bool checkErrors = true;
   FMM_options opts;

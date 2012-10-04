@@ -76,7 +76,11 @@ class SphericalLaplaceKernel
   SphericalLaplaceKernel(const int p)
       : P(p), prefactor(), Anm(), Cnm() {};
   //! Destructor
-  ~SphericalLaplaceKernel() {}
+  ~SphericalLaplaceKernel() {
+    delete[] prefactor;                                         // Free sqrt( (n - |m|)! / (n + |m|)! )
+    delete[] Anm;                                               // Free (-1)^n / sqrt( (n + m)! / (n - m)! )
+    delete[] Cnm;                                               // Free M2L translation matrix Cjknm
+  }
 
   //! Precalculate M2L translation matrix
   void preCalculation() {
@@ -531,14 +535,6 @@ class SphericalLaplaceKernel
       (*r_begin)[3] += cartesian[2];
     }
   }
-
-  //! Free temporary allocations
-  void postCalculation() {
-    delete[] prefactor;                                         // Free sqrt( (n - |m|)! / (n + |m|)! )
-    delete[] Anm;                                               // Free (-1)^n / sqrt( (n + m)! / (n - m)! )
-    delete[] Cnm;                                               // Free M2L translation matrix Cjknm
-  }
-
 
  private:
 

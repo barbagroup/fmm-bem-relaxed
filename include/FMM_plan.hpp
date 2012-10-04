@@ -209,8 +209,9 @@ public:
     results.resize(charges.size());
     evaluator.downward(otree, charges, results);
 
+    auto ipresults = ipermute(results,otree.getPermutation());
     // TODO, don't return this
-    return results;
+    return ipresults;
   }
 };
 

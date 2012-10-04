@@ -127,12 +127,15 @@ public:
         //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
+      // evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
+      printf("(M2P) P2P: %d to %d\n",b1.index(),b2.index());
+      evalP2P(b1,b2);
 #else
       //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      //evalP2P(b1,b2);
+      printf("P2P: %d to %d\n",b1.index(),b2.index());
+      evalP2P(b1,b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -233,9 +236,12 @@ public:
     auto r1_begin = results_begin + b1.body_begin()->index();
     auto r2_begin = results_begin + b2.body_begin()->index();
 
-    K.P2P(p1_begin, p1_end, c1_begin,
-          p2_begin, p2_end, c2_begin,
-          r1_begin, r2_begin);
+    //K.P2P(p1_begin, p1_end, c1_begin,
+    //      p2_begin, p2_end, c2_begin,
+    //      r1_begin, r2_begin);
+    K.P2P(p2_begin, p2_end, c2_begin,
+          p1_begin, p1_end, c1_begin,
+          r2_begin, r1_begin);
   }
 
   void evalM2P(const typename Octree<point_type>::Box& b1,

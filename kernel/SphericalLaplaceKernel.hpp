@@ -192,6 +192,9 @@ class SphericalLaplaceKernel
            point_iter p2_begin, point_iter p2_end, charge_iter c2_begin,
            result_iter r1_begin, result_iter r2_begin) const {
     // TODO...
+    (void) c2_begin;
+    (void) r1_begin;
+    P2P(p1_begin, p1_end, c1_begin, p2_begin, p2_end, r2_begin);
   }
 
   void P2M(Cell& C, multipole_type& M) {

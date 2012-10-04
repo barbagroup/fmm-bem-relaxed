@@ -425,7 +425,6 @@ class Octree
       return Body(idx_, tree_);
     }
     Body* operator->() const {
-      printf("idx_ : %d\n",idx_);
       placeholder_ = operator*();
       return &placeholder_;
     }

@@ -24,13 +24,25 @@ THE SOFTWARE.
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
 
-template <typename charge_type>
-void chargesFromBodies(std::vector<charge_type>& charges, Bodies& bodies)
-{
-  for (size_t i=0; i<bodies.size(); i++)
-  {
-    charges[i] = charge_type(bodies[i].SRC);
+template <typename Box>
+void print_box(const Box& b, std::string padding = std::string()) {
+  std::cout << padding << "Box " << b.index()
+            << " (Level " << b.level() << ", Parent " << b.parent().index() << "): "
+            << b.morton_index() << "    " << b.center() << "\n";
+
+  padding.append(2,' ');
+  if (!b.is_leaf()) {
+    for (auto ci = b.child_begin(); ci != b.child_end(); ++ci)
+      print_box(*ci, padding);
+  } else {
+    //for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
+    //  std::cout << padding << "Point " << ci->index() << ": " << ci->morton_index() << "\t" << ci->point() << "\n";
   }
+}
+
+// Random number in [0,1)
+inline double drand() {
+  return ::drand48();
 }
 
 int main(int argc, char **argv)
@@ -73,84 +85,54 @@ int main(int argc, char **argv)
     }
   }
 
-  IMAGES = 0;                                                   // Level of periodic image tree (0 for non-periodic)
-  Bodies bodies(numBodies);                                     // Define vector of bodies
-
   SphericalLaplaceKernel K(P);
-  Dataset::cube(bodies,time(NULL));
-  Bodies jbodies = bodies;                                               // Define vector of source bodies
+  typedef SphericalLaplaceKernel::point_type point_type;
+  typedef SphericalLaplaceKernel::charge_type charge_type;
+  typedef SphericalLaplaceKernel::result_type result_type;
+
+  std::vector<point_type> points;
+  for (int k = 0; k < numBodies; ++k)
+    points.push_back(point_type(drand(), drand(), drand()));
+  std::vector<point_type> jpoints = points;
 
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, bodies, opts);
+  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, points, opts);
+  print_box(plan.otree.root());
 
-  std::vector<typename SphericalLaplaceKernel::charge_type> charges(numBodies);
-
-  // get charges from initialised bodies
-  chargesFromBodies(charges,bodies);
+  std::vector<charge_type> charges(numBodies, charge_type(1));
 
   //fmm_execute(plan, charges, jbodies);
-  plan.execute(charges, jbodies);
-
-  std::vector<typename SphericalLaplaceKernel::result_type> results(charges.size());
-  plan.getResults(results.begin());
+  std::vector<result_type> result = plan.execute(charges, jpoints);
 
   // TODO: More elegant
   if (checkErrors) {
-    const int numTargets = 100;                                  // Number of target points to be used for error eval
-    bodies.resize(numTargets);
-    Bodies test_bodies = bodies;
-
-    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B)
-    {
-      B->IBODY = B-test_bodies.begin();
-      B->TRG = 0;
-    }
-
-    std::vector<typename SphericalLaplaceKernel::charge_type> source_charges(numBodies);
-    std::vector<typename SphericalLaplaceKernel::point_type> source_points, test_points;
-    std::vector<typename SphericalLaplaceKernel::result_type> test_results(numTargets);
-
-    printf("Assembling test data\n");
-    chargesFromBodies(source_charges, bodies);
-    plan.bodies2points(jbodies, source_points);
-    plan.bodies2points(test_bodies, test_points);
-    printf("...done\n");
-
-    printf("performing direct P2P\n");
-    SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K,
-                                                     source_points.begin(), source_points.end(), source_charges.begin(),
-                                                     test_points.begin(), test_points.end(), test_results.begin());
-    printf("...done\n");
+    std::vector<result_type> exact_result(numBodies, result_type(0));
 
     // TODO: Use a Direct class to make this more intuitive and accessible
+    //SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies, jbodies);
+    K.P2P(points.begin(), points.end(), charges.begin(),
+          jpoints.begin(), jpoints.end(),
+          exact_result.begin());
 
-    printf("checking errors\n");
-    real diff1=0, diff2=0, norm1=0, norm2=0;
-    auto fmm_it = results.begin();
-    for (auto it=test_results.begin(); it!=test_results.end(); ++it, ++fmm_it)
-    {
-      printf("checking point..\n");
-      std::cout << "Direct: " << *it << std::endl;
-      std::cout << "FMM   : " << *fmm_it << std::endl;
-      //printf("%lg\n",(*it)[0]);
-      //printf("%lg\n",(*fmm_it)[0]);
-      diff1 += ((*fmm_it)[0] - (*it)[0]) * ((*fmm_it)[0] - (*it)[0]);
-      norm1 += (*it)[0] * (*it)[0];
+    double diff1=0, diff2=0, norm1=0, norm2=0;
+    for (auto r1i = exact_result.begin(), r2i = result.begin();
+             r1i != exact_result.end(); ++r1i, ++r2i) {
+      result_type exact = *r1i;
+      result_type r = *r2i;
 
-      diff2 += ((*fmm_it)[1] - (*it)[1]) * ((*fmm_it)[1] - (*it)[1]);
-      diff2 += ((*fmm_it)[2] - (*it)[2]) * ((*fmm_it)[2] - (*it)[2]);
-      diff2 += ((*fmm_it)[3] - (*it)[3]) * ((*fmm_it)[3] - (*it)[3]);
-      norm2 += (*it)[1]*(*it)[1];
-      norm2 += (*it)[2]*(*it)[2];
-      norm2 += (*it)[3]*(*it)[3];
+      diff1 += (r[0] - exact[0]) * (r[0] - exact[0]);
+      norm1 += exact[0] * exact[0];
+
+      diff2 += (r[1] - exact[1]) * (r[1] - exact[1]);
+      diff2 += (r[2] - exact[2]) * (r[2] - exact[2]);
+      diff2 += (r[3] - exact[3]) * (r[3] - exact[3]);
+      norm2 += exact[1] * exact[1];
+      norm2 += exact[2] * exact[2];
+      norm2 += exact[3] * exact[3];
     }
-    printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
-    printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
-    
 
-    #if 0
-    B_iter B2 = bodies.begin();
 
+#if 0
     real diff1=0, diff2=0, norm1=0, norm2=0;
     for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B, ++B2)
     {
@@ -164,9 +146,9 @@ int main(int argc, char **argv)
       norm2 += B2->TRG[2] * B2->TRG[2];
       norm2 += B2->TRG[3] * B2->TRG[3];
     }
+#endif
 
     printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
     printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
-    #endif
   }
 }

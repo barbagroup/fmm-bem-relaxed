@@ -52,7 +52,7 @@ private:
   std::vector<local_type> L;
 
   typename std::vector<result_type>::iterator results_begin;
-  typename std::vector<charge_type>::iterator charges_begin;
+  typename std::vector<charge_type>::const_iterator charges_begin;
 
 public:
   //! Constructor
@@ -62,7 +62,7 @@ public:
   ~SimpleEvaluator() {}
 
   // upward sweep using new tree structure
-  void upward(Octree<point_type>& otree, std::vector<charge_type>& charges)
+  void upward(Octree<point_type>& otree, const std::vector<charge_type>& charges)
   {
     M.resize(otree.boxes());
     L.resize(otree.boxes());
@@ -91,7 +91,7 @@ public:
           auto p_end   = make_transform_iterator(box.body_end(),   body2point);
           auto c_begin = charges.begin()+box.body_begin()->index();
 
-          printf("P2M: box: %d\n",(int)box.index());
+          printf("P2M: box: %d\n", (int)box.index());
           K.P2M(p_begin, p_end, c_begin, box.center(), M[idx]);
 
         } else {
@@ -103,7 +103,7 @@ public:
             auto cbox = *cit;
             auto translation = box.center() - cbox.center();
 
-            printf("M2M: %d to %d\n",cbox.index(),idx);
+            printf("M2M: %d to %d\n", cbox.index(), idx);
             K.M2M(M[cbox.index()], M[idx], translation);
           }
         }
@@ -115,6 +115,7 @@ public:
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
     point_type r0 = b1.center() - b2.center();
     double r0_norm = std::sqrt(norm(r0));
+    //printf("r0_norm = %f, THETA = %f, D = %f\n", r0_norm, THETA, b1.side_length() + b2.side_length());
     if (r0_norm * THETA > b1.side_length() + b2.side_length()) {
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
@@ -126,20 +127,21 @@ public:
         //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      // evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
-      evalP2P(b1,b2);
+      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
 #else
       //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      evalP2P(b1,b2);
+      //evalP2P(b1,b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
   }
 
 
-  void downward(Octree<point_type>& octree, std::vector<charge_type>& charges, std::vector<result_type>& results) {
+  void downward(Octree<point_type>& octree,
+                const std::vector<charge_type>& charges,
+                std::vector<result_type>& results) {
 
     // keep references to charges & results
     charges_begin = charges.begin();
@@ -173,6 +175,7 @@ public:
 
     //
 
+    /*
     // For the highest level down to the lowest level
     for (unsigned l = 2; l < octree.levels(); ++l) {
       // For all boxes at this level
@@ -210,26 +213,26 @@ public:
         }
       }
     }
+    */
   }
 
   void evalP2P(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2) {
-    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-
+    // Point iters
+    auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
     auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
     auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
     auto p2_begin = make_transform_iterator(b2.body_begin(), body2point);
     auto p2_end   = make_transform_iterator(b2.body_end(),   body2point);
 
     // Charge iters
-    auto c1_begin = charges_begin + b1.index();
-    auto c2_begin = charges_begin + b2.index();
+    auto c1_begin = charges_begin + b1.body_begin()->index();
+    auto c2_begin = charges_begin + b2.body_begin()->index();
 
     // Result iters
-    auto r1_begin = results_begin + b1.index();
-    auto r2_begin = results_begin + b2.index();
+    auto r1_begin = results_begin + b1.body_begin()->index();
+    auto r2_begin = results_begin + b2.body_begin()->index();
 
-    printf("P2P from %d to %d\n",b1.index(),b2.index());
     K.P2P(p1_begin, p1_end, c1_begin,
           p2_begin, p2_end, c2_begin,
           r1_begin, r2_begin);
@@ -238,21 +241,24 @@ public:
   void evalM2P(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2)
   {
-    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-
+    // Target point iters
+    auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
     auto t_begin = make_transform_iterator(b2.body_begin(), body2point);
     auto t_end   = make_transform_iterator(b2.body_end(), body2point);
+
+    // Target result iters
     auto r_begin = results_begin + b2.body_begin()->index();
 
     auto idx = b1.index();
-    printf("M2P from %d to %d\n",b1.index(),b2.index());
+    printf("calling K.M2P: %d to %d\n", b1.index(), b2.index());
     K.M2P(b1.center(), M[idx], t_begin, t_end, r_begin);
   }
 
-  template <typename point_iter, typename charge_iter, typename result_iter>
-  static void evalP2P(Kernel& K, point_iter s_begin, point_iter s_end, charge_iter c_begin,
-                                 point_iter t_begin, point_iter t_end, result_iter r_begin)
+  static void evalP2P(Kernel& K, Bodies& sources, Bodies& targets)
   {
-    K.P2P(s_begin,s_end,c_begin,t_begin,t_end,r_begin);
+    // quiet warnings
+    (void)K;
+    (void)sources;
+    (void)targets;
   }
 };

@@ -49,14 +49,11 @@ class FMM_plan//  : public fmm_wrapper
   //typedef typename Kernel::point_type point_type;
   // TODO: Use this as the base vector type?
   typedef typename Kernel::point_type point_type;
-  typedef std::vector<point_type> Points;
   typedef typename Kernel::charge_type charge_type;
-  typedef std::vector<charge_type> Charges;
   typedef typename Kernel::result_type result_type;
-  typedef std::vector<result_type> Results;
 
 
-private:
+  //private:
   Cells cells, jcells;
   Bodies buffer;
   Kernel &K;
@@ -64,15 +61,28 @@ private:
   SimpleEvaluator<Kernel> evaluator;
   TreeStructure<point_type> tree;
   Octree<point_type> otree;
-  Points source_points;
-  Charges charges;
-  Results results;
+  std::vector<point_type> source_points;
+  std::vector<charge_type> charges;
+  std::vector<result_type> results;
 
   BoundingBox<point_type> get_boundingbox(Bodies& bodies) {
     BoundingBox<point_type> result;
     for (B_iter B = bodies.begin(); B != bodies.end(); ++B) {
       result |= point_type(B->X[0], B->X[1], B->X[2]);
     }
+    // Make sure the bounding box is square for now TODO: improve
+    auto dim = result.dimensions();
+    auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
+    result |= result.min() + point_type(maxdim, maxdim, maxdim);
+    std::cout << "Bounding Box: " << result << "\n";
+    return result;
+  }
+
+  template <typename PointIter>
+  BoundingBox<point_type> get_boundingbox(PointIter begin, PointIter end) {
+    BoundingBox<point_type> result;
+    for ( ; begin != end; ++begin)
+      result |= *begin;
     // Make sure the bounding box is square for now TODO: improve
     auto dim = result.dimensions();
     auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
@@ -101,24 +111,24 @@ private:
     R0 *= 1.000001;                                           // Add some leeway to root radius
   }
 
-  void sortCharges(Charges& charges, std::vector<unsigned>& permute)
+  template <typename T>
+  std::vector<T> permute(const std::vector<T>& v,
+                         const std::vector<unsigned>& permute)
   {
-    Charges temp_charges = charges;
-
-    for (unsigned i=0; i<charges.size(); i++)
-    {
-      charges[i] = temp_charges[permute[i]];
-    }
+    std::vector<T> temp(v.size());
+    for (unsigned i=0; i < v.size(); ++i)
+      temp[i] = v[permute[i]];
+    return temp;
   }
 
-  void desortResults(Results& results, std::vector<unsigned>& permute)
+  template <typename T>
+  std::vector<T> ipermute(const std::vector<T>& v,
+                          const std::vector<unsigned>& permute)
   {
-    Results temp_results = results;
-
-    for (unsigned i=0; i<results.size(); i++)
-    {
-      results[permute[i]] = temp_results[i];
-    }
+    std::vector<T> temp(v.size());
+    for (unsigned i = 0; i < v.size(); ++i)
+      temp[permute[i]] = v[i];
+    return temp;
   }
 
 public:
@@ -139,6 +149,17 @@ public:
     }
   }
 
+  FMM_plan(Kernel& k, const std::vector<point_type>& points, FMM_options& opts)
+      : K(k), Opts(opts), evaluator(K),
+        otree(get_boundingbox(points.begin(), points.end()))
+  {
+    // do all kernel precomputation
+    K.preCalculation();
+
+    // Construct the Octree
+    otree.construct_tree(points.begin(),points.end());
+  }
+
   FMM_plan(Kernel& k, Bodies& bodies, FMM_options& opts)
       : K(k), Opts(opts), evaluator(K), otree(get_boundingbox(bodies))
   {
@@ -150,6 +171,19 @@ public:
     // create copy of bodies into array of points
     bodies2points(bodies,source_points);
     otree.construct_tree(source_points.begin(),source_points.end());
+
+#if 0
+    // initialise tree & construct
+    point_type X0;
+    double R0;
+    setDomain(bodies, X0, R0);
+    tree.init(X0, R0);
+    if (opts.tree == TOPDOWN)
+      tree.topdown(bodies,cells);
+    else
+      tree.bottomup(bodies,cells);
+    printf("Tree created: %d cells\n",(int)cells.size());
+#endif
   }
 
   ~FMM_plan()
@@ -158,32 +192,25 @@ public:
     K.postCalculation();
   }
 
-  void execute(std::vector<charge_type>& charges, Bodies& jbodies)
+  std::vector<result_type> execute(const std::vector<charge_type>& charges,
+                                   const std::vector<point_type>& jbodies)
   {
     // sort charges to match sorted body array
-    sortCharges(charges, otree.getPermutation());
+    auto pcharges = permute(charges, otree.getPermutation());
 
     // run upward sweep based on body charges
-    evaluator.upward(otree,charges);
+    evaluator.upward(otree, charges);
 
     // run evaluator and traverse tree
     jcells = cells;
     printf("Executing...\n");
     // evaluator.downward(cells,jcells,false);
+    std::vector<result_type> results;
     results.resize(charges.size());
-    evaluator.downward(otree,charges,results);
+    evaluator.downward(otree, charges, results);
 
-    // de-sort the results
-    desortResults(results,otree.getPermutation());
-  }
-
-  template <typename results_iter>
-  void getResults(results_iter r_begin)
-  {
-    for (auto it = results.begin(); it!=results.end(); ++it, ++r_begin)
-    {
-      *r_begin = *it;
-    }
+    // TODO, don't return this
+    return results;
   }
 };
 

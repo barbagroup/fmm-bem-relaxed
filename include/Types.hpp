@@ -76,7 +76,6 @@ int MPISIZE    = 1;                                             //!< MPI comm si
 int DEVICE     = 0;                                             //!< GPU device ID
 int IMAGES     = 0;                                             //!< Number of periodic image sublevels
 real THETA     = .5;                                            //!< Multipole acceptance criteria
-vect Xperiodic = vect(0.0);                                     //!< Coordinate offset of periodic image
 #if PAPI
 int PAPIEVENT  = PAPI_NULL;                                     //!< PAPI event handle
 #endif
@@ -86,7 +85,6 @@ extern int MPISIZE;                                             //!< MPI comm si
 extern int DEVICE;                                              //!< GPU device ID
 extern int IMAGES;                                              //!< Number of periodic image sublevels
 extern real THETA;                                              //!< Multipole acceptance criteria
-extern vect Xperiodic;                                          //!< Coordinate offset of periodic image
 #if PAPI
 extern int PAPIEVENT;                                           //!< PAPI event handle
 #endif

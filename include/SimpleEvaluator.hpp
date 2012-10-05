@@ -32,6 +32,8 @@ template <class Kernel>
 class SimpleEvaluator
 {
 public:
+  //! Kernel type
+  typedef Kernel kernel_type;
   //! Point type
   typedef typename Kernel::point_type point_type;
   //! Multipole expansion type
@@ -46,6 +48,9 @@ public:
 private:
   //! Kernel
   Kernel& K;
+  //! Octree
+  //Octree<point_type> otree;
+
   //! Multipole expansions corresponding to Box indices in Octree
   std::vector<multipole_type> M;
   //! Local expansions corresponding to Box indices in Octree
@@ -56,7 +61,9 @@ private:
 
 public:
   //! Constructor
-  SimpleEvaluator(Kernel& k) : K(k), M(0), L(0) {};
+  SimpleEvaluator(Kernel& k)
+      : K(k), M(0), L(0) {
+  };
 
   // upward sweep using new tree structure
   void upward(Octree<point_type>& otree, const std::vector<charge_type>& charges)
@@ -144,21 +151,20 @@ public:
     pairQ.push_back(box_pair(octree.root(), octree.root()));
 
     while (!pairQ.empty()) {
-      box_pair boxes = pairQ.front();
+      auto b1 = pairQ.front().first;
+      auto b2 = pairQ.front().second;
       pairQ.pop_front();
-      bool is_leaf1 = boxes.first.is_leaf();
-      bool is_leaf2 = boxes.second.is_leaf();
 
-      if (is_leaf2 || (!is_leaf1 && boxes.first > boxes.second)) {
+      if (b2.is_leaf() || (!b1.is_leaf() && b1.side_length() > b2.side_length())) {
         // Split the first box into children and interact
-        auto c_end = boxes.first.child_end();
-        for (auto cit = boxes.first.child_begin(); cit != c_end; ++cit)
-          interact(*cit, boxes.second, pairQ);
+        auto c_end = b1.child_end();
+        for (auto cit = b1.child_begin(); cit != c_end; ++cit)
+          interact(*cit, b2, pairQ);
       } else {
         // Split the second box into children and interact
-        auto c_end = boxes.second.child_end();
-        for (auto cit = boxes.second.child_begin(); cit != c_end; ++cit)
-          interact(boxes.first, *cit, pairQ);
+        auto c_end = b2.child_end();
+        for (auto cit = b2.child_begin(); cit != c_end; ++cit)
+          interact(b1, *cit, pairQ);
       }
     }
 

@@ -48,7 +48,6 @@ class FMM_plan//  : public fmm_wrapper
   typedef typename Kernel::result_type result_type;
 
   //private:
-  Kernel& K;
   FMM_options& Opts;
   SimpleEvaluator<Kernel> evaluator;
   Octree<point_type> otree;
@@ -92,7 +91,7 @@ public:
   // CONSTRUCTOR
 
   FMM_plan(Kernel& k, const std::vector<point_type>& points, FMM_options& opts)
-      : K(k), Opts(opts), evaluator(K),
+      : Opts(opts), evaluator(k),
         otree(get_boundingbox(points.begin(), points.end()))
   {
     // Construct the Octree

@@ -164,6 +164,3 @@ template <unsigned D, typename P>
 inline Vec<D,P> operator/(Vec<D,P> a, const Vec<D,P>& b) {
   return a /= b;
 }
-
-// Legacy
-typedef Vec<3,double[3]> vect;

@@ -317,12 +317,6 @@ class Octree
       return box_iterator(data().child_end_, tree_);
     }
 
-    // operators for < and ==
-    bool operator<(const Box& b) const
-    {
-      return this->side_length() < b.side_length();
-    }
-
    private:
     unsigned idx_;
     tree_type* tree_;

@@ -43,6 +43,9 @@ public:
   //! Kernel result type
   typedef typename Kernel::result_type result_type;
 
+  std::vector<std::vector<unsigned>> p2plist;
+  std::vector<std::vector<unsigned>> m2llist;
+
 private:
   //! Kernel
   Kernel& K;
@@ -118,24 +121,13 @@ public:
     //printf("r0_norm*THETA: %lg, rhs: %lg\n",r0_norm*THETA,b1.side_length()/2 + b2.side_length()/2);
     if (r0_norm * THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
-#if HYBRID
-      if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest
-        evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
-      } else if ( timeM2P < timeP2P*Cj->NDLEAF && timeM2P*Ci->NDLEAF < timeM2L ) {// If M2P is fastest
-        evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
-      } else {                                                    // If M2L is fastest
-        evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
-      }                                                           // End if for kernel selection
-#elif TREECODE
-      printf("M2P: %d to %d\n",b1.index(),b2.index());
-      evalM2P(b2,b1);                                             // Evaluate on CPU, queue on GPU
+#if TREECODE
+      evalM2P(b2,b1);
       // evalP2P(b2,b1);
 #else
-      printf("M2L: %d to %d\n",b1.index(),b2.index());
-      evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
+      evalM2L(b1,b2);
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      printf("P2P: %d to %d\n",b1.index(),b2.index());
       evalP2P(b2,b1);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
@@ -146,6 +138,11 @@ public:
   void downward(Octree<point_type>& octree,
                 const std::vector<charge_type>& charges,
                 std::vector<result_type>& results) {
+
+    // TEMP
+    p2plist.resize(octree.boxes());
+    m2llist.resize(octree.boxes());
+
 
     // keep references to charges & results
     charges_begin = charges.begin();
@@ -187,7 +184,7 @@ public:
         unsigned idx = box.index();
 
         // Initialize box data
-        printf("downward: box id: %d, is_leaf: %d\n",idx,(int)box.is_leaf());
+        //printf("downward: box id: %d, is_leaf: %d\n",idx,(int)box.is_leaf());
         if (box.is_leaf()) {
           // If leaf, make L2P calls
 
@@ -219,6 +216,23 @@ public:
       }
     }
 #endif
+
+    printf("M2L List:\n");
+    for (unsigned k = 0; k < m2llist.size(); ++k) {
+      printf("%02d:   ", k);
+      for (unsigned k2 = 0; k2 < m2llist[k].size(); ++k2) {
+        printf("%02d, ", m2llist[k][k2]);
+      }
+      printf("\n");
+    }
+    printf("P2P List:\n");
+    for (unsigned k = 0; k < p2plist.size(); ++k) {
+      printf("%02d:   ", k);
+      for (unsigned k2 = 0; k2 < p2plist[k].size(); ++k2) {
+        printf("%02d, ", p2plist[k][k2]);
+      }
+      printf("\n");
+    }
   }
 
   void evalP2P(const typename Octree<point_type>::Box& b1,
@@ -238,6 +252,11 @@ public:
     auto r1_begin = results_begin + b1.body_begin()->index();
     auto r2_begin = results_begin + b2.body_begin()->index();
 
+    printf("P2P: %d to %d\n",b1.index(),b2.index());
+    p2plist[b1.index()].push_back(b2.index());
+    if (b1.index() != b2.index())
+      p2plist[b2.index()].push_back(b1.index());
+
     K.P2P(p1_begin, p1_end, c1_begin,
           p2_begin, p2_end, c2_begin,
           r1_begin, r2_begin);
@@ -254,7 +273,8 @@ public:
     // Target result iters
     auto r_begin = results_begin + b2.body_begin()->index();
 
-    printf("calling K.M2P: %d to %d\n", b1.index(), b2.index());
+    printf("M2P: %d to %d\n", b1.index(), b2.index());
+
     K.M2P(b1.center(), M[b1.index()], t_begin, t_end, r_begin);
   }
 
@@ -263,6 +283,9 @@ public:
   {
     // auto translation = b1.center() - b2.center();
     auto translation = b2.center() - b1.center();
+
+    m2llist[b1.index()].push_back(b2.index());
+    printf("M2L: %d to %d\n",b2.index(),b1.index());
 
     K.M2L(M[b2.index()],L[b1.index()],translation);
   }

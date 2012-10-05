@@ -35,8 +35,8 @@ void print_box(const Box& b, std::string padding = std::string()) {
     for (auto ci = b.child_begin(); ci != b.child_end(); ++ci)
       print_box(*ci, padding);
   } else {
-    //for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
-    //  std::cout << padding << "Point " << ci->index() << ": " << ci->morton_index() << "\t" << ci->point() << "\n";
+    for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
+      std::cout << padding << "Point " << ci->index() << ": " << ci->morton_index() << "\t" << ci->point() << "\n";
   }
 }
 
@@ -73,23 +73,29 @@ int main(int argc, char **argv)
     }
   }
 
+  // Init the FMM Kernel
   SphericalLaplaceKernel K(P);
   typedef SphericalLaplaceKernel::point_type point_type;
   typedef SphericalLaplaceKernel::charge_type charge_type;
   typedef SphericalLaplaceKernel::result_type result_type;
 
-  std::vector<point_type> points;
+
+  // Init points and charges
+  std::vector<point_type> points(numBodies);
   for (int k = 0; k < numBodies; ++k)
-    points.push_back(point_type(drand(), drand(), drand()));
+    points[k] = point_type(drand(), drand(), drand());
   std::vector<point_type> jpoints = points;
 
+  std::vector<charge_type> charges(numBodies);
+  for (int k = 0; k < numBodies; ++k)
+    charges[k] = drand();
+  std::vector<charge_type> charges_copy = charges;
+
+
+  // Build and execute the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
   FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, jpoints, opts);
   print_box(plan.otree.root());
-
-  std::vector<charge_type> charges(numBodies, charge_type(1));
-  for (auto& c : charges) c = drand();
-  std::vector<charge_type> charges_copy = charges;
 
   //fmm_execute(plan, charges, jbodies);
   std::vector<result_type> result = plan.execute(charges, points);
@@ -123,23 +129,6 @@ int main(int argc, char **argv)
       norm2 += exact[2] * exact[2];
       norm2 += exact[3] * exact[3];
     }
-
-
-#if 0
-    real diff1=0, diff2=0, norm1=0, norm2=0;
-    for (B_iter B=test_bodies.begin(); B!=test_bodies.end(); ++B, ++B2)
-    {
-      diff1 += (B->TRG[0] - B2->TRG[0]) * (B->TRG[0] - B2->TRG[0]);
-      norm1 += B2->TRG[0] * B2->TRG[0];
-
-      diff2 += (B->TRG[1] - B2->TRG[1]) * (B->TRG[1] - B2->TRG[1]);
-      diff2 += (B->TRG[2] - B2->TRG[2]) * (B->TRG[2] - B2->TRG[2]);
-      diff2 += (B->TRG[3] - B2->TRG[3]) * (B->TRG[3] - B2->TRG[3]);
-      norm2 += B2->TRG[1] * B2->TRG[1];
-      norm2 += B2->TRG[2] * B2->TRG[2];
-      norm2 += B2->TRG[3] * B2->TRG[3];
-    }
-#endif
 
     printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
     printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));

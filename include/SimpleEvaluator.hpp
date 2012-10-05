@@ -123,7 +123,6 @@ public:
       // These boxes satisfy the multipole acceptance criteria
 #if TREECODE
       evalM2P(b2,b1);
-      // evalP2P(b2,b1);
 #else
       evalM2L(b1,b2);
 #endif
@@ -235,6 +234,8 @@ public:
     }
   }
 
+  /** One-sided P2P!!
+   */
   void evalP2P(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2) {
     // Point iters
@@ -246,20 +247,16 @@ public:
 
     // Charge iters
     auto c1_begin = charges_begin + b1.body_begin()->index();
-    auto c2_begin = charges_begin + b2.body_begin()->index();
 
     // Result iters
-    auto r1_begin = results_begin + b1.body_begin()->index();
     auto r2_begin = results_begin + b2.body_begin()->index();
 
     printf("P2P: %d to %d\n",b1.index(),b2.index());
-    p2plist[b1.index()].push_back(b2.index());
-    if (b1.index() != b2.index())
-      p2plist[b2.index()].push_back(b1.index());
+    p2plist[b2.index()].push_back(b1.index());
 
     K.P2P(p1_begin, p1_end, c1_begin,
-          p2_begin, p2_end, c2_begin,
-          r1_begin, r2_begin);
+          p2_begin, p2_end,
+          r2_begin);
   }
 
   void evalM2P(const typename Octree<point_type>::Box& b1,

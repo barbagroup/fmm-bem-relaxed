@@ -177,9 +177,9 @@ public:
       }
     }
 
-#if 0
+#if 1
     // For the highest level down to the lowest level
-    for (unsigned l = 2; l < octree.levels(); ++l) {
+    for (unsigned l = 1; l < octree.levels(); ++l) {
       // For all boxes at this level
       auto b_end = octree.box_end(l);
       for (auto bit = octree.box_begin(l); bit != b_end; ++bit) {
@@ -187,6 +187,7 @@ public:
         unsigned idx = box.index();
 
         // Initialize box data
+        printf("downward: box id: %d, is_leaf: %d\n",idx,(int)box.is_leaf());
         if (box.is_leaf()) {
           // If leaf, make L2P calls
 
@@ -197,7 +198,7 @@ public:
           auto r_begin = results_begin + box.index();
 
           printf("L2P: %d\n",idx);
-#if 0
+#if 1
           K.L2P(t_begin, t_end, r_begin,
                 box.center(),
                 L[idx]);
@@ -261,7 +262,7 @@ public:
                const typename Octree<point_type>::Box& b2)
   {
     // auto translation = b1.center() - b2.center();
-    auto translation = b1.center() - b2.center();
+    auto translation = b2.center() - b1.center();
 
     K.M2L(M[b2.index()],L[b1.index()],translation);
   }

@@ -415,7 +415,6 @@ class SphericalLaplaceKernel
   }
   */
 
-  // void L2P(Cell& Ci, local_type &L) const {
   template <typename point_iter, typename result_iter>
   void L2P(point_iter t_begin, point_iter t_end, result_iter r_begin,
            const point_type& center, local_type& L) const {

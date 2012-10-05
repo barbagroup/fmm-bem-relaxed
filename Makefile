@@ -21,7 +21,7 @@ endif
 LINK := $(CXX)
 
 # define any compile-time flags
-CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra -DTREECODE #-ffast-math
+CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra #-ffast-math
 ifeq ($(DEBUG),1)
 CFLAGS += -g -fno-inline
 endif

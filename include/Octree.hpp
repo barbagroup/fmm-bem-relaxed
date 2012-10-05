@@ -511,7 +511,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 50;
+    unsigned NCRIT = 15;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );

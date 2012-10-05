@@ -128,8 +128,8 @@ public:
       }                                                           // End if for kernel selection
 #elif TREECODE
       printf("M2P: %d to %d\n",b1.index(),b2.index());
-      // evalM2P(b2,b1);                                             // Evaluate on CPU, queue on GPU
-      evalP2P(b2,b1);
+      evalM2P(b2,b1);                                             // Evaluate on CPU, queue on GPU
+      // evalP2P(b2,b1);
 #else
       printf("M2L: %d to %d\n",b1.index(),b2.index());
       evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU

@@ -94,11 +94,12 @@ int main(int argc, char **argv)
 
   // Build and execute the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, jpoints, opts);
+  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, points, opts);
   print_box(plan.otree.root());
 
   //fmm_execute(plan, charges, jbodies);
-  std::vector<result_type> result = plan.execute(charges, points);
+  std::vector<result_type> result = plan.execute(charges, jpoints);
+
 
   // TODO: More elegant
   if (checkErrors) {

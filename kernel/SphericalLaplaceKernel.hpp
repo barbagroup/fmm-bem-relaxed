@@ -1,3 +1,4 @@
+#pragma once
 /*
   Copyright (C) 2011 by Rio Yokota, Simon Layton, Lorena Barba
 
@@ -20,9 +21,7 @@
   THE SOFTWARE.
 */
 
-#pragma once
-
-#define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
+//#define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
 
 class SphericalLaplaceKernel
@@ -31,6 +30,7 @@ class SphericalLaplaceKernel
   typedef double real;
   typedef std::complex<real> complex;
 
+  //! Expansion order
   const int P;
   //! \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
   std::vector<real> prefactor;
@@ -38,9 +38,15 @@ class SphericalLaplaceKernel
   std::vector<real> Anm;
   //! M2L translation matrix \f$ C_{jn}^{km} \f$
   std::vector<complex> Cnm;
+
   //! Epsilon
   static constexpr real EPS = 1e-6;
+  //! ODD-Even helper function
+  inline int ODDEVEN(int n) const {
+    return (((n & 1) == 1) ? -1 : 1);
+  };
 
+  //! Custom multipole type TODO?
   struct multipole {
     std::vector<complex> M;
     real RCRIT;

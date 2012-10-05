@@ -1,13 +1,12 @@
 #pragma once
-
-#include <iostream>
-#include <cstdarg>
-#include <math.h>
-
 /** @file Vec.hpp
  * @brief A wrapper class to provide simple vector operators for
  * a class that only requires the operator[]
  */
+
+#include <iostream>
+#include <cstdarg>
+#include <math.h>
 
 #define for_i for(unsigned i=0; i!=dimension; ++i)
 

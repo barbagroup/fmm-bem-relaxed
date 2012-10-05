@@ -428,9 +428,6 @@ class Octree
     bool operator==(const body_iterator& it) const {
       return tree_ == it.tree_ && idx_ == it.idx_;
     }
-    unsigned index() const {
-      return idx_;
-    }
 
    private:
     unsigned idx_;
@@ -545,17 +542,14 @@ class Octree
           if (end_c - begin_c > 0) {
             // Increment parent child offset
             ++box_data_[k].child_end_;
-
-            // TODO: Optimize on key
-            // If this is starting a new level, record it
-            if (box_c.level() > box_data_[level_offset_.back()].level()) {
-              std::cout << box_c.level() << " > " << box_data_[level_offset_.back()].level() << "\n";
-              level_offset_.push_back(box_data_.size());
-            }
-
             // Set the child body offsets
             box_c.child_begin_ = begin_c - mc_.begin();
             box_c.child_end_ = end_c - mc_.begin();
+
+            // TODO: Optimize on key
+            // If this is starting a new level, record it
+            if (box_c.level() > levels())
+              level_offset_.push_back(box_data_.size());
 
             // Add the child
             box_data_.push_back(box_c);

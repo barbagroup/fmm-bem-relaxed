@@ -1,3 +1,4 @@
+#pragma once
 /*
 Copyright (C) 2011 by Rio Yokota, Simon Layton, Lorena Barba
 
@@ -20,8 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#pragma once
-
 #include <Vec.hpp>
 #include <Octree.hpp>
 #include <TransformIterator.hpp>
@@ -31,7 +30,6 @@ THE SOFTWARE.
 
 // TODO: paraterize
 double THETA     = .5;                                            //!< Multipole acceptance criteria
-
 
 //! Interface between tree and kernel
 template <class Kernel>

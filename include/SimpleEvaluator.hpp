@@ -120,20 +120,23 @@ public:
       // These boxes satisfy the multipole acceptance criteria
 #if HYBRID
       if( timeP2P*Cj->NDLEAF < timeM2P && timeP2P*Ci->NDLEAF*Cj->NDLEAF < timeM2L) {// If P2P is fastest
-        //evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        evalP2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else if ( timeM2P < timeP2P*Cj->NDLEAF && timeM2P*Ci->NDLEAF < timeM2L ) {// If M2P is fastest
-        //evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        evalM2P(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       } else {                                                    // If M2L is fastest
-        //evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
+        evalM2L(b1,b2);                                           //  Evaluate on CPU, queue on GPU
       }                                                           // End if for kernel selection
 #elif TREECODE
-      evalM2P(b1,b2);                                             // Evaluate on CPU, queue on GPU
+      printf("M2P: %d to %d\n",b1.index(),b2.index());
+      // evalM2P(b2,b1);                                             // Evaluate on CPU, queue on GPU
+      evalP2P(b2,b1);
 #else
-      //evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
+      printf("M2L: %d to %d\n",b1.index(),b2.index());
+      evalM2L(b1,b2);                                             // Evalaute on CPU, queue on GPU
 #endif
     } else if(b1.is_leaf() && b2.is_leaf()) {
       printf("P2P: %d to %d\n",b1.index(),b2.index());
-      evalP2P(b1,b2);
+      evalP2P(b2,b1);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -174,9 +177,7 @@ public:
       }
     }
 
-    //
-
-    /*
+#if 0
     // For the highest level down to the lowest level
     for (unsigned l = 2; l < octree.levels(); ++l) {
       // For all boxes at this level
@@ -190,16 +191,17 @@ public:
           // If leaf, make L2P calls
 
           // For all the bodies, L2P
-          auto p_begin = box.body_begin();
-
           auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
           auto t_begin = make_transform_iterator(box.body_begin(), body2point);
           auto t_end   = make_transform_iterator(box.body_end(), body2point);
           auto r_begin = results_begin + box.index();
 
+          printf("L2P: %d\n",idx);
+#if 0
           K.L2P(t_begin, t_end, r_begin,
                 box.center(),
                 L[idx]);
+#endif
         } else {
           // If not leaf, make L2L calls
 
@@ -209,12 +211,13 @@ public:
             auto cbox = *cit;
             auto translation = cbox.center() - box.center();
 
+            printf("L2L: %d to %d\n",idx,cbox.index());
             K.L2L(L[idx], L[cbox.index()], translation);
           }
         }
       }
     }
-    */
+#endif
   }
 
   void evalP2P(const typename Octree<point_type>::Box& b1,
@@ -252,5 +255,14 @@ public:
 
     printf("calling K.M2P: %d to %d\n", b1.index(), b2.index());
     K.M2P(b1.center(), M[b1.index()], t_begin, t_end, r_begin);
+  }
+
+  void evalM2L(const typename Octree<point_type>::Box& b1,
+               const typename Octree<point_type>::Box& b2)
+  {
+    // auto translation = b1.center() - b2.center();
+    auto translation = b1.center() - b2.center();
+
+    K.M2L(M[b2.index()],L[b1.index()],translation);
   }
 };

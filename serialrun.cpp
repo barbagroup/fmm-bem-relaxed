@@ -84,14 +84,15 @@ int main(int argc, char **argv)
   std::vector<point_type> jpoints = points;
 
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, points, opts);
+  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, jpoints, opts);
   print_box(plan.otree.root());
 
   std::vector<charge_type> charges(numBodies, charge_type(1));
+  for (auto& c : charges) c = drand();
   std::vector<charge_type> charges_copy = charges;
 
   //fmm_execute(plan, charges, jbodies);
-  std::vector<result_type> result = plan.execute(charges, jpoints);
+  std::vector<result_type> result = plan.execute(charges, points);
 
   // TODO: More elegant
   if (checkErrors) {
@@ -99,12 +100,12 @@ int main(int argc, char **argv)
 
     // TODO: Use a Direct class to make this more intuitive and accessible
     //SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies, jbodies);
-    K.P2P(points.begin(), points.end(), charges_copy.begin(),
-          jpoints.begin(), jpoints.end(),
+    K.P2P(jpoints.begin(), jpoints.end(), charges_copy.begin(),
+          points.begin(), points.end(),
           exact_result.begin());
 
     double diff1=0, diff2=0, norm1=0, norm2=0;
-    int i=0;
+    int i = 0;
     for (auto r1i = exact_result.begin(), r2i = result.begin();
              r1i != exact_result.end(); ++r1i, ++r2i) {
 

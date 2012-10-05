@@ -137,31 +137,6 @@ class SphericalLaplaceKernel
     L.resize(P*(P+1)/2);
   }
 
-  /*
-  void P2P(C_iter Ci, C_iter Cj) const {         // Laplace P2P kernel on CPU
-    for( B_iter Bi=Ci->LEAF; Bi!=Ci->LEAF+Ci->NDLEAF; ++Bi ) {    // Loop over target bodies
-      real P0 = real(0);                                          //  Initialize potential
-      vect F0 = vect(0);                                          //  Initialize force
-      for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
-        vect dist = Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
-        real R2 = norm(dist);                                     //   R^2
-        real invR2 = 1.0 / R2;                                    //   1 / R^2
-        if( R2 == 0 ) invR2 = 0;                                  //   Exclude self interaction
-        real invR = Bj->SRC * std::sqrt(invR2);                   //   potential
-        dist *= invR2 * invR;                                     //   force
-        P0 += invR;                                               //   accumulate potential
-        F0 += dist;                                               //   accumulate force
-      }                                                           //  End loop over source bodies
-
-      Bi->TRG[0] += P0;                                           //  potential
-      Bi->TRG[1] -= F0[0];                                        //  x component of force
-      Bi->TRG[2] -= F0[1];                                        //  y component of force
-      Bi->TRG[3] -= F0[2];                                        //  z component of force
-      // printf("setting: %lg\n",Bi->TRG[0]);
-    }                                                             // End loop over target bodies
-  }
-  */
-
   /** Kernel vectorized non-symmetric P2P operation
    *
    */
@@ -173,11 +148,11 @@ class SphericalLaplaceKernel
       result_type R(0);
       // for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
       charge_iter c = c_begin;
-      for(auto s = s_begin ; s!=s_end; ++s) {  //  Loop over source bodies
+      for(auto s = s_begin ; s!=s_end; ++s, ++c) {  //  Loop over source bodies
         auto dist = *t_begin - *s; // Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
         real R2 = norm(dist);                                     //   R^2
         real invR2 = 1.0 / R2;                                    //   1 / R^2
-        if( R2 == 0 ) invR2 = 0;                                  //   Exclude self interaction
+        if( R2 < 1e-8 ) invR2 = 0;                                  //   Exclude self interaction
         real invR = (*c) * std::sqrt(invR2);                   //   potential
         dist *= invR2 * invR;                                     //   force
         R[0] += invR;                                               //   accumulate potential
@@ -205,31 +180,6 @@ class SphericalLaplaceKernel
     (void) r1_begin;
     P2P(p1_begin, p1_end, c1_begin, p2_begin, p2_end, r2_begin);
   }
-
-  /*
-  void P2M(Cell& C, multipole_type& M) {
-    for (size_t i=0; i<M.size(); i++) M[i]=0;
-    real Rmax = 0;
-    complex Ynm[4*P*P], YnmTheta[4*P*P];
-    for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
-      vect dist = B->X - C.X;
-      real R = std::sqrt(norm(dist));
-      if( R > Rmax ) Rmax = R;
-      real rho, alpha, beta;
-      cart2sph(rho,alpha,beta,dist);
-      evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
-        for( int m=0; m<=n; ++m ) {
-          const int nm  = n * n + n + m;
-          const int nms = n * (n + 1) / 2 + m;
-          M[nms] += B->SRC * Ynm[nm];
-        }
-      }
-    }
-    M.RMAX = Rmax;
-    M.RCRIT = std::min(C.R,Rmax);
-  }
-  */
 
   /** Kernel P2M operation
    * M += sum_i Op(p_i) where M is the multipole and p_i are the points
@@ -321,7 +271,7 @@ class SphericalLaplaceKernel
    *
    */
   void M2L(const multipole_type& Msource,
-           local_type& Ltarget,
+                 local_type& Ltarget,
            const point_type& translation) {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     vect dist = translation;
@@ -354,52 +304,13 @@ class SphericalLaplaceKernel
     }
   }
 
-  /*
-  // void M2P(Cell& Cj, multipole_type& M, Cell& Ci) const {
-  void M2P(const point_type& Mcenter, multipole_type& M, Cell& Ci) const {
-    const complex I(0.,1.);                                       // Imaginary unit
-    complex Ynm[4*P*P], YnmTheta[4*P*P];
-    for( B_iter B=Ci.LEAF; B!=Ci.LEAF+Ci.NDLEAF; ++B ) {
-      vect dist = B->X - Mcenter - Xperiodic;
-      vect spherical = vect(0);
-      vect cartesian = vect(0);
-      real r, theta, phi;
-      cart2sph(r,theta,phi,dist);
-      evalLocal(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
-        int nm  = n * n + n;
-        int nms = n * (n + 1) / 2;
-        B->TRG[0] += std::real(M[nms] * Ynm[nm]);
-        spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
-        spherical[1] += std::real(M[nms] * YnmTheta[nm]);
-        for( int m=1; m<=n; ++m ) {
-          nm  = n * n + n + m;
-          nms = n * (n + 1) / 2 + m;
-          B->TRG[0] += 2 * std::real(M[nms] * Ynm[nm]);
-          spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
-          spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
-          spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * I) * m;
-        }
-      }
-      sph2cart(r,theta,phi,spherical,cartesian);
-      B->TRG[1] += cartesian[0];
-      B->TRG[2] += cartesian[1];
-      B->TRG[3] += cartesian[2];
-    }
-  }
-  */
-
   template <typename point_iter, typename result_iter>
   void M2P(const point_type& Mcenter, multipole_type& M,
            point_iter t_begin, point_iter t_end, result_iter r_begin) const {
     const complex I(0.,1.);                                       // Imaginary unit
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    //printf("evaluating particle...\n");
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
       vect dist = *t_begin - Mcenter;
-      //std::cout << "target: " << *t_begin << std::endl;
-      //std::cout << "dist: " << dist << std::endl;
-      //std::cout << "result: " << *r_begin << std::endl;
       vect spherical = vect(0);
       vect cartesian = vect(0);
       real r, theta, phi;
@@ -421,13 +332,9 @@ class SphericalLaplaceKernel
         }
       }
       sph2cart(r,theta,phi,spherical,cartesian);
-      //B->TRG[1] += cartesian[0];
-      //B->TRG[2] += cartesian[1];
-      //B->TRG[3] += cartesian[2];
       (*r_begin)[1] += cartesian[0];
       (*r_begin)[2] += cartesian[1];
       (*r_begin)[3] += cartesian[2];
-      //std::cout << "result: " << *r_begin << std::endl;
     }
   }
 
@@ -439,7 +346,7 @@ class SphericalLaplaceKernel
    * @param[in] translation The vector from source to target
    */
   void L2L(const local_type& Lsource,
-           local_type& Ltarget,
+                 local_type& Ltarget,
            const vect& translation) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];

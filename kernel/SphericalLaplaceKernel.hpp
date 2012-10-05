@@ -34,9 +34,12 @@ class SphericalLaplaceKernel
   typedef std::complex<real> complex;
 
   const int P;
-  real* prefactor;                     //!< \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
-  real* Anm;                           //!< \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
-  complex* Cnm;                        //!< M2L translation matrix \f$ C_{jn}^{km} \f$
+  //! \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
+  std::vector<real> prefactor;
+  //! \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
+  std::vector<real> Anm;
+  //! M2L translation matrix \f$ C_{jn}^{km} \f$
+  std::vector<complex> Cnm;
 
   struct multipole {
     std::vector<complex> M;
@@ -74,24 +77,9 @@ class SphericalLaplaceKernel
   typedef Vec<4,real[4]> result_type;
 
   //! Constructor
-  SphericalLaplaceKernel()
-      : P(5), prefactor(), Anm(), Cnm() {};
   SphericalLaplaceKernel(const int p)
-      : P(p), prefactor(), Anm(), Cnm() {};
-  //! Destructor
-  ~SphericalLaplaceKernel() {
-    delete[] prefactor;                                         // Free sqrt( (n - |m|)! / (n + |m|)! )
-    delete[] Anm;                                               // Free (-1)^n / sqrt( (n + m)! / (n - m)! )
-    delete[] Cnm;                                               // Free M2L translation matrix Cjknm
-  }
-
-  //! Precalculate M2L translation matrix
-  void preCalculation() {
-    printf("PreCalculation starting\n");
-    const complex I(0.,1.);                                     // Imaginary unit
-    prefactor = new real  [4*P*P];                              // sqrt( (n - |m|)! / (n + |m|)! )
-    Anm       = new real  [4*P*P];                              // (-1)^n / sqrt( (n + m)! / (n - m)! )
-    Cnm       = new complex [P*P*P*P];                          // M2L translation matrix Cjknm
+      : P(p), prefactor(4*P*P), Anm(4*P*P), Cnm(P*P*P*P) {
+    constexpr complex I(0.,1.);                                 // Imaginary unit
 
     for( int n=0; n!=2*P; ++n ) {                               // Loop over n in Anm
       for( int m=-n; m<=n; ++m ) {                              //  Loop over m in Anm
@@ -121,7 +109,6 @@ class SphericalLaplaceKernel
         }                                                       //   End loop over n in Cjknm
       }                                                         //  End loop over in k in Cjknm
     }                                                           // End loop over in j in Cjknm
-    printf("PreCalculation finished\n");
   }
 
   /** Initialize a multipole expansion

@@ -95,9 +95,6 @@ public:
       : K(k), Opts(opts), evaluator(K),
         otree(get_boundingbox(points.begin(), points.end()))
   {
-    // do all kernel precomputation
-    K.preCalculation();
-
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
   }

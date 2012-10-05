@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <assert.h>
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;

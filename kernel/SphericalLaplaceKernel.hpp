@@ -25,8 +25,6 @@
 #define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
 
 
-const real EPS      = 1e-6;                                     //!< Single precision epsilon
-
 class SphericalLaplaceKernel
 {
  private:
@@ -40,6 +38,8 @@ class SphericalLaplaceKernel
   std::vector<real> Anm;
   //! M2L translation matrix \f$ C_{jn}^{km} \f$
   std::vector<complex> Cnm;
+  //! Epsilon
+  static constexpr real EPS = 1e-6;
 
   struct multipole {
     std::vector<complex> M;

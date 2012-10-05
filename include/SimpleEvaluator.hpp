@@ -22,10 +22,16 @@ THE SOFTWARE.
 
 #pragma once
 
-#include <Types.hpp>
 #include <Vec.hpp>
 #include <Octree.hpp>
 #include <TransformIterator.hpp>
+
+#include <assert.h>
+#include <deque>
+
+// TODO: paraterize
+double THETA     = .5;                                            //!< Multipole acceptance criteria
+
 
 //! Interface between tree and kernel
 template <class Kernel>

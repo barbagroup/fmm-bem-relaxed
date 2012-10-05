@@ -4,14 +4,15 @@
 #include <algorithm>
 
 // FMM includes
-#include <Types.hpp>
-#include <Logger.hpp>
+
 // #include <Evaluator.hpp>
 #include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
 #include "Octree.hpp"
 
+
+#include <Logger.hpp>
 Logger Log;
 
 typedef enum {TOPDOWN, BOTTOMUP} treeType;

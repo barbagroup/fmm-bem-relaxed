@@ -274,6 +274,7 @@ class SphericalLaplaceKernel
                  local_type& Ltarget,
            const point_type& translation) {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
+
     vect dist = translation;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
@@ -420,8 +421,10 @@ class SphericalLaplaceKernel
            const point_type& center, local_type& L) const {
     const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    for( ; t_begin!=t_end; ++t_begin, ++r_begin ) {
-      auto dist = *t_begin - center;
+
+    auto t = t_begin;
+    for( ; t!=t_end; ++t, ++r_begin ) {
+      auto dist = *t - center;
       auto spherical = vect(0);
       auto cartesian = vect(0);
       real r, theta, phi;

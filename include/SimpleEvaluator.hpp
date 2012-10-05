@@ -191,7 +191,7 @@ public:
           auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
           auto t_begin = make_transform_iterator(box.body_begin(), body2point);
           auto t_end   = make_transform_iterator(box.body_end(), body2point);
-          auto r_begin = results_begin + box.index();
+          auto r_begin = results_begin + box.body_begin()->index();
 
           printf("L2P: %d\n",idx);
 #if 1
@@ -284,6 +284,6 @@ public:
     m2llist[b1.index()].push_back(b2.index());
     printf("M2L: %d to %d\n",b2.index(),b1.index());
 
-    K.M2L(M[b2.index()],L[b1.index()],translation);
+    K.M2L(M[b1.index()],L[b2.index()],translation);
   }
 };

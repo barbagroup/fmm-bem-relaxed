@@ -31,7 +31,7 @@ endif
 DEPCFLAGS = -MD -MF $(DEPSDIR)/$*.d -MP
 
 # Other in-code flags
-CFLAGS += -DTREECODE
+CFLAGS += # -DTREECODE
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files

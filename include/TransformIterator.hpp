@@ -14,7 +14,6 @@ class transform_iterator
 {
   typedef typename std::iterator_traits<Iterator>::reference it_reference;
 public:
-  //!
   typedef typename std::result_of<const UnaryFunction(it_reference)>::type reference;
   typedef typename std::remove_cv<std::remove_reference<reference>>::type value_type;
   typedef typename std::add_pointer<value_type>::type pointer;
@@ -30,7 +29,7 @@ public:
   transform_iterator(const Iterator& x, const UnaryFunction& f)
       : it_(x), f_(f) {
   }
-
+  // Copy constructor
   template <class I2, class F2>
   transform_iterator(const transform_iterator<I2, F2>& t)
       : it_(t.it_), f_(t.f_) {

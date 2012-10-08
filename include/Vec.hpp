@@ -1,22 +1,46 @@
 #pragma once
 /** @file Vec.hpp
- * @brief A wrapper class to provide simple vector operators for
- * a class that only requires the operator[]
+ * @brief A wrapper class to provide simple vector operations for
+ * primitive types and classes that only require op[].
  */
 
 #include <iostream>
+#include <type_traits>
 #include <cstdarg>
 #include <math.h>
 
-#define for_i for(unsigned i=0; i!=dimension; ++i)
+//! Predeclaration of SmallVec
+template <unsigned DIM, typename DATA>
+class SmallVec;
 
 /** @class Vec
+ * A general class that endows types with vector operations. If the base type
+ * is a primitive type, the Vec stores information as an array of that type.
+ * If the base type is not a primitive type, then it must implement the bracket
+ * operator (lvalue and rvalue).
+ *
+ * Vec<3, float> v1;
+ * Vec<3, double[3]> v2;
+ * Vec<3, MyClassThatImplementsOpBracket> v3;
+ */
+template <unsigned DIM, typename DATA>
+using Vec = typename std::conditional<std::is_fundamental<DATA>::value,
+                                      SmallVec<DIM, DATA[DIM]>,
+                                      SmallVec<DIM, DATA>>::type;
+
+#define for_i for(unsigned i=0; i!=dimension; ++i)
+
+/** @class SmallVec
  * @brief Class representing ND points and vectors.
  *
- * Vec contains methods that supports use as points in ND space.
+ * SmallVec contains methods that support use of the underlying type
+ * as points in ND space. The underlying data is stored as type POINT,
+ * which must only provide the operators:
+ * value_type& operator[](unsigned i)
+ * const value_type& operator[](unsigned i) const
  */
 template <unsigned DIM, typename POINT>
-class Vec {
+class SmallVec {
  private:
   POINT a;
 
@@ -27,27 +51,27 @@ class Vec {
 
   // CONSTRUCTORS
 
-  Vec() {
+  SmallVec() {
     for_i a[i] = value_type(0);
   }
-  Vec(const Vec& b) {
+  SmallVec(const SmallVec& b) {
     for_i a[i] = b[i];
   }
-  explicit Vec(const point_type& b) {
+  explicit SmallVec(const point_type& b) {
     for_i a[i] = b[i];
   }
-  explicit Vec(value_type b) {
+  explicit SmallVec(value_type b) {
     for_i a[i] = b;
   }
-  Vec(value_type b0, value_type b1) {
-    static_assert(dimension == 3, "Calling 2-value Vec constructor for Non-2D Vec");
+  SmallVec(value_type b0, value_type b1) {
+    static_assert(dimension == 2, "Calling 2-value Vec constructor for Non-2D Vec");
     a[0] = b0; a[1] = b1;
   }
-  Vec(value_type b0, value_type b1, value_type b2) {
+  SmallVec(value_type b0, value_type b1, value_type b2) {
     static_assert(dimension == 3, "Calling 3-value Vec constructor for Non-3D Vec");
     a[0] = b0; a[1] = b1; a[2] = b2;
   }
-  Vec(value_type b0, value_type b1, value_type b2, value_type b3) {
+  SmallVec(value_type b0, value_type b1, value_type b2, value_type b3) {
     static_assert(dimension == 4, "Calling 4-value Vec constructor for Non-4D Vec");
     a[0] = b0; a[1] = b1; a[2] = b2; a[3] = b3;
   }
@@ -55,76 +79,76 @@ class Vec {
   // MODIFIERS
 
   /** Return a negated version of @a p. */
-  inline Vec operator-() const {
-    return Vec(-a[0], -a[1], -a[2]);
+  inline SmallVec operator-() const {
+    return SmallVec(-a[0], -a[1], -a[2]);
   }
   /** Scalar assignment */
-  Vec& operator=(const value_type b) {
+  inline SmallVec& operator=(const value_type b) {
     for_i a[i] = b;
     return *this;
   }
-  /** Add scalar @a b to this Vec */
-  Vec& operator+=(const value_type b) {
+  /** Add scalar @a b to this SmallVec */
+  inline SmallVec& operator+=(const value_type b) {
     for_i a[i] += b;
     return *this;
   }
-  /** Subtract scalar @a b from this Vec */
-  Vec& operator-=(const value_type b) {
+  /** Subtract scalar @a b from this SmallVec */
+  inline SmallVec& operator-=(const value_type b) {
     for_i a[i] -= b;
     return *this;
   }
-  /** Scale this Vec up by scalar @a b */
-  Vec& operator*=(const value_type b) {
+  /** Scale this SmallVec up by scalar @a b */
+  inline SmallVec& operator*=(const value_type b) {
     for_i a[i] *= b;
     return *this;
   }
-  /** Scale this Vec down by scalar @a b */
-  Vec& operator/=(const value_type b) {
+  /** Scale this SmallVec down by scalar @a b */
+  inline SmallVec& operator/=(const value_type b) {
     for_i a[i] /= b;
     return *this;
   }
-  /** Add Vec @a b to this Vec */
-  Vec& operator+=(const Vec& b) {
+  /** Add SmallVec @a b to this SmallVec */
+  inline SmallVec& operator+=(const SmallVec& b) {
     for_i a[i] += b[i];
     return *this;
   }
-  /** Subtract Vec @a b from this Vec */
-  Vec& operator-=(const Vec& b) {
+  /** Subtract SmallVec @a b from this SmallVec */
+  inline SmallVec& operator-=(const SmallVec& b) {
     for_i a[i] -= b[i];
     return *this;
   }
-  /** Scale this Vec up by factors in @a b */
-  Vec& operator*=(const Vec& b) {
+  /** Scale this SmallVec up by factors in @a b */
+  inline SmallVec& operator*=(const SmallVec& b) {
     for_i a[i] *= b[i];
     return *this;
   }
-  /** Scale this Vec down by factors in @a b */
-  Vec& operator/=(const Vec& b) {
+  /** Scale this SmallVec down by factors in @a b */
+  inline SmallVec& operator/=(const SmallVec& b) {
     for_i a[i] /= b[i];
     return *this;
   }
 
   // ACCESSORS
 
-  /** Access the @a i th (lvalue) element of this Vec
+  /** Access the @a i th (lvalue) element of this SmallVec
    * @pre i < dimension */
-  value_type& operator[](int i) {
+  inline value_type& operator[](unsigned i) {
     return a[i];
   }
-  /** Access the @a i th (rvalue) element of this Vec
+  /** Access the @a i th (rvalue) element of this SmallVec
    * @pre i < dimension */
-  const value_type& operator[](int i) const {
+  inline const value_type& operator[](unsigned i) const {
     return a[i];
   }
 
-  /** Compute the squared L2 norm of this Vec */
-  friend value_type norm(const Vec& b) {
+  /** Compute the squared L2 norm of this SmallVec */
+  inline friend value_type norm(const SmallVec& b) {
     value_type c(0);
     for_i c += b[i]*b[i];
     return c;
   }
-  /** Write a Vec to an output stream */
-  friend std::ostream& operator<<(std::ostream& s, const Vec& a) {
+  /** Write a SmallVec to an output stream */
+  inline friend std::ostream& operator<<(std::ostream& s, const SmallVec& a) {
     for_i s << a[i] << " ";
     return s;
   }
@@ -136,30 +160,30 @@ class Vec {
 
 /** Unary plus: Return @a p. ("+p" should work if "-p" works.) */
 template <unsigned D, typename P>
-inline Vec<D,P> operator+(const Vec<D,P>& p) {
+inline SmallVec<D,P> operator+(const SmallVec<D,P>& p) {
   return p;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator+(Vec<D,P> a, const Vec<D,P>& b) {
+inline SmallVec<D,P> operator+(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a += b;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator-(Vec<D,P> a, const Vec<D,P>& b) {
+inline SmallVec<D,P> operator-(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a -= b;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator*(Vec<D,P> p, double d) {
+inline SmallVec<D,P> operator*(SmallVec<D,P> p, double d) {
   return p *= d;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator*(Vec<D,P> a, const Vec<D,P>& b) {
+inline SmallVec<D,P> operator*(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a *= b;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator/(Vec<D,P> p, double d) {
+inline SmallVec<D,P> operator/(SmallVec<D,P> p, double d) {
   return p /= d;
 }
 template <unsigned D, typename P>
-inline Vec<D,P> operator/(Vec<D,P> a, const Vec<D,P>& b) {
+inline SmallVec<D,P> operator/(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a /= b;
 }

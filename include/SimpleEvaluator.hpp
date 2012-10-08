@@ -28,7 +28,7 @@ THE SOFTWARE.
 #include <assert.h>
 #include <deque>
 
-// TODO: paraterize
+// TODO: parameterize
 double THETA     = .5;                                            //!< Multipole acceptance criteria
 
 //! Interface between tree and kernel
@@ -121,9 +121,7 @@ public:
 
   template <typename BOX, typename Q>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
-    double r0_norm = std::sqrt(norm(b1.center() - b2.center()));
-    //printf("r0_norm = %f, THETA = %f, D = %f\n", r0_norm, THETA, b1.side_length() + b2.side_length());
-    //printf("r0_norm*THETA: %lg, rhs: %lg\n",r0_norm*THETA,b1.side_length()/2 + b2.side_length()/2);
+    double r0_norm = std::sqrt(normSq(b1.center() - b2.center()));
     if (r0_norm * THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
 #if TREECODE
@@ -194,9 +192,9 @@ public:
 
           printf("L2P: %d\n",idx);
 #if 1
-          K.L2P(t_begin, t_end, r_begin,
-                box.center(),
-                L[idx]);
+          K.L2P(L[idx], box.center(),
+                t_begin, t_end,
+                r_begin);
 #endif
         } else {
           // If not leaf, make L2L calls
@@ -253,7 +251,9 @@ public:
 
     printf("M2P: %d to %d\n", b1.index(), b2.index());
 
-    K.M2P(b1.center(), M[b1.index()], t_begin, t_end, r_begin);
+    K.M2P(M[b1.index()], b1.center(),
+          t_begin, t_end,
+          r_begin);
   }
 
   void evalM2L(const typename Octree<point_type>::Box& b1,
@@ -264,6 +264,8 @@ public:
 
     printf("M2L: %d to %d\n",b2.index(),b1.index());
 
-    K.M2L(M[b1.index()],L[b2.index()],translation);
+    K.M2L(M[b1.index()],
+          L[b2.index()],
+          translation);
   }
 };

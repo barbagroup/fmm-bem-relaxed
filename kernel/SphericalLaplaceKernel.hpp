@@ -21,8 +21,6 @@
   THE SOFTWARE.
 */
 
-//#define ODDEVEN(n) ((((n) & 1) == 1) ? -1 : 1)
-
 
 class SphericalLaplaceKernel
 {
@@ -41,28 +39,26 @@ class SphericalLaplaceKernel
 
   //! Epsilon
   static constexpr real EPS = 1e-6;
+  //! Imaginary unit
+  static constexpr complex CI = complex(0,1);
   //! ODD-Even helper function
   inline int ODDEVEN(int n) const {
     return (((n & 1) == 1) ? -1 : 1);
   };
 
-  //! Custom multipole type TODO?
+  //! Custom multipole type
   struct multipole {
     std::vector<complex> M;
     real RCRIT;
     real RMAX;
 
+    //! Convenience method
     complex& operator[](const int i) {
       return M[i];
     }
+    //! Convenience method
     const complex& operator[](const int i) const {
       return M[i];
-    }
-    unsigned size() const {
-      return M.size();
-    }
-    void resize(unsigned sz) {
-      M.resize(sz);
     }
   };
 
@@ -76,17 +72,15 @@ class SphericalLaplaceKernel
   static constexpr unsigned dimension = 3;
   //! Point type
   // typedef vec<dimension,real> point_type;
-  typedef Vec<dimension,real[dimension]> point_type;
+  typedef Vec<dimension,real> point_type;
   //! Charge type
   typedef real charge_type;
   //! Kernel result type
-  typedef Vec<4,real[4]> result_type;
+  typedef Vec<4,real> result_type;
 
   //! Constructor
-  SphericalLaplaceKernel(const int p)
+  SphericalLaplaceKernel(int p)
       : P(p), prefactor(4*P*P), Anm(4*P*P), Cnm(P*P*P*P) {
-    constexpr complex I(0.,1.);                                 // Imaginary unit
-
     for( int n=0; n!=2*P; ++n ) {                               // Loop over n in Anm
       for( int m=-n; m<=n; ++m ) {                              //  Loop over m in Anm
         int nm = n*n+n+m;                                       //   Index of Anm
@@ -109,7 +103,7 @@ class SphericalLaplaceKernel
         for( int n=0, nm=0; n!=P; ++n ) {                       //   Loop over n in Cjknm
           for( int m=-n; m<=n; ++m, ++nm, ++jknm ) {            //    Loop over m in Cjknm
             const int jnkm = (j+n)*(j+n)+j+n+m-k;               //     Index C_{j+n}^{m-k}
-            Cnm[jknm] = std::pow(I,real(abs(k-m)-abs(k)-abs(m)))//     Cjknm
+            Cnm[jknm] = std::pow(CI,real(abs(k-m)-abs(k)-abs(m)))//     Cjknm
                 * real(ODDEVEN(j)*Anm[nm]*Anm[jk]/Anm[jnkm]) * EPS;
           }                                                     //    End loop over m in Cjknm
         }                                                       //   End loop over n in Cjknm
@@ -117,33 +111,38 @@ class SphericalLaplaceKernel
     }                                                           // End loop over in j in Cjknm
   }
 
-  /** Initialize a multipole expansion
-   */
+  /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M, double box_size) const {
     (void) box_size;  // Quiet warning
-    M.resize(P*(P+1)/2);
+    M.M = std::vector<complex>(P*(P+1)/2, 0);
+    M.RMAX = 0;
+    M.RCRIT = box_size / 2;
   }
-  /** Initialize a local expansion
-   */
+  /** Initialize a local expansion with the size of a box at this level */
   void init_local(local_type& L, double box_size) const {
     (void) box_size;  // Quiet warning
-    L.resize(P*(P+1)/2);
+    L = std::vector<complex>(P*(P+1)/2, 0);
   }
 
   /** Kernel vectorized non-symmetric P2P operation
+   * r_j += sum_i K(s_i,t_j) * c_i
    *
+   * @param[in] s_begin,s_end Iterator pair to the source points
+   * @param[in] c_begin Iterator to the source charges
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
    */
-  template <typename point_iter, typename charge_iter, typename result_iter>
-  void P2P(point_iter s_begin, point_iter s_end, charge_iter c_begin,
-           point_iter t_begin, point_iter t_end, result_iter r_begin) const
+  template <typename PointIter, typename ChargeIter, typename ResultIter>
+  void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
+           PointIter t_begin, PointIter t_end, ResultIter r_begin) const
   {
     for( ; t_begin!=t_end; ++t_begin, ++r_begin) {    // Loop over target bodies
       result_type R(0);
       // for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
-      charge_iter c = c_begin;
+      ChargeIter c = c_begin;
       for(auto s = s_begin ; s!=s_end; ++s, ++c) {  //  Loop over source bodies
-        auto dist = *t_begin - *s; // Bi->X - Bj->X -Xperiodic;                     //   Distance vector from source to target
-        real R2 = norm(dist);                                     //   R^2
+        auto dist = *t_begin - *s;                                   //   Distance vector from source to target
+        real R2 = normSq(dist);                                     //   R^2
         real invR2 = 1.0 / R2;                                    //   1 / R^2
         if( R2 < 1e-8 ) invR2 = 0;                                  //   Exclude self interaction
         real invR = (*c) * std::sqrt(invR2);                   //   potential
@@ -163,36 +162,41 @@ class SphericalLaplaceKernel
   }
 
   /** Kernel vectorized symmetric P2P operation
+   * ...
    */
-  template <typename point_iter, typename charge_iter, typename result_iter>
-  void P2P(point_iter p1_begin, point_iter p1_end, charge_iter c1_begin,
-           point_iter p2_begin, point_iter p2_end, charge_iter c2_begin,
-           result_iter r1_begin, result_iter r2_begin) const {
+  template <typename PointIter, typename ChargeIter, typename ResultIter>
+  void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
+           PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
+           ResultIter r1_begin, ResultIter r2_begin) const {
     // TODO...
+    (void) p1_begin;
+    (void) p1_end;
+    (void) c1_begin;
+    (void) p2_begin;
+    (void) p2_end;
     (void) c2_begin;
     (void) r1_begin;
-    P2P(p1_begin, p1_end, c1_begin, p2_begin, p2_end, r2_begin);
+    (void) r2_begin;
   }
 
   /** Kernel P2M operation
-   * M += sum_i Op(p_i) where M is the multipole and p_i are the points
+   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
    *
    * @param[in] p_begin,p_end Iterator pair to the points in this operation
    * @param[in] c_begin Corresponding charge iterator for the points
    * @param[in] center The center of the box containing the multipole expansion
-   * @param[in] M The multipole expansion to accumulate into
+   * @param[in,out] M The multipole expansion to accumulate into
+   * @pre M is the result of init_multipole
    */
-  template <typename point_iter, typename charge_iter>
-  void P2M(point_iter p_begin, point_iter p_end,
-           charge_iter c_begin,
+  template <typename PointIter, typename ChargeIter>
+  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) {
-    for (size_t i=0; i<M.size(); i++) M[i]=0;
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     // for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
     for ( ; p_begin != p_end; ++p_begin, ++c_begin) {
       auto dist = *p_begin - center;
-      real R = std::sqrt(norm(dist));
+      real R = std::sqrt(normSq(dist));
       if( R > Rmax ) Rmax = R;
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
@@ -206,7 +210,7 @@ class SphericalLaplaceKernel
       }
     }
     M.RMAX = Rmax;
-    M.RCRIT = std::min(M.RCRIT,Rmax);
+    M.RCRIT = std::min(M.RCRIT, M.RMAX);
   }
 
   /** Kernel M2M operator
@@ -215,14 +219,14 @@ class SphericalLaplaceKernel
    * @param[in] source The multipole source at the child level
    * @param[in,out] target The multipole target to accumulate into
    * @param[in] translation The vector from source to target
+   * @pre Msource includes the influence of all points within its box
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
            const point_type& translation) {
-    const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
-    real R = std::sqrt(norm(translation)) + Msource.RCRIT;
+    real R = std::sqrt(normSq(translation)) + Msource.RCRIT;
     if (R > Rmax) Rmax = R;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,translation);
@@ -238,7 +242,7 @@ class SphericalLaplaceKernel
               const int jnkm  = (j - n) * (j - n) + j - n + k - m;
               const int jnkms = (j - n) * (j - n + 1) / 2 + k - m;
               const int nm    = n * n + n + m;
-              M += Msource[jnkms] * std::pow(I,real(m-abs(m))) * Ynm[nm]
+              M += Msource[jnkms] * std::pow(CI,real(m-abs(m))) * Ynm[nm]
               * real(ODDEVEN(n) * Anm[nm] * Anm[jnkm] / Anm[jk]);
             }
           }
@@ -256,12 +260,17 @@ class SphericalLaplaceKernel
       }
     }
     Mtarget.RMAX = Rmax;
-    Mtarget.RCRIT = std::min(R,Rmax);
+    Mtarget.RCRIT = std::min(Mtarget.RCRIT, Mtarget.RMAX);
   }
 
   /** Kernel M2L operation
+   * L += Op(M)
    *
-   *
+   * @param[in] Msource The multpole expansion source
+   * @param[in,out] Ltarget The local expansion target
+   * @param[in] translation The vector from source to target
+   * @pre translation obeys the multipole-acceptance criteria
+   * @pre Msource includes the influence of all points within its box
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
@@ -298,10 +307,19 @@ class SphericalLaplaceKernel
     }
   }
 
-  template <typename point_iter, typename result_iter>
-  void M2P(const point_type& Mcenter, multipole_type& M,
-           point_iter t_begin, point_iter t_end, result_iter r_begin) const {
-    const complex I(0.,1.);                                       // Imaginary unit
+  /** Kernel M2P operation
+   * r_i += Op(M)
+   *
+   * @param[in] M The multpole expansion
+   * @param[in] Mcenter The center of the box with the multipole expansion
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   * @pre M includes the influence of all points within its box
+   */
+  template <typename PointIter, typename ResultIter>
+  void M2P(const multipole_type& M, const point_type& Mcenter,
+           PointIter t_begin, PointIter t_end,
+           ResultIter r_begin) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
       point_type dist = *t_begin - Mcenter;
@@ -322,7 +340,7 @@ class SphericalLaplaceKernel
           (*r_begin)[0] += 2 * std::real(M[nms] * Ynm[nm]);
           spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
           spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
-          spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * I) * m;
+          spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * CI) * m;
         }
       }
       sph2cart(r,theta,phi,spherical,cartesian);
@@ -338,10 +356,11 @@ class SphericalLaplaceKernel
    * @param[in] source The local source at the parent level
    * @param[in,out] target The local target to accumulate into
    * @param[in] translation The vector from source to target
+   * @pre Lsource includes the influence of all points outside its box
    */
-  void L2L(const local_type& Lsource, local_type& Ltarget,
+  void L2L(const local_type& Lsource,
+           local_type& Ltarget,
            const point_type& translation) const {
-    const complex I(0.,1.);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,translation);
@@ -364,7 +383,7 @@ class SphericalLaplaceKernel
               const int jnkm = (n - j) * (n - j) + n - j + m - k;
               const int nm   = n * n + n + m;
               const int nms  = n * (n + 1) / 2 + m;
-              L += Lsource[nms] * std::pow(I,real(m-k-abs(m-k)))
+              L += Lsource[nms] * std::pow(CI,real(m-k-abs(m-k)))
                   * Ynm[jnkm] * Anm[jnkm] * Anm[jk] / Anm[nm];
             }
           }
@@ -374,15 +393,23 @@ class SphericalLaplaceKernel
     }
   }
 
-  template <typename point_iter, typename result_iter>
-  void L2P(point_iter t_begin, point_iter t_end, result_iter r_begin,
-           const point_type& center, local_type& L) const {
-    const complex I(0.,1.);
+  /** Kernel M2P operation
+   * r_i += Op(L)
+   *
+   * @param[in] L The local expansion
+   * @param[in] Lcenter The center of the box with the local expansion
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   * @pre L includes the influence of all points outside its box
+   */
+  template <typename PointIter, typename ResultIter>
+  void L2P(const local_type& L, const point_type& Lcenter,
+           PointIter t_begin, PointIter t_end,
+           ResultIter r_begin) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
-    auto t = t_begin;
-    for( ; t!=t_end; ++t, ++r_begin ) {
-      point_type dist = *t - center;
+    for (auto t = t_begin; t != t_end; ++t, ++r_begin) {
+      point_type dist = *t - Lcenter;
       point_type spherical(0);
       point_type cartesian(0);
       real r, theta, phi;
@@ -391,24 +418,19 @@ class SphericalLaplaceKernel
       for( int n=0; n!=P; ++n ) {
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
-        // B->TRG[0] += std::real(L[nms] * Ynm[nm]);
         (*r_begin)[0] += std::real(L[nms] * Ynm[nm]);
         spherical[0] += std::real(L[nms] * Ynm[nm]) / r * n;
         spherical[1] += std::real(L[nms] * YnmTheta[nm]);
         for( int m=1; m<=n; ++m ) {
           nm  = n * n + n + m;
           nms = n * (n + 1) / 2 + m;
-          // B->TRG[0] += 2 * std::real(L[nms] * Ynm[nm]);
           (*r_begin)[0] += 2 * std::real(L[nms] * Ynm[nm]);
           spherical[0] += 2 * std::real(L[nms] * Ynm[nm]) / r * n;
           spherical[1] += 2 * std::real(L[nms] * YnmTheta[nm]);
-          spherical[2] += 2 * std::real(L[nms] * Ynm[nm] * I) * m;
+          spherical[2] += 2 * std::real(L[nms] * Ynm[nm] * CI) * m;
         }
       }
       sph2cart(r,theta,phi,spherical,cartesian);
-      //B->TRG[1] += cartesian[0];
-      //B->TRG[2] += cartesian[1];
-      //B->TRG[3] += cartesian[2];
       (*r_begin)[1] += cartesian[0];
       (*r_begin)[2] += cartesian[1];
       (*r_begin)[3] += cartesian[2];
@@ -419,14 +441,13 @@ class SphericalLaplaceKernel
 
   //! Evaluate solid harmonics \f$ r^n Y_{n}^{m} \f$
   void evalMultipole(real rho, real alpha, real beta, complex *Ynm, complex *YnmTheta) const {
-    const complex I(0.,1.);                                     // Imaginary unit
     real x = std::cos(alpha);                                   // x = cos(alpha)
     real y = std::sin(alpha);                                   // y = sin(alpha)
     real fact = 1;                                              // Initialize 2 * m + 1
     real pn = 1;                                                // Initialize Legendre polynomial Pn
     real rhom = 1;                                              // Initialize rho^m
     for( int m=0; m!=P; ++m ) {                                 // Loop over m in Ynm
-      complex eim = std::exp(I * real(m * beta));               //  exp(i * m * beta)
+      complex eim = std::exp(CI * real(m * beta));              //  exp(i * m * beta)
       real p = pn;                                              //  Associated Legendre polynomial Pnm
       int npn = m * m + 2 * m;                                  //  Index of Ynm for m > 0
       int nmn = m * m;                                          //  Index of Ynm for m < 0
@@ -455,14 +476,13 @@ class SphericalLaplaceKernel
 
   //! Evaluate singular harmonics \f$ r^{-n-1} Y_n^m \f$
   void evalLocal(real rho, real alpha, real beta, complex *Ynm, complex *YnmTheta) const {
-    const complex I(0.,1.);                                     // Imaginary unit
     real x = std::cos(alpha);                                   // x = cos(alpha)
     real y = std::sin(alpha);                                   // y = sin(alpha)
     real fact = 1;                                              // Initialize 2 * m + 1
     real pn = 1;                                                // Initialize Legendre polynomial Pn
     real rhom = 1.0 / rho;                                      // Initialize rho^(-m-1)
     for( int m=0; m!=2*P; ++m ) {                               // Loop over m in Ynm
-      complex eim = std::exp(I * real(m * beta));               //  exp(i * m * beta)
+      complex eim = std::exp(CI * real(m * beta));              //  exp(i * m * beta)
       real p = pn;                                              //  Associated Legendre polynomial Pnm
       int npn = m * m + 2 * m;                                  //  Index of Ynm for m > 0
       int nmn = m * m;                                          //  Index of Ynm for m < 0
@@ -491,7 +511,7 @@ class SphericalLaplaceKernel
 
   //! Get r,theta,phi from x,y,z
   void cart2sph(real& r, real& theta, real& phi, point_type dist=0) const {
-    r = sqrt(norm(dist))+EPS;                                   // r = sqrt(x^2 + y^2 + z^2) + eps
+    r = sqrt(normSq(dist))+EPS;                                   // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps
       phi = 0;                                                  //  phi can be anything so we set it to 0

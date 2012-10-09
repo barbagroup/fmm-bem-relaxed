@@ -6,7 +6,7 @@
 // FMM includes
 
 // #include <Evaluator.hpp>
-#include <FMM_options.hpp>
+#include <FMMOptions.hpp>
 // #include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
@@ -19,8 +19,8 @@
 Logger Log;
 
 // forward declarations
-template <class Tree, class Kernel>
-class EvaluatorBase;
+//template <class Tree, class Kernel>
+//class EvaluatorBase;
 
 
 /** Simple wrapper class for FMM_plan */
@@ -47,9 +47,9 @@ class FMM_plan//  : public fmm_wrapper
   typedef Kernel kernel_type;
 
   //private:
-  FMM_options& Opts;
+  FMMOptions& options;
   // SimpleEvaluator<Kernel> evaluator;
-  EvaluatorBase<tree_type,kernel_type> *evaluator;
+  EvaluatorBase<tree_type,kernel_type>* evaluator;
   Kernel& K;
   Octree<point_type> otree;
 
@@ -70,8 +70,7 @@ class FMM_plan//  : public fmm_wrapper
 
   template <typename T>
   std::vector<T> permute(const std::vector<T>& v,
-                         const std::vector<unsigned>& permute)
-  {
+                         const std::vector<unsigned>& permute) {
     std::vector<T> temp(v.size());
     for (unsigned i=0; i < v.size(); ++i)
       temp[i] = v[permute[i]];
@@ -80,29 +79,38 @@ class FMM_plan//  : public fmm_wrapper
 
   template <typename T>
   std::vector<T> ipermute(const std::vector<T>& v,
-                          const std::vector<unsigned>& permute)
-  {
+                          const std::vector<unsigned>& permute) {
     std::vector<T> temp(v.size());
     for (unsigned i = 0; i < v.size(); ++i)
       temp[permute[i]] = v[i];
     return temp;
   }
 
+  //! Set the evaluator strategy of this plan at runtime
+  void set_evaluator(FMMOptions::EvaluatorType type) {
+    if (type == FMMOptions::FMM) {
+      evaluator = new EvaluatorFMM<tree_type,kernel_type>(otree,K,options.THETA);
+    } else if (type == FMMOptions::TREECODE) {
+      evaluator = new EvaluatorTreecode<tree_type,kernel_type>(otree,K,options.THETA);
+    } else {
+      evaluator = NULL;
+    }
+  }
+
 public:
 
   // CONSTRUCTOR
 
-  FMM_plan(Kernel& k, const std::vector<point_type>& points, FMM_options& opts)
-      : Opts(opts), K(k), //evaluator(k),
-        otree(get_boundingbox(points.begin(), points.end()))
-  {
+  FMM_plan(Kernel& k, const std::vector<point_type>& points,
+           FMMOptions& opts)
+      : options(opts), K(k), //evaluator(k),
+        otree(get_boundingbox(points.begin(), points.end())) {
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
   }
-  
+
   // DESTRUCTOR
-  ~FMM_plan()
-  {
+  ~FMM_plan() {
     if (evaluator) delete evaluator;
   }
 
@@ -111,16 +119,16 @@ public:
   std::vector<result_type> execute(const std::vector<charge_type>& charges,
                                    const std::vector<point_type>& t_points)
   {
-    // sort charges to match sorted body array
-    auto pcharges = permute(charges, otree.getPermutation());
-
     // setup the evaluator
-    evaluator = EvaluatorBase<tree_type,kernel_type>::createEvaluator(otree,K,Opts);
+    set_evaluator(options.evaluator);
 
     if (!evaluator) {
       printf("[E]: Evaluator not initialised -- returning..\n");
       return std::vector<result_type>(0);
     }
+
+    // sort charges to match sorted body array
+    auto pcharges = permute(charges, otree.getPermutation());
 
     // run upward sweep based on (permuted) body charges
     evaluator->upward(pcharges);

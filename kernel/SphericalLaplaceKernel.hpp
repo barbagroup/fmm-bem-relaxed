@@ -115,7 +115,6 @@ class SphericalLaplaceKernel
 
   /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M, double box_size) const {
-    (void) box_size;  // Quiet warning
     M.M = std::vector<complex>(P*(P+1)/2, 0);
     M.RMAX = 0;
     M.RCRIT = box_size / 2;

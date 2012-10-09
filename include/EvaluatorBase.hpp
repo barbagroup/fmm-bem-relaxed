@@ -13,6 +13,8 @@ class EvaluatorBase
  public:
   //! Kernel type
   typedef Kernel kernel_type;
+  //! Tree type
+  typedef Tree tree_type;
   //! Point type
   typedef typename Kernel::point_type point_type;
   //! Multipole expansion type
@@ -25,16 +27,16 @@ class EvaluatorBase
   typedef typename Kernel::result_type result_type;
 
  protected:
-  //! Octree
+  //! Handle to Tree
   Tree& tree;
-  //! Kernel
+  //! Handle to the Kernel
   Kernel& K;
 
   //! Multipole expansions corresponding to Box indices in Octree
   std::vector<multipole_type> M;
   //! Local expansions corresponding to Box indices in Octree
   std::vector<local_type> L;
-  
+
   // THETA for multipole acceptance criteria
   double THETA;
  private:
@@ -42,7 +44,9 @@ class EvaluatorBase
   typename std::vector<charge_type>::const_iterator charges_begin;
 
  public:
-  EvaluatorBase(Tree& t, Kernel& k, double theta) : tree(t), K(k), THETA(theta) {};
+  EvaluatorBase(Tree& t, Kernel& k, double theta)
+      : tree(t), K(k), THETA(theta) {
+  };
   virtual ~EvaluatorBase() {};
 
   //! Upward sweep
@@ -51,23 +55,6 @@ class EvaluatorBase
   virtual void interactions(std::vector<result_type>& results) = 0;
   //! Downward sweep
   virtual void downward(std::vector<result_type>& results) = 0;
-
-  //! Abstract factory
-  static EvaluatorBase<Tree,Kernel> *createEvaluator(Tree& t, Kernel& k, FMM_options& options)
-  {
-    if (options.evaluator == FMM)
-    {
-      return new EvaluatorFMM<Tree,Kernel>(t,k,options.THETA);
-    }
-    else if (options.evaluator == TREECODE)
-    {
-      return new EvaluatorTreecode<Tree,Kernel>(t,k,options.THETA);
-    }
-    else
-    {
-      return NULL;
-    }
-  }
 
   //! set the value of THETA
   void setTheta(double th) {
@@ -78,7 +65,6 @@ class EvaluatorBase
     return THETA;
   }
 
-  //! name of the evaluator
+  //! Name of the evaluator
   virtual std::string name() = 0;
 };
-

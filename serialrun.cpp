@@ -50,7 +50,7 @@ int main(int argc, char **argv)
   int numBodies = 100;
   int P = 5;
   bool checkErrors = true;
-  FMM_options opts;
+  FMMOptions opts;
   opts.THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
 
   // parse command line args
@@ -67,13 +67,13 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     } else if (strcmp(argv[i],"-bottomup") == 0) {
-      opts.tree = BOTTOMUP;
+      opts.tree = FMMOptions::BOTTOMUP;
     } else if (strcmp(argv[i],"-evaluator") == 0) {
       i++;
       if (strcmp(argv[i],"FMM") == 0) {
-        opts.evaluator = FMM;
+        opts.evaluator = FMMOptions::FMM;
       } else if (strcmp(argv[i],"TREECODE") == 0) {
-        opts.evaluator = TREECODE;
+        opts.evaluator = FMMOptions::TREECODE;
       } else {
         printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
       }

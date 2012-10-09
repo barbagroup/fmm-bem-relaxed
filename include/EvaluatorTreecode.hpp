@@ -13,19 +13,18 @@ class EvaluatorBase;
 template <typename Tree, typename  Kernel>
 class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
 {
- private:
-  typedef typename EvaluatorBase<Tree,Kernel>::charge_type charge_type;
-  typedef typename EvaluatorBase<Tree,Kernel>::result_type result_type;
-  typedef typename EvaluatorBase<Tree,Kernel>::point_type  point_type;
-
   typedef EvaluatorBase<Tree,Kernel> Base;
+ public:
+  typedef typename Base::charge_type charge_type;
+  typedef typename Base::result_type result_type;
+  typedef typename Base::point_type  point_type;
 
   typename std::vector<result_type>::iterator results_begin;
   typename std::vector<charge_type>::const_iterator charges_begin;
 
   /** One-sided P2P!!
    */
-  void evalP2P(const typename Octree<point_type>::Box& b1, 
+  void evalP2P(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2) {
     // Point iters
     auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
@@ -47,8 +46,8 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
                 r2_begin);
   }
 
-  void evalM2P(const typename Octree<point_type>::Box& b1, 
-               const typename Octree<point_type>::Box& b2) 
+  void evalM2P(const typename Octree<point_type>::Box& b1,
+               const typename Octree<point_type>::Box& b2)
   {
     // Target point iters
     auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
@@ -92,7 +91,7 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
 
     Base::M.resize(Base::tree.boxes());
     Base::L.resize(Base::tree.boxes());
-    
+
     // EvaluatorBase<Tree,Kernel>::M.resize(10);
     unsigned lowest_level = Base::tree.levels();
     printf("lowest level in tree: %d\n",(int)lowest_level);
@@ -132,9 +131,9 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
 
             printf("M2M: %d to %d\n", cbox.index(), idx);
             Base::K.M2M(Base::M[cbox.index()], Base::M[idx], translation);
-          }   
-        }   
-      }   
+          }
+        }
+      }
     }
   }
 
@@ -166,7 +165,7 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
         auto c_end = b2.child_end();
         for (auto cit = b2.child_begin(); cit != c_end; ++cit)
           interact(b1, *cit, pairQ);
-      }   
+      }
     }
   }
 

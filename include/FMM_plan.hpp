@@ -15,16 +15,18 @@
 #include <Logger.hpp>
 Logger Log;
 
-typedef enum {TOPDOWN, BOTTOMUP} treeType;
+typedef enum {TOPDOWN, BOTTOMUP} TreeType;
+typedef enum {FMM} EvaluatorType;
 
 /** Class to define compile-time and run-time FMM options */
 class FMM_options
 {
 public:
   bool symmetric;
-  treeType tree;
+  TreeType tree;
+  EvaluatorType evaluator;
 
-  FMM_options() : symmetric(false), tree(TOPDOWN) {};
+  FMM_options() : symmetric(false), tree(TOPDOWN), evaluator(FMM) {};
 };
 
 

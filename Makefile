@@ -50,6 +50,9 @@ LIBS +=
 # 'make' - default rule
 all: serialrun
 
+eval_test: eval_test.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 serialrun: serialrun.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 

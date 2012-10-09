@@ -149,9 +149,7 @@ class SmallVec {
   }
   /** Compute the L2 norm of this SmallVec */
   inline friend value_type norm(const SmallVec& b) {
-    value_type c(0);
-    for_i c += b[i]*b[i];
-    return std::sqrt(c);
+    return std::sqrt(normSq(b));
   }
   /** Write a SmallVec to an output stream */
   inline friend std::ostream& operator<<(std::ostream& s, const SmallVec& a) {

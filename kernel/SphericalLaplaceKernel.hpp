@@ -196,7 +196,7 @@ class SphericalLaplaceKernel
     // for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
     for ( ; p_begin != p_end; ++p_begin, ++c_begin) {
       auto dist = *p_begin - center;
-      real R = std::sqrt(normSq(dist));
+      real R = norm(dist);
       if( R > Rmax ) Rmax = R;
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
@@ -226,7 +226,7 @@ class SphericalLaplaceKernel
            const point_type& translation) {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
-    real R = std::sqrt(normSq(translation)) + Msource.RCRIT;
+    real R = norm(translation) + Msource.RCRIT;
     if (R > Rmax) Rmax = R;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,translation);
@@ -511,7 +511,7 @@ class SphericalLaplaceKernel
 
   //! Get r,theta,phi from x,y,z
   void cart2sph(real& r, real& theta, real& phi, point_type dist=0) const {
-    r = sqrt(normSq(dist))+EPS;                                   // r = sqrt(x^2 + y^2 + z^2) + eps
+    r = norm(dist) + EPS;                                       // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps
       phi = 0;                                                  //  phi can be anything so we set it to 0

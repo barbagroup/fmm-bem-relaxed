@@ -97,7 +97,7 @@ public:
 
           auto p_begin = make_transform_iterator(box.body_begin(), body2point);
           auto p_end   = make_transform_iterator(box.body_end(),   body2point);
-          auto c_begin = charges.begin()+box.body_begin()->index();
+          auto c_begin = charges.begin() + box.body_begin()->index();
 
           printf("P2M: box: %d\n", (int)box.index());
           K.P2M(p_begin, p_end, c_begin, box.center(), M[idx]);
@@ -170,7 +170,6 @@ public:
       }
     }
 
-#if 1
     // For the highest level down to the lowest level
     for (unsigned l = 1; l < octree.levels(); ++l) {
       // For all boxes at this level
@@ -180,7 +179,6 @@ public:
         unsigned idx = box.index();
 
         // Initialize box data
-        //printf("downward: box id: %d, is_leaf: %d\n",idx,(int)box.is_leaf());
         if (box.is_leaf()) {
           // If leaf, make L2P calls
 
@@ -191,11 +189,9 @@ public:
           auto r_begin = results_begin + box.body_begin()->index();
 
           printf("L2P: %d\n",idx);
-#if 1
           K.L2P(L[idx], box.center(),
                 t_begin, t_end,
                 r_begin);
-#endif
         } else {
           // If not leaf, make L2L calls
 
@@ -211,7 +207,6 @@ public:
         }
       }
     }
-#endif
   }
 
   /** One-sided P2P!!

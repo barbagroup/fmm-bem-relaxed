@@ -44,7 +44,7 @@ template <class Kernel>
 class FMM_plan//  : public fmm_wrapper
 {
  public:
-  typedef typename Kernel::point_type point_type;    // TODO: Better point support
+  typedef typename Kernel::point_type point_type;  // TODO: Better point support
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 

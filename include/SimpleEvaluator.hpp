@@ -29,7 +29,8 @@ THE SOFTWARE.
 #include <deque>
 
 // TODO: parameterize
-double THETA     = .5;                                            //!< Multipole acceptance criteria
+//!< Multipole acceptance criteria
+double THETA     = .5;
 
 //! Interface between tree and kernel
 template <class Kernel>

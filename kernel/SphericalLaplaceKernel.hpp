@@ -75,7 +75,9 @@ class SphericalLaplaceKernel
   typedef Vec<dimension,real> point_type;
   //! Charge type
   typedef real charge_type;
-  //! Kernel result type
+  //! The return type of a kernel evaluation
+  typedef Vec<4,real> kernel_value_type;
+  //! The product of the kernel_value_type and the charge_type
   typedef Vec<4,real> result_type;
 
   //! Constructor
@@ -122,6 +124,14 @@ class SphericalLaplaceKernel
   void init_local(local_type& L, double box_size) const {
     (void) box_size;  // Quiet warning
     L = std::vector<complex>(P*(P+1)/2, 0);
+  }
+
+  /** Kernel evaluation stub
+   * K(s,t)
+   */
+  kernel_value_type operator()(const point_type& s,
+                               const point_type& t) {
+    return result_type(0);
   }
 
   /** Kernel vectorized non-symmetric P2P operation

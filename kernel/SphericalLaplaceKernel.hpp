@@ -126,12 +126,20 @@ class SphericalLaplaceKernel
     L = std::vector<complex>(P*(P+1)/2, 0);
   }
 
-  /** Kernel evaluation stub
+  /** Kernel evaluation
    * K(s,t)
+   *
+   * @param[in] s,t The source and target points to evaluate the kernel
    */
   kernel_value_type operator()(const point_type& s,
                                const point_type& t) {
-    return result_type(0);
+    point_type dist = t - s;         //   Distance vector from source to target
+    real R2 = normSq(dist);          //   R^2
+    real invR2 = 1.0 / R2;           //   1 / R^2
+    if( R2 < 1e-8 ) invR2 = 0;       //   Exclude self interaction
+    real invR = std::sqrt(invR2);    //   potential
+    dist *= invR2 * invR;            //   force
+    return kernel_value_type(invR, -dist[0], -dist[1], -dist[2]);
   }
 
   /** Kernel vectorized non-symmetric P2P operation

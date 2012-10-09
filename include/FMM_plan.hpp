@@ -99,6 +99,12 @@ public:
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
   }
+  
+  // DESTRUCTOR
+  ~FMM_plan()
+  {
+    if (evaluator) delete evaluator;
+  }
 
   // EXECUTE
 
@@ -110,6 +116,11 @@ public:
 
     // setup the evaluator
     evaluator = EvaluatorBase<tree_type,kernel_type>::createEvaluator(otree,K,Opts);
+
+    if (!evaluator) {
+      printf("[E]: Evaluator not initialised -- returning..\n");
+      return std::vector<result_type>(0);
+    }
 
     // run upward sweep based on (permuted) body charges
     evaluator->upward(pcharges);

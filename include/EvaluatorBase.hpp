@@ -43,6 +43,7 @@ class EvaluatorBase
 
  public:
   EvaluatorBase(Tree& t, Kernel& k, double theta) : tree(t), K(k), THETA(theta) {};
+  virtual ~EvaluatorBase() {};
 
   //! Upward sweep
   virtual void upward(const std::vector<charge_type>& charges) = 0;

@@ -65,14 +65,6 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
                 r_begin);
   }
 
-  void evalM2L(const typename Octree<point_type>::Box& b1, 
-               const typename Octree<point_type>::Box& b2) 
-  {
-    // unused -- quiet compiler warnings
-    (void) b1;
-    (void) b2;
-  }
-
   template <typename BOX, typename Q>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
     double r0_norm = std::sqrt(normSq(b1.center() - b2.center()));

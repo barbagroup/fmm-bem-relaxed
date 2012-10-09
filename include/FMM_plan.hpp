@@ -6,28 +6,21 @@
 // FMM includes
 
 // #include <Evaluator.hpp>
-#include <SimpleEvaluator.hpp>
+#include <FMM_options.hpp>
+// #include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
 #include "Octree.hpp"
-
-
 #include <Logger.hpp>
+#include <EvaluatorBase.hpp>
+
+
+//! global logging
 Logger Log;
 
-typedef enum {TOPDOWN, BOTTOMUP} TreeType;
-typedef enum {FMM} EvaluatorType;
-
-/** Class to define compile-time and run-time FMM options */
-class FMM_options
-{
-public:
-  bool symmetric;
-  TreeType tree;
-  EvaluatorType evaluator;
-
-  FMM_options() : symmetric(false), tree(TOPDOWN), evaluator(FMM) {};
-};
+// forward declarations
+template <class Tree, class Kernel>
+class EvaluatorBase;
 
 
 /** Simple wrapper class for FMM_plan */
@@ -50,10 +43,16 @@ class FMM_plan//  : public fmm_wrapper
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 
+  typedef Octree<point_type> tree_type;
+  typedef Kernel kernel_type;
+
   //private:
   FMM_options& Opts;
-  SimpleEvaluator<Kernel> evaluator;
+  // SimpleEvaluator<Kernel> evaluator;
+  EvaluatorBase<tree_type,kernel_type> *evaluator;
+  Kernel& K;
   Octree<point_type> otree;
+
 
   template <typename PointIter>
   BoundingBox<point_type> get_boundingbox(PointIter begin, PointIter end) {
@@ -94,7 +93,7 @@ public:
   // CONSTRUCTOR
 
   FMM_plan(Kernel& k, const std::vector<point_type>& points, FMM_options& opts)
-      : Opts(opts), evaluator(k),
+      : Opts(opts), K(k), //evaluator(k),
         otree(get_boundingbox(points.begin(), points.end()))
   {
     // Construct the Octree
@@ -109,15 +108,20 @@ public:
     // sort charges to match sorted body array
     auto pcharges = permute(charges, otree.getPermutation());
 
+    // setup the evaluator
+    evaluator = EvaluatorBase<tree_type,kernel_type>::createEvaluator(otree,K,Opts);
+
     // run upward sweep based on (permuted) body charges
-    evaluator.upward(otree, pcharges);
+    evaluator->upward(pcharges);
 
     // run evaluator and traverse tree
     printf("Executing...\n");
 
     (void) t_points; // Quiet compiler TODO
     std::vector<result_type> results(charges.size());
-    evaluator.downward(otree, pcharges, results);
+
+    evaluator->interactions(results);
+    evaluator->downward(results);
 
     // inverse permute results
     auto ipresults = ipermute(results, otree.getPermutation());

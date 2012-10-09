@@ -49,9 +49,9 @@ int main(int argc, char **argv)
 {
   int numBodies = 100;
   int P = 5;
-  THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
   bool checkErrors = true;
   FMM_options opts;
+  opts.THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {
@@ -63,11 +63,20 @@ int main(int argc, char **argv)
       P = atoi(argv[i]);
     } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
-      THETA = (double)atof(argv[i]);
+      opts.THETA = (double)atof(argv[i]);
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     } else if (strcmp(argv[i],"-bottomup") == 0) {
       opts.tree = BOTTOMUP;
+    } else if (strcmp(argv[i],"-evaluator") == 0) {
+      i++;
+      if (strcmp(argv[i],"FMM") == 0) {
+        opts.evaluator = FMM;
+      } else if (strcmp(argv[i],"TREECODE") == 0) {
+        opts.evaluator = TREECODE;
+      } else {
+        printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
+      }
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
     }

@@ -4,8 +4,8 @@
  * Base class for all evaluators
  */
 
-#include <FMM_plan.hpp>
 #include <EvaluatorFMM.hpp>
+#include <EvaluatorTreecode.hpp>
 
 template <class Tree, class Kernel>
 class EvaluatorBase
@@ -25,22 +25,24 @@ class EvaluatorBase
   typedef typename Kernel::result_type result_type;
 
  protected:
-  //! Kernel
-  Kernel& K;
   //! Octree
   Tree& tree;
+  //! Kernel
+  Kernel& K;
 
   //! Multipole expansions corresponding to Box indices in Octree
   std::vector<multipole_type> M;
   //! Local expansions corresponding to Box indices in Octree
   std::vector<local_type> L;
-
+  
+  // THETA for multipole acceptance criteria
+  double THETA;
  private:
   typename std::vector<result_type>::iterator results_begin;
   typename std::vector<charge_type>::const_iterator charges_begin;
 
  public:
-  EvaluatorBase(Tree& t, Kernel& k) : tree(t), K(k) {};
+  EvaluatorBase(Tree& t, Kernel& k, double theta) : tree(t), K(k), THETA(theta) {};
 
   //! Upward sweep
   virtual void upward(const std::vector<charge_type>& charges) = 0;
@@ -54,12 +56,25 @@ class EvaluatorBase
   {
     if (options.evaluator == FMM)
     {
-      return new EvaluatorFMM<Tree,Kernel>(t,k);
+      return new EvaluatorFMM<Tree,Kernel>(t,k,options.THETA);
+    }
+    else if (options.evaluator == TREECODE)
+    {
+      return new EvaluatorTreecode<Tree,Kernel>(t,k,options.THETA);
     }
     else
     {
       return NULL;
     }
+  }
+
+  //! set the value of THETA
+  void setTheta(double th) {
+    THETA = th;
+  }
+  //! get the value of THETA
+  double getTheta() {
+    return THETA;
   }
 
   //! name of the evaluator

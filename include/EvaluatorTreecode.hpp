@@ -11,7 +11,7 @@ template <typename Tree, typename Kernel>
 class EvaluatorBase;
 
 template <typename Tree, typename  Kernel>
-class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
+class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
 {
  private:
   typedef typename EvaluatorBase<Tree,Kernel>::charge_type charge_type;
@@ -68,14 +68,9 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
   void evalM2L(const typename Octree<point_type>::Box& b1, 
                const typename Octree<point_type>::Box& b2) 
   {
-    // auto translation = b1.center() - b2.center();
-    auto translation = b2.center() - b1.center();
-
-    printf("M2L: %d to %d\n",b2.index(),b1.index());
-
-    Base::K.M2L(Base::M[b1.index()],
-                Base::L[b2.index()],
-                translation);
+    // unused -- quiet compiler warnings
+    (void) b1;
+    (void) b2;
   }
 
   template <typename BOX, typename Q>
@@ -83,7 +78,7 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
     double r0_norm = std::sqrt(normSq(b1.center() - b2.center()));
     if (r0_norm * Base::THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
-      evalM2L(b1,b2);
+      evalM2P(b1,b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
       evalP2P(b2,b1);
     } else {
@@ -93,9 +88,8 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
 
  public:
   //! constructor
-  EvaluatorFMM(Tree& t, Kernel& k, double theta)
+  EvaluatorTreecode(Tree& t, Kernel& k, double theta)
         : EvaluatorBase<Tree,Kernel>(t,k,theta) {};
-//         : EvaluatorBase<Tree,Kernel>::tree(t), EvaluatorBase<Tree,Kernel>::K(k) {};
 
   //! upward sweep
   void upward(const std::vector<charge_type>& charges)
@@ -187,49 +181,14 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
   //! downward sweep
   void downward(std::vector<result_type>& results)
   {
-    // For the highest level down to the lowest level
-    for (unsigned l = 1; l < Base::tree.levels(); ++l) {
-      // For all boxes at this level
-      auto b_end = Base::tree.box_end(l);
-      for (auto bit = Base::tree.box_begin(l); bit != b_end; ++bit) {
-        auto box = *bit;
-        unsigned idx = box.index();
-
-        // Initialize box data
-        if (box.is_leaf()) {
-          // If leaf, make L2P calls
-
-          // For all the bodies, L2P
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-          auto t_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto t_end   = make_transform_iterator(box.body_end(), body2point);
-          auto r_begin = results.begin() + box.body_begin()->index();
-
-          printf("L2P: %d\n",idx);
-          Base::K.L2P(Base::L[idx], box.center(),
-                t_begin, t_end,
-                r_begin);
-        } else {
-          // If not leaf, make L2L calls
-
-          // For all the children, L2L
-          auto c_end = box.child_end();
-          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
-            auto cbox = *cit;
-            auto translation = cbox.center() - box.center();
-
-            printf("L2L: %d to %d\n",idx,cbox.index());
-            Base::K.L2L(Base::L[idx], Base::L[cbox.index()], translation);
-          }   
-        }   
-      }   
-    }
+    // not needed for treecode -- quiet warning
+    (void) results;
   }
 
   //! evaluator name
   std::string name()
   {
-    return "FMM";
+    return "Treecode";
   }
 };
 

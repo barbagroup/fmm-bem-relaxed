@@ -19,50 +19,6 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
   typedef typename Base::result_type result_type;
   typedef typename Base::point_type  point_type;
 
-#if 0
-  /** One-sided P2P!!
-   */
-  void evalP2P(const typename Octree<point_type>::Box& b1,
-               const typename Octree<point_type>::Box& b2) {
-    // Point iters
-    auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
-    auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
-    auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
-    auto p2_begin = make_transform_iterator(b2.body_begin(), body2point);
-    auto p2_end   = make_transform_iterator(b2.body_end(),   body2point);
-
-    // Charge iters
-    auto c1_begin = charges_begin + b1.body_begin()->index();
-
-    // Result iters
-    auto r2_begin = results_begin + b2.body_begin()->index();
-
-    printf("P2P: %d to %d\n",b1.index(),b2.index());
-
-    Base::K.P2P(p1_begin, p1_end, c1_begin,
-                p2_begin, p2_end,
-                r2_begin);
-  }
-
-  void evalM2P(const typename Octree<point_type>::Box& b1,
-               const typename Octree<point_type>::Box& b2)
-  {
-    // Target point iters
-    auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
-    auto t_begin = make_transform_iterator(b2.body_begin(), body2point);
-    auto t_end   = make_transform_iterator(b2.body_end(), body2point);
-
-    // Target result iters
-    auto r_begin = results_begin + b2.body_begin()->index();
-
-    printf("M2P: %d to %d\n", b1.index(), b2.index());
-
-    Base::K.M2P(Base::M[b1.index()], b1.center(),
-                t_begin, t_end,
-                r_begin);
-  }
-#endif
-
   template <typename BOX, typename Q>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
     double r0_norm = std::sqrt(normSq(b1.center() - b2.center()));

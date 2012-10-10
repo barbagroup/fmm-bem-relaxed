@@ -146,3 +146,90 @@ struct NullEval : public Evaluator<NullEval> {
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext&, ChargeContext&) const {}
 };
+
+
+
+template <typename Tree, typename Kernel, typename Options>
+class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
+{
+  const Tree& tree;
+  const Kernel& K;
+
+ public:
+  typedef typename Kernel::charge_type charge_type;
+  typedef typename Kernel::result_type result_type;
+  typedef typename Kernel::point_type  point_type;
+
+  typedef typename Kernel::multipole_type multipole_type;
+  typedef typename Kernel::local_type  local_type;
+
+  //! constructor
+  EvalUpward(const Tree& t, const Kernel& k, const Options& options)
+      : tree(t), K(k) {
+    // Do any precomputation
+  };
+
+  template <typename ExpansionContext, typename ChargeContext>
+  void execute(ExpansionContext& ec, ChargeContext& cc) {
+    (void) ec;
+    (void) cc;
+    // Translate upward(...) to use ec, cc
+  }
+
+  //! upward sweep
+  void upward(std::vector<multipole_type>& M,
+              std::vector<local_type>& L,
+              const std::vector<charge_type>& charges)
+  {
+    // set charges_begin iterator
+    typename std::vector<charge_type>::const_iterator charges_begin = charges.begin();
+
+    M.resize(tree.boxes());
+    L.resize(tree.boxes());
+
+    // EvaluatorBase<Tree,Kernel>::M.resize(10);
+    unsigned lowest_level = tree.levels();
+    printf("lowest level in tree: %d\n",(int)lowest_level);
+
+    // For the lowest level up to the highest level
+    for (unsigned l = tree.levels()-1; l != 0; --l) {
+      // For all boxes at this level
+      auto b_end = tree.box_end(l);
+      for (auto bit = tree.box_begin(l); bit != b_end; ++bit) {
+        auto box = *bit;
+
+        // Initialize box data
+        unsigned idx = box.index();
+        double box_size = box.side_length();
+        K.init_multipole(M[idx], box_size);
+        K.init_local(L[idx], box_size);
+
+        if (box.is_leaf()) {
+          // If leaf, make P2M calls
+          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
+
+          auto p_begin = make_transform_iterator(box.body_begin(), body2point);
+          auto p_end   = make_transform_iterator(box.body_end(),   body2point);
+          auto c_begin = charges.begin() + box.body_begin()->index();
+
+          printf("P2M: box: %d\n", (int)box.index());
+          K.P2M(p_begin, p_end, c_begin, box.center(), M[idx]);
+
+        } else {
+          // If not leaf, make M2M calls
+
+          // For all the children, M2M
+          auto c_end = box.child_end();
+          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
+            auto cbox = *cit;
+            auto translation = box.center() - cbox.center();
+
+            printf("M2M: %d to %d\n", cbox.index(), idx);
+            K.M2M(M[cbox.index()], M[idx], translation);
+          }
+        }
+      }
+    }
+  }
+
+};

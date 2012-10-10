@@ -565,37 +565,37 @@ class Octree
 
   /** Return the root box of this tree
    */
-  Box root() {
+  Box root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
 
   /** Return an iterator to the first body in this tree */
-  body_iterator body_begin() {
+  body_iterator body_begin() const {
     return body_iterator(0, const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last body in this tree */
-  body_iterator body_end() {
+  body_iterator body_end() const {
     return body_iterator(point_.size(), const_cast<tree_type*>(this));
   }
   /** Return an iterator to the first box in this tree */
-  box_iterator box_begin() {
+  box_iterator box_begin() const {
     return box_iterator(0, const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last box in this tree */
-  box_iterator box_end() {
+  box_iterator box_end() const {
     return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
   }
   /** Return an iterator to the first box at level L in this tree
    * @pre L < levels()
    */
-  box_iterator box_begin(unsigned L) {
+  box_iterator box_begin(unsigned L) const {
     assert(L < levels());
     return box_iterator(level_offset_[L], const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last box at level L in this tree
    * @pre L < levels()
    */
-  box_iterator box_end(unsigned L) {
+  box_iterator box_end(unsigned L) const {
     assert(L < levels());
     return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
   }

@@ -207,7 +207,7 @@ class SphericalLaplaceKernel
    */
   template <typename PointIter, typename ChargeIter>
   void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) {
+           const point_type& center, multipole_type& M) const {
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     // for( B_iter B=C.LEAF; B!=C.LEAF+C.NCLEAF; ++B ) {
@@ -240,7 +240,7 @@ class SphericalLaplaceKernel
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
     real R = norm(translation) + Msource.RCRIT;
@@ -291,7 +291,7 @@ class SphericalLaplaceKernel
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     point_type dist = translation;

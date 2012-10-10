@@ -12,7 +12,9 @@
 #include "BoundingBox.hpp"
 #include "Octree.hpp"
 #include <Logger.hpp>
-#include <EvaluatorBase.hpp>
+
+//#include <EvaluatorBase.hpp>
+#include <Evaluator.hpp>
 
 
 //! global logging
@@ -49,7 +51,7 @@ class FMM_plan//  : public fmm_wrapper
   //private:
   FMMOptions& options;
   // SimpleEvaluator<Kernel> evaluator;
-  EvaluatorBase<tree_type,kernel_type>* evaluator;
+  ExecutorBase<tree_type,kernel_type>* evaluator;
   Kernel& K;
   Octree<point_type> otree;
 
@@ -88,6 +90,11 @@ class FMM_plan//  : public fmm_wrapper
 
   //! Set the evaluator strategy of this plan at runtime
   void set_evaluator(FMMOptions::EvaluatorType type) {
+    (void) type;
+    auto eval = make_evaluator(NullEval(), NullEval(), NullEval());
+    evaluator = make_executor(otree, K, eval);
+
+    /*
     if (type == FMMOptions::FMM) {
       evaluator = new EvaluatorFMM<tree_type,kernel_type>(otree,K,options.THETA);
     } else if (type == FMMOptions::TREECODE) {
@@ -95,6 +102,7 @@ class FMM_plan//  : public fmm_wrapper
     } else {
       evaluator = NULL;
     }
+    */
   }
 
 public:

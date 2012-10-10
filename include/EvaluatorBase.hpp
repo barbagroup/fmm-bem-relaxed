@@ -32,9 +32,9 @@ class EvaluatorBase
 
  protected:
   //! Handle to Tree
-  Tree& tree;
+  const Tree& tree;
   //! Handle to the Kernel
-  Kernel& K;
+  const Kernel& K;
 
   //! Multipole expansions corresponding to Box indices in Octree
   std::vector<multipole_type> M;

@@ -127,20 +127,23 @@ public:
       return std::vector<result_type>(0);
     }
 
+    (void) t_points; // Quiet compiler TODO
+
     // sort charges to match sorted body array
     auto pcharges = permute(charges, otree.getPermutation());
-
-    // run upward sweep based on (permuted) body charges
-    evaluator->upward(pcharges);
-
-    // run evaluator and traverse tree
-    printf("Executing...\n");
-
-    (void) t_points; // Quiet compiler TODO
     std::vector<result_type> results(charges.size());
 
-    evaluator->interactions(results);
-    evaluator->downward(results);
+    evaluator->execute(pcharges, results);
+
+
+    // run upward sweep based on (permuted) body charges
+    //evaluator->upward(pcharges);
+
+    // run evaluator and traverse tree
+    //printf("Executing...\n");
+
+    //evaluator->interactions(results);
+    //evaluator->downward(results);
 
     // inverse permute results
     auto ipresults = ipermute(results, otree.getPermutation());

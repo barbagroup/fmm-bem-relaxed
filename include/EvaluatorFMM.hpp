@@ -22,71 +22,15 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
   typename std::vector<result_type>::iterator results_begin;
   typename std::vector<charge_type>::const_iterator charges_begin;
 
-  /** One-sided P2P!!
-   */
-  void evalP2P(const typename Octree<point_type>::Box& b1,
-               const typename Octree<point_type>::Box& b2) {
-    // Point iters
-    auto body2point = [](const typename Octree<point_type>::Body& b)
-        { return b.point(); };
-    auto p1_begin = make_transform_iterator(b1.body_begin(), body2point);
-    auto p1_end   = make_transform_iterator(b1.body_end(),   body2point);
-    auto p2_begin = make_transform_iterator(b2.body_begin(), body2point);
-    auto p2_end   = make_transform_iterator(b2.body_end(),   body2point);
-
-    // Charge iters
-    auto c1_begin = charges_begin + b1.body_begin()->index();
-
-    // Result iters
-    auto r2_begin = results_begin + b2.body_begin()->index();
-
-    printf("P2P: %d to %d\n",b1.index(),b2.index());
-
-    Base::K.P2P(p1_begin, p1_end, c1_begin,
-                p2_begin, p2_end,
-                r2_begin);
-  }
-
-  void evalM2P(const typename Octree<point_type>::Box& b1,
-               const typename Octree<point_type>::Box& b2)
-  {
-    // Target point iters
-    auto body2point = [](const typename Octree<point_type>::Body& b) { return b.point(); };
-    auto t_begin = make_transform_iterator(b2.body_begin(), body2point);
-    auto t_end   = make_transform_iterator(b2.body_end(), body2point);
-
-    // Target result iters
-    auto r_begin = results_begin + b2.body_begin()->index();
-
-    printf("M2P: %d to %d\n", b1.index(), b2.index());
-
-    Base::K.M2P(Base::M[b1.index()], b1.center(),
-                t_begin, t_end,
-                r_begin);
-  }
-
-  void evalM2L(const typename Octree<point_type>::Box& b1,
-               const typename Octree<point_type>::Box& b2)
-  {
-    // auto translation = b1.center() - b2.center();
-    auto translation = b2.center() - b1.center();
-
-    printf("M2L: %d to %d\n",b2.index(),b1.index());
-
-    Base::K.M2L(Base::M[b1.index()],
-                Base::L[b2.index()],
-                translation);
-  }
-
   template <typename BOX, typename Q>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
     double r0_norm = norm(b1.center() - b2.center());
     if (r0_norm * Base::THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
-      evalM2L(b1,b2);
+      Base::evalM2L(b1,b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
       // These boxes don't satisfy the MAC and are leaves: P2P
-      evalP2P(b2,b1);
+      Base::evalP2P(b2,b1);
     } else {
       // Doesn't satisfy MAC and aren't leaves, continue splitting
       pairQ.push_back(std::make_pair(b1,b2));
@@ -96,17 +40,13 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
  public:
   //! constructor
   EvaluatorFMM(Tree& t, Kernel& k, double theta)
-        : EvaluatorBase<Tree,Kernel>(t,k,theta) {};
-//         : EvaluatorBase<Tree,Kernel>::tree(t), EvaluatorBase<Tree,Kernel>::K(k) {};
+      : EvaluatorBase<Tree,Kernel>(t,k,theta) {
+  };
 
   //! upward sweep
   void upward(const std::vector<charge_type>& charges)
   {
-    // set charges_begin iterator
-    charges_begin = charges.begin();
-
-    Base::M.resize(Base::tree.boxes());
-    Base::L.resize(Base::tree.boxes());
+    (void) charges; // Quiet warning
 
     // EvaluatorBase<Tree,Kernel>::M.resize(10);
     unsigned lowest_level = Base::tree.levels();
@@ -127,27 +67,10 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-
-          auto p_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto p_end   = make_transform_iterator(box.body_end(),   body2point);
-          auto c_begin = charges.begin() + box.body_begin()->index();
-
-          printf("P2M: box: %d\n", (int)box.index());
-          Base::K.P2M(p_begin, p_end, c_begin, box.center(), Base::M[idx]);
-
+          Base::evalP2M(box);
         } else {
           // If not leaf, make M2M calls
-
-          // For all the children, M2M
-          auto c_end = box.child_end();
-          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
-            auto cbox = *cit;
-            auto translation = box.center() - cbox.center();
-
-            printf("M2M: %d to %d\n", cbox.index(), idx);
-            Base::K.M2M(Base::M[cbox.index()], Base::M[idx], translation);
-          }
+          Base::evalM2M(box);
         }
       }
     }
@@ -156,8 +79,7 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
   //! Box-Box interactions
   void interactions(std::vector<result_type>& results)
   {
-    // set reference to beginning of results
-    results_begin = results.begin();
+    (void) results; // Quiet warning
 
     typedef typename Octree<point_type>::Box Box;
     typedef typename std::pair<Box, Box> box_pair;
@@ -188,40 +110,21 @@ class EvaluatorFMM : public EvaluatorBase<Tree,Kernel>
   //! downward sweep
   void downward(std::vector<result_type>& results)
   {
+    (void) results; // Quiet warning
+
     // For the highest level down to the lowest level
     for (unsigned l = 1; l < Base::tree.levels(); ++l) {
       // For all boxes at this level
       auto b_end = Base::tree.box_end(l);
       for (auto bit = Base::tree.box_begin(l); bit != b_end; ++bit) {
         auto box = *bit;
-        unsigned idx = box.index();
-
         // Initialize box data
         if (box.is_leaf()) {
           // If leaf, make L2P calls
-
-          // For all the bodies, L2P
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-          auto t_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto t_end   = make_transform_iterator(box.body_end(), body2point);
-          auto r_begin = results.begin() + box.body_begin()->index();
-
-          printf("L2P: %d\n",idx);
-          Base::K.L2P(Base::L[idx], box.center(),
-                t_begin, t_end,
-                r_begin);
+          Base::evalL2P(box);
         } else {
           // If not leaf, make L2L calls
-
-          // For all the children, L2L
-          auto c_end = box.child_end();
-          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
-            auto cbox = *cit;
-            auto translation = cbox.center() - box.center();
-
-            printf("L2L: %d to %d\n",idx,cbox.index());
-            Base::K.L2L(Base::L[idx], Base::L[cbox.index()], translation);
-          }
+          Base::evalL2L(box);
         }
       }
     }

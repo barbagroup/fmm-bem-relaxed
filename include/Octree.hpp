@@ -215,7 +215,9 @@ class Octree
  public:
   // Predeclarations
   struct Body;
+  typedef Body body_type;
   struct Box;
+  typedef Box box_type;
   struct body_iterator;
   struct box_iterator;
 

@@ -19,9 +19,7 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
   typedef typename Base::result_type result_type;
   typedef typename Base::point_type  point_type;
 
-  typename std::vector<result_type>::iterator results_begin;
-  typename std::vector<charge_type>::const_iterator charges_begin;
-
+#if 0
   /** One-sided P2P!!
    */
   void evalP2P(const typename Octree<point_type>::Box& b1,
@@ -63,15 +61,16 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
                 t_begin, t_end,
                 r_begin);
   }
+#endif
 
   template <typename BOX, typename Q>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ) {
     double r0_norm = std::sqrt(normSq(b1.center() - b2.center()));
     if (r0_norm * Base::THETA > b1.side_length()/2 + b2.side_length()/2) {
       // These boxes satisfy the multipole acceptance criteria
-      evalM2P(b1,b2);
+      Base::evalM2P(b1,b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      evalP2P(b2,b1);
+      Base::evalP2P(b2,b1);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -85,12 +84,7 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
   //! upward sweep
   void upward(const std::vector<charge_type>& charges)
   {
-
-    // set charges_begin iterator
-    charges_begin = charges.begin();
-
-    Base::M.resize(Base::tree.boxes());
-    Base::L.resize(Base::tree.boxes());
+    (void) charges; // Quiet warning
 
     // EvaluatorBase<Tree,Kernel>::M.resize(10);
     unsigned lowest_level = Base::tree.levels();
@@ -111,27 +105,10 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-
-          auto p_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto p_end   = make_transform_iterator(box.body_end(),   body2point);
-          auto c_begin = charges.begin() + box.body_begin()->index();
-
-          printf("P2M: box: %d\n", (int)box.index());
-          Base::K.P2M(p_begin, p_end, c_begin, box.center(), Base::M[idx]);
-
+          Base::evalP2M(box);
         } else {
           // If not leaf, make M2M calls
-
-          // For all the children, M2M
-          auto c_end = box.child_end();
-          for (auto cit = box.child_begin(); cit != c_end; ++cit) {
-            auto cbox = *cit;
-            auto translation = box.center() - cbox.center();
-
-            printf("M2M: %d to %d\n", cbox.index(), idx);
-            Base::K.M2M(Base::M[cbox.index()], Base::M[idx], translation);
-          }
+          Base::evalM2M(box);
         }
       }
     }
@@ -140,8 +117,7 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
   //! Box-Box interactions
   void interactions(std::vector<result_type>& results)
   {
-    // set reference to beginning of results
-    results_begin = results.begin();
+    (void) results; // Quiet warning
 
     typedef typename Octree<point_type>::Box Box;
     typedef typename std::pair<Box, Box> box_pair;
@@ -172,13 +148,12 @@ class EvaluatorTreecode : public EvaluatorBase<Tree,Kernel>
   //! downward sweep
   void downward(std::vector<result_type>& results)
   {
-    // not needed for treecode -- quiet warning
-    (void) results;
+    // not needed for treecode
+    (void) results; // Quiet warning
   }
 
   //! evaluator name
-  std::string name()
-  {
+  std::string name() {
     return "Treecode";
   }
 };

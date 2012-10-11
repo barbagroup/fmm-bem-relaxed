@@ -43,6 +43,8 @@ class Octree
       assert(!bb.empty());
     }
 
+    MortonCoder() {};
+
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
       return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
@@ -445,6 +447,8 @@ class Octree
   Octree(const BoundingBox<Point>& bb)
       : coder_(bb) {
   }
+
+  Octree() {};
 
   /** Return the Bounding Box that this Octree encompasses
    */

@@ -91,6 +91,8 @@ class FMM_plan//  : public fmm_wrapper
   //! Set the evaluator strategy of this plan at runtime
   void set_evaluator(FMMOptions::EvaluatorType type) {
     (void) type;
+    printf("FMM_plan::set_evaluator: &tree: %p\n",&otree);
+    printf("FMM_plan::set_evaluator: tree.bodies(): %d\n",(int)otree.bodies());
     // auto eval = make_evaluator(NullEval(), NullEval(), NullEval());
     auto eval = make_evaluator(EvalUpward<tree_type,kernel_type,FMMOptions>(otree,K,options),
                                EvalInteraction<tree_type,kernel_type,FMMOptions>(otree,K,options),
@@ -131,6 +133,8 @@ public:
                                    const std::vector<point_type>& t_points)
   {
     // setup the evaluator
+    printf("FMM_plan::execute: &tree: %p\n",&otree);
+    printf("FMM_plan::execute: tree.bodies(): %d\n",(int)otree.bodies());
     set_evaluator(options.evaluator);
 
     if (!evaluator) {

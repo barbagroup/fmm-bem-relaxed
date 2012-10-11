@@ -22,8 +22,11 @@ class ExpansionContext {
   // resize the expansions
   void resize(unsigned size)
   {
+    printf("resizing expansions\n");
     M.resize(size);
+    printf("M resized\n");
     L.resize(size);
+    printf("L resized\n");
   }
 
   // Accessors
@@ -69,6 +72,14 @@ class ChargeContext {
   typename std::vector<result_type>::iterator result_end(const box_type& b) {
     return results.begin() + b.body_end()->index();
   }
+  template <typename Vector>
+  void set_charges(Vector& c) {
+    charges = c;
+  }
+  template <typename Vector>
+  void set_results(Vector& r) {
+    results = r;
+  }
 };
 
 
@@ -78,6 +89,9 @@ struct Evaluator {
   const DerivedType& derived() const {
     return static_cast<const DerivedType&>(*this);
   }
+ private:
+  Evaluator(const Evaluator<DerivedType>& other) {(void)other;};
+  Evaluator<DerivedType>& operator=(const Evaluator<DerivedType>& other) {(void)other;};
 };
 
 template <typename E1, typename E2>
@@ -135,6 +149,7 @@ class Executor : public ExecutorBase<Tree,Kernel>
 
   void execute(ExpansionContext<Tree,Kernel>& ec,
                ChargeContext<Tree,Kernel>& cc) const {
+    printf("execute(ec, cc) called\n");
     eval_.execute(ec, cc);
   }
 
@@ -142,14 +157,21 @@ class Executor : public ExecutorBase<Tree,Kernel>
                std::vector<typename Kernel::result_type>& results) {
       (void) charges;
       (void) results;
+      printf("execute(charges, results) called\n");
+      cc_.set_charges(charges);
+      cc_.set_results(results);
+      eval_.execute(ec_,cc_);
   }
 };
 
 template <typename Tree, typename Kernel, typename E>
 ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree, const Kernel& K,
                                          const Evaluator<E>& eval) {
+  printf("ExecutorBase::make_executor: &tree: %p\n",&tree);
+  printf("ExecutorBase::make_executor: tree.bodies(): %d\n",(int)tree.bodies());
   return new Executor<Tree, Kernel, decltype(eval.derived())>(tree, K, eval.derived());
 }
+
 
 
 // Example evaluator
@@ -165,6 +187,9 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
   const Tree& tree;
   const Kernel& K;
 
+ private:
+  EvalUpward(const EvalUpward<Tree,Kernel,Options>& other) {(void)other;};
+  EvalUpward<Tree,Kernel,Options>& operator=(const EvalUpward<Tree,Kernel,Options>& other) {(void)other;};
  public:
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
@@ -178,12 +203,18 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
       : tree(t), K(k) {
     (void) options;
     // Do any precomputation
+    printf("EvalUpward::EvalUpward(): &{t,tree}: %p, %p\n",&t,&tree);
+    printf("EvalUpward::EvalUpward(): {t,tree}.bodies(): %d, %d\n",(int)t.bodies(),(int)tree.bodies());
   };
 
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext& ec, ChargeContext& cc) const {
+    printf("EvalUpward executing...\n");
     // Translate upward(...) to use ec, cc
+    printf("EvalUpward::execute(): &tree: %p\n",&tree);
+    printf("EvalUpward::execute(): tree.bodies(): %d\n",(int)tree.bodies());
     ec.resize(tree.boxes());
+    printf("ec resized\n");
 
     // EvaluatorBase<Tree,Kernel>::M.resize(10);
     unsigned lowest_level = tree.levels();

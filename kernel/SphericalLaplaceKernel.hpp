@@ -40,7 +40,7 @@ class SphericalLaplaceKernel
   //! Epsilon
   static constexpr real EPS = 1e-6;
   //! Imaginary unit
-  static constexpr complex CI = complex(0,1);
+  const complex CI = complex(0,1);
   //! ODD-Even helper function
   inline int ODDEVEN(int n) const {
     return (((n & 1) == 1) ? -1 : 1);

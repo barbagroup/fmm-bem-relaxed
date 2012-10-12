@@ -204,6 +204,29 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
     (void) options;
   };
 
+  template <typename BOX, typename ChargeContext, typename ExpansionContext>
+  void evalP2M(const BOX& box, ChargeContext& cc, ExpansionContext& ec) const
+  {
+    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
+
+    auto p_begin = make_transform_iterator(box.body_begin(), body2point);
+    auto p_end   = make_transform_iterator(box.body_end(),   body2point);
+    auto c_begin = cc.charge_begin(box);
+
+    printf("P2M: box: %d\n", (int)box.index());
+    K.P2M(p_begin, p_end, c_begin, box.center(), ec.multipole_expansion(box));
+  }
+
+  template <typename BOX, typename ExpansionContext>
+  void evalM2M(const BOX& cbox, const BOX& box, ExpansionContext& ec) const
+  {
+    auto translation = box.center() - cbox.center();
+
+    printf("M2M: %d to %d\n", cbox.index(), box.index());
+    // K.M2M(M[cbox.index()], M[idx], translation);
+    K.M2M(ec.multipole_expansion(cbox),ec.multipole_expansion(box), translation);
+  }
+
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext& ec, ChargeContext& cc) const {
     ec.resize(tree.boxes());
@@ -220,7 +243,6 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
         auto box = *bit;
 
         // Initialize box data
-        unsigned idx = box.index();
         double box_size = box.side_length();
         // K.init_multipole(M[idx], box_size);
         K.init_multipole(ec.multipole_expansion(box), box_size);
@@ -229,16 +251,7 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-
-          auto p_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto p_end   = make_transform_iterator(box.body_end(),   body2point);
-          // auto c_begin = charges.begin() + box.body_begin()->index();
-          auto c_begin = cc.charge_begin(box);
-
-          printf("P2M: box: %d\n", (int)box.index());
-          // K.P2M(p_begin, p_end, c_begin, box.center(), M[idx]);
-          K.P2M(p_begin, p_end, c_begin, box.center(), ec.multipole_expansion(box));
+          evalP2M(box,cc,ec);
 
         } else {
           // If not leaf, make M2M calls
@@ -247,11 +260,7 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
           auto c_end = box.child_end();
           for (auto cit = box.child_begin(); cit != c_end; ++cit) {
             auto cbox = *cit;
-            auto translation = box.center() - cbox.center();
-
-            printf("M2M: %d to %d\n", cbox.index(), idx);
-            // K.M2M(M[cbox.index()], M[idx], translation);
-            K.M2M(ec.multipole_expansion(cbox),ec.multipole_expansion(box), translation);
+            evalM2M(cbox,box,ec);
           }
         }
       }
@@ -415,6 +424,30 @@ class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
     (void) options;
   }
 
+  template <typename BOX, typename ExpansionContext, typename ChargeContext>
+  void evalL2P(const BOX& box, ExpansionContext& ec, ChargeContext& cc) const
+  {
+    auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
+    auto t_begin = make_transform_iterator(box.body_begin(), body2point);
+    auto t_end   = make_transform_iterator(box.body_end(), body2point);
+    auto r_begin = cc.result_begin(box); // results_begin + box.body_begin()->index();
+
+    printf("L2P: %d\n",box.index());
+    K.L2P(ec.local_expansion(box), box.center(),
+          t_begin, t_end,
+          r_begin);
+  }
+
+  template <typename BOX, typename ExpansionContext>
+  void evalL2L(const BOX& box, const BOX& cbox, ExpansionContext& ec) const
+  {
+    auto translation = cbox.center() - box.center();
+
+    printf("L2L: %d to %d\n",box.index(),cbox.index());
+    K.L2L(ec.local_expansion(box), ec.local_expansion(cbox), translation);
+
+  }
+
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext& ec, ChargeContext& cc) const {
     // For the highest level down to the lowest level
@@ -423,22 +456,11 @@ class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
       auto b_end = tree.box_end(l);
       for (auto bit = tree.box_begin(l); bit != b_end; ++bit) {
         auto box = *bit;
-        unsigned idx = box.index();
 
         // Initialize box data
         if (box.is_leaf()) {
           // If leaf, make L2P calls
-
-          // For all the bodies, L2P
-          auto body2point = [](typename Octree<point_type>::Body b) { return b.point(); };
-          auto t_begin = make_transform_iterator(box.body_begin(), body2point);
-          auto t_end   = make_transform_iterator(box.body_end(), body2point);
-          auto r_begin = cc.result_begin(box); // results_begin + box.body_begin()->index();
-
-          printf("L2P: %d\n",idx);
-          K.L2P(ec.local_expansion(box), box.center(),
-                t_begin, t_end,
-                r_begin);
+          evalL2P(box,ec,cc);
         } else {
           // If not leaf, make L2L calls
 
@@ -446,11 +468,7 @@ class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
           auto c_end = box.child_end();
           for (auto cit = box.child_begin(); cit != c_end; ++cit) {
             auto cbox = *cit;
-            auto translation = cbox.center() - box.center();
-
-            printf("L2L: %d to %d\n",idx,cbox.index());
-            // K.L2L(L[idx], L[cbox.index()], translation);
-            K.L2L(ec.local_expansion(box), ec.local_expansion(cbox), translation);
+            evalL2L(box,cbox,ec);
           }
         }
       }

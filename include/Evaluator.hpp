@@ -30,16 +30,16 @@ class ExpansionContext {
   }
 
   // Accessors
-  multipole_type& multipole_expansion(const box_type& b) {
+  inline multipole_type& multipole_expansion(const box_type& b) {
     return M[b.index()];
   }
-  const multipole_type& multipole_expansion(const box_type& b) const {
+  inline const multipole_type& multipole_expansion(const box_type& b) const {
     return M[b.index()];
   }
-  local_type& local_expansion(const box_type& b) {
+  inline local_type& local_expansion(const box_type& b) {
     return L[b.index()];
   }
-  const multipole_type& local_expansion(const box_type& b) const {
+  inline const multipole_type& local_expansion(const box_type& b) const {
     return L[b.index()];
   }
 };
@@ -60,25 +60,29 @@ class ChargeContext {
     : charges(size), results(size) {
   }
   // Accessors
-  typename std::vector<charge_type>::const_iterator charge_begin(const box_type& b) const {
+  inline typename std::vector<charge_type>::const_iterator charge_begin(const box_type& b) const {
     return charges.begin() + b.body_begin()->index();
   }
-  typename std::vector<charge_type>::const_iterator charge_end(const box_type& b) const {
+  inline typename std::vector<charge_type>::const_iterator charge_end(const box_type& b) const {
     return charges.begin() + b.body_end()->index();
   }
-  typename std::vector<result_type>::iterator result_begin(const box_type& b) {
+  inline typename std::vector<result_type>::iterator result_begin(const box_type& b) {
     return results.begin() + b.body_begin()->index();
   }
-  typename std::vector<result_type>::iterator result_end(const box_type& b) {
+  inline typename std::vector<result_type>::iterator result_end(const box_type& b) {
     return results.begin() + b.body_end()->index();
   }
+  // TODO: What to do with these...
   template <typename Vector>
-  void set_charges(Vector& c) {
+  inline void set_charges(Vector& c) {
     charges = c;
   }
   template <typename Vector>
-  void set_results(Vector& r) {
+  inline void set_results(Vector& r) {
     results = r;
+  }
+  inline std::vector<result_type> get_results() {
+    return results;
   }
 };
 
@@ -86,48 +90,53 @@ class ChargeContext {
 
 template <typename DerivedType>
 struct Evaluator {
-  const DerivedType& derived() const {
-    return static_cast<const DerivedType&>(*this);
-  }
- private:
-  Evaluator(const Evaluator<DerivedType>& other) {(void)other;};
-  Evaluator<DerivedType>& operator=(const Evaluator<DerivedType>& other) {(void)other;};
+  //operator const DerivedType&() const {
+  //  return static_cast<const DerivedType&>(*this);
+  //}
+  //operator DerivedType&() {
+  //  return static_cast<DerivedType&>(*this);
+  //}
 };
 
 template <typename E1, typename E2>
 class EvalPair : public Evaluator<EvalPair<E1,E2>> {
-  const E1& e1_;
-  const E2& e2_;
+  const E1* e1_;
+  const E2* e2_;
 public:
-  EvalPair(const E1& e1, const E2& e2)
-      : e1_(e1), e2_(e2) {
+  EvalPair(const Evaluator<E1>* e1, const Evaluator<E2>* e2)
+      : e1_(static_cast<const E1*>(e1)), e2_(static_cast<const E2*>(e2)) {
+  }
+  ~EvalPair() {
+    delete e1_;
+    delete e2_;
   }
   template <typename ExpansionContext, typename ChargeContext>
-  void execute(ExpansionContext& ec, ChargeContext& cc) const {
-    e1_.execute(ec, cc);
-    e2_.execute(ec, cc);
+  inline void execute(ExpansionContext& ec, ChargeContext& cc) const {
+    e1_->execute(ec, cc);
+    e2_->execute(ec, cc);
   }
 };
 
+
 template <typename E1, typename E2>
-EvalPair<E1,E2> make_evaluator(const Evaluator<E1>& e1,
-                               const Evaluator<E2>& e2) {
-  return EvalPair<E1,E2>(e1.derived(), e2.derived());
+EvalPair<E1,E2>* make_evaluator(const Evaluator<E1>* e1,
+                                const Evaluator<E2>* e2) {
+  return new EvalPair<E1,E2>(e1, e2);
 }
 
 template <typename E1, typename E2, typename E3>
-EvalPair<E1,EvalPair<E2,E3>> make_evaluator(const Evaluator<E1>& e1,
-                                            const Evaluator<E2>& e2,
-                                            const Evaluator<E3>& e3) {
-  return make_evaluator(e1.derived(), make_evaluator(e2.derived(), e3.derived()));
+EvalPair<E1,EvalPair<E2,E3>>* make_evaluator(const Evaluator<E1>* e1,
+                                             const Evaluator<E2>* e2,
+                                             const Evaluator<E3>* e3) {
+  return make_evaluator(e1, make_evaluator(e2, e3));
 }
+
 
 template <typename Tree, typename Kernel>
 struct ExecutorBase {
+  ExecutorBase() {}
   virtual ~ExecutorBase() {};
-  virtual void execute(ExpansionContext<Tree,Kernel>& ec,
-                       ChargeContext<Tree,Kernel>& cc) const = 0;
-  // TODO: remove
+  // TODO: improve
   virtual void execute(const std::vector<typename Kernel::charge_type>& charges,
                        std::vector<typename Kernel::result_type>& results) = 0;
 };
@@ -136,42 +145,36 @@ struct ExecutorBase {
 template <typename Tree, typename Kernel, typename E>
 class Executor : public ExecutorBase<Tree,Kernel>
 {
-  const E& eval_;
   ExpansionContext<Tree,Kernel> ec_;
   ChargeContext<Tree,Kernel> cc_;
+  const E* eval_;
 
  public:
-  Executor(const Tree& tree, const Kernel& K, const E& eval)
-      : eval_(eval), ec_(tree.boxes()), cc_(tree.bodies()) {
+  Executor(const Tree& tree, const Kernel& K, const Evaluator<E>* eval)
+      : ec_(tree.boxes()), cc_(tree.bodies()),
+        eval_(static_cast<const E*>(eval)) {
     (void) K;
   }
-  ~Executor() {}
-
-  void execute(ExpansionContext<Tree,Kernel>& ec,
-               ChargeContext<Tree,Kernel>& cc) const {
-    printf("execute(ec, cc) called\n");
-    eval_.execute(ec, cc);
+  ~Executor() {
+    delete eval_;
   }
 
   void execute(const std::vector<typename Kernel::charge_type>& charges,
                std::vector<typename Kernel::result_type>& results) {
-      (void) charges;
-      (void) results;
-      printf("execute(charges, results) called\n");
       cc_.set_charges(charges);
       cc_.set_results(results);
-      eval_.execute(ec_,cc_);
+      eval_->execute(ec_, cc_);
+      results = cc_.get_results();
   }
 };
 
-template <typename Tree, typename Kernel, typename E>
-ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree, const Kernel& K,
-                                         const Evaluator<E>& eval) {
-  printf("ExecutorBase::make_executor: &tree: %p\n",&tree);
-  printf("ExecutorBase::make_executor: tree.bodies(): %d\n",(int)tree.bodies());
-  return new Executor<Tree, Kernel, decltype(eval.derived())>(tree, K, eval.derived());
-}
 
+template <typename Tree, typename Kernel, typename E>
+ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree,
+                                         const Kernel& K,
+                                         const Evaluator<E>* eval) {
+  return new Executor<Tree, Kernel, E>(tree, K, eval);
+}
 
 
 // Example evaluator
@@ -187,9 +190,6 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
   const Tree& tree;
   const Kernel& K;
 
- private:
-  EvalUpward(const EvalUpward<Tree,Kernel,Options>& other) {(void)other;};
-  EvalUpward<Tree,Kernel,Options>& operator=(const EvalUpward<Tree,Kernel,Options>& other) {(void)other;};
  public:
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
@@ -202,19 +202,11 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
   EvalUpward(const Tree& t, const Kernel& k, const Options& options)
       : tree(t), K(k) {
     (void) options;
-    // Do any precomputation
-    printf("EvalUpward::EvalUpward(): &{t,tree}: %p, %p\n",&t,&tree);
-    printf("EvalUpward::EvalUpward(): {t,tree}.bodies(): %d, %d\n",(int)t.bodies(),(int)tree.bodies());
   };
 
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext& ec, ChargeContext& cc) const {
-    printf("EvalUpward executing...\n");
-    // Translate upward(...) to use ec, cc
-    printf("EvalUpward::execute(): &tree: %p\n",&tree);
-    printf("EvalUpward::execute(): tree.bodies(): %d\n",(int)tree.bodies());
     ec.resize(tree.boxes());
-    printf("ec resized\n");
 
     // EvaluatorBase<Tree,Kernel>::M.resize(10);
     unsigned lowest_level = tree.levels();
@@ -286,7 +278,7 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
  /** One-sided P2P!!
    */
   template <typename BOX, typename ChargeContext>
-  void evalP2P(const BOX& b1, 
+  void evalP2P(const BOX& b1,
                const BOX& b2,
                ChargeContext& cc) const {
     // Point iters
@@ -312,7 +304,7 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
   }
 
   template <typename BOX, typename ExpansionContext, typename ChargeContext>
-  void evalM2P(const BOX& b1, 
+  void evalM2P(const BOX& b1,
                const BOX& b2,
                      ExpansionContext& ec,
                      ChargeContext& cc) const
@@ -335,9 +327,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
   }
 
   template <typename ExpansionContext>
-  void evalM2L(const typename Octree<point_type>::Box& b1, 
+  void evalM2L(const typename Octree<point_type>::Box& b1,
                const typename Octree<point_type>::Box& b2,
-                              ExpansionContext& ec) const 
+                              ExpansionContext& ec) const
   {
     // auto translation = b1.center() - b2.center();
     auto translation = b2.center() - b1.center();
@@ -356,7 +348,8 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
     // any precomputation here
   }
 
-  template <typename BOX, typename Q, typename ExpansionContext, typename ChargeContext>
+  template <typename BOX, typename Q,
+            typename ExpansionContext, typename ChargeContext>
   void interact(const BOX& b1, const BOX& b2, Q& pairQ,
                 ExpansionContext& ec, ChargeContext& cc) const {
     double r0_norm = norm(b1.center() - b2.center());
@@ -421,6 +414,7 @@ class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
     // any precomputation here
     (void) options;
   }
+
   template <typename ExpansionContext, typename ChargeContext>
   void execute(ExpansionContext& ec, ChargeContext& cc) const {
     // For the highest level down to the lowest level
@@ -457,9 +451,9 @@ class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
             printf("L2L: %d to %d\n",idx,cbox.index());
             // K.L2L(L[idx], L[cbox.index()], translation);
             K.L2L(ec.local_expansion(box), ec.local_expansion(cbox), translation);
-          }   
-        }   
-      }   
+          }
+        }
+      }
     }
   }
 };

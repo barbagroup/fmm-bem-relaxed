@@ -23,6 +23,12 @@ THE SOFTWARE.
 #include <FMM_plan.hpp>
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
+#include <CountingKernel.hpp>
+//#include <CartesianLaplaceKernel.hpp>
+
+// modify error checking for counting kernel
+// TODO: Do this much better...
+// #define COUNTING_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -83,10 +89,12 @@ int main(int argc, char **argv)
   }
 
   // Init the FMM Kernel
-  SphericalLaplaceKernel K(P);
-  typedef SphericalLaplaceKernel::point_type point_type;
-  typedef SphericalLaplaceKernel::charge_type charge_type;
-  typedef SphericalLaplaceKernel::result_type result_type;
+  // SphericalLaplaceKernel K(P);
+  typedef SphericalLaplaceKernel kernel_type;
+  kernel_type K(P);
+  typedef kernel_type::point_type point_type;
+  typedef kernel_type::charge_type charge_type;
+  typedef kernel_type::result_type result_type;
 
 
   // Init points and charges
@@ -103,7 +111,7 @@ int main(int argc, char **argv)
 
   // Build and execute the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<SphericalLaplaceKernel> plan = FMM_plan<SphericalLaplaceKernel>(K, points, opts);
+  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
   print_box(plan.otree.root());
 
   //fmm_execute(plan, charges, jbodies);
@@ -120,6 +128,7 @@ int main(int argc, char **argv)
           points.begin(), points.end(),
           exact_result.begin());
 
+#ifndef COUNTING_KERNEL
     double diff1=0, diff2=0, norm1=0, norm2=0;
     int i = 0;
     for (auto r1i = exact_result.begin(), r2i = result.begin();
@@ -142,5 +151,21 @@ int main(int argc, char **argv)
 
     printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
     printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+#else
+    #pragma message "HERE"
+    int i = 0;
+    int wrong_results = 0;
+    for (auto r1i = exact_result.begin(), r2i = result.begin();
+              r1i != exact_result.end(); ++r1i, ++r2i) {
+
+      result_type exact = *r1i;
+      result_type r = *r2i;
+
+      if (*r1i != *r2i) wrong_results++;
+
+      printf("[%03d] exact: %d, FMM: %d\n",i++,*r1i,*r2i);
+    }
+    printf("Wrong counts: %d\n",wrong_results);
+#endif
   }
 }

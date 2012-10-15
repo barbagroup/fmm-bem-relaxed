@@ -21,20 +21,26 @@
   THE SOFTWARE.
 */
 
-
-class BaseKernel
+/** @class KernelSkeleton
+ * @brief Example Kernel that can be followed to develop Kernel classes for
+ * Tree/FMM code.
+ *
+ * This class acts as a starting point for defining Kernels that may be
+ * used with the treecode and fast multipole method implementations provided in
+ * TODO.txt...
+ *
+ * Not all methods must be implemented, but most constexr and typedefs should
+ * be kept for compatibility.
+ */
+class KernelSkeleton
 {
  private:
   //! Precision
   typedef double real;
-  typedef std::complex<real> complex;
+
+  // Any other member variables to be used in the Tree operations
 
  public:
-  //! Multipole expansion type
-  typedef std::vector<real> multipole_type;
-  //! Local expansion type
-  typedef std::vector<real> local_type;
-
   //! The dimension of the Kernel
   static constexpr unsigned dimension = 3;
   //! Point type
@@ -43,12 +49,14 @@ class BaseKernel
   //! Charge type
   typedef real charge_type;
   //! The return type of a kernel evaluation
-  typedef Vec<4,real> kernel_value_type;
+  typedef real kernel_value_type;
   //! The product of the kernel_value_type and the charge_type
-  typedef Vec<4,real> result_type;
+  typedef real result_type;
 
-  //! Constructor
-  BaseKernel() {};
+  //! Multipole expansion type
+  typedef std::vector<real> multipole_type;
+  //! Local expansion type
+  typedef std::vector<real> local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M, double box_size) const {
@@ -67,7 +75,7 @@ class BaseKernel
    * @param[in] s,t The source and target points to evaluate the kernel
    */
   kernel_value_type operator()(const point_type& s,
-                               const point_type& t) {
+                               const point_type& t) const {
     (void) s;
     (void) t;
     return kernel_value_type(0);
@@ -83,8 +91,7 @@ class BaseKernel
    */
   template <typename PointIter, typename ChargeIter, typename ResultIter>
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-           PointIter t_begin, PointIter t_end, ResultIter r_begin) const
-  {
+           PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
     (void) s_begin;
     (void) s_end;
     (void) c_begin;
@@ -100,7 +107,6 @@ class BaseKernel
   void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
            PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
            ResultIter r1_begin, ResultIter r2_begin) const {
-    // TODO...
     (void) p1_begin;
     (void) p1_end;
     (void) c1_begin;
@@ -122,7 +128,7 @@ class BaseKernel
    */
   template <typename PointIter, typename ChargeIter>
   void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) {
+           const point_type& center, multipole_type& M) const {
     (void) p_begin;
     (void) p_end;
     (void) c_begin;
@@ -140,7 +146,7 @@ class BaseKernel
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     (void) Msource;
     (void) Mtarget;
     (void) translation;
@@ -157,7 +163,7 @@ class BaseKernel
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     (void) Msource;
     (void) Ltarget;
     (void) translation;

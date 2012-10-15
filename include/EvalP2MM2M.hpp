@@ -5,7 +5,7 @@
 
 // FMM / treecode upward sweep
 template <typename Tree, typename Kernel, typename Options>
-class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
+class EvalP2MM2M : public Evaluator<EvalP2MM2M<Tree,Kernel,Options>>
 {
   const Tree& tree;
   const Kernel& K;
@@ -37,7 +37,7 @@ class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel,Options>>
 
 public:
   //! constructor
-  EvalUpward(const Tree& t, const Kernel& k, const Options& options)
+  EvalP2MM2M(const Tree& t, const Kernel& k, const Options& options)
       : tree(t), K(k) {
     (void) options;
   };
@@ -79,3 +79,11 @@ public:
     }
   }
 };
+
+template <typename Tree, typename Kernel, typename Options>
+EvalP2MM2M<Tree,Kernel,Options>* make_P2MM2M(const Tree& tree,
+					     const Kernel& kernel,
+					     const Options& opts) {
+  return new EvalP2MM2M<Tree,Kernel,Options>(tree, kernel, opts);
+}
+

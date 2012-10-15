@@ -2,20 +2,23 @@
 
 #include "Evaluator.hpp"
 
+#include <functional>
 
-template <typename Tree, typename Kernel, typename Options>
-class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
+template <typename Tree, typename Kernel, int EXECCODE>
+class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
 {
   const Tree& tree;
   const Kernel& K;
-  double THETA;
+
+  std::function<bool(typename Tree::box_type,
+		     typename Tree::box_type)> acceptMultipole;
 
   /** One-sided P2P!!
    */
   template <typename BoxContext, typename BOX>
-      void evalP2P(BoxContext& bc,
-                   const BOX& b1,
-                   const BOX& b2) const {
+  void evalP2P(BoxContext& bc,
+	       const BOX& b1,
+	       const BOX& b2) const {
     // Point iters
     auto p1_begin = bc.point_begin(b1);
     auto p1_end   = bc.point_end(b1);
@@ -35,9 +38,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
   }
 
   template <typename BoxContext, typename BOX>
-      void evalM2P(BoxContext& bc,
-                   const BOX& b1,
-                   const BOX& b2) const {
+  void evalM2P(BoxContext& bc,
+	       const BOX& b1,
+	       const BOX& b2) const {
     // Target point iters
     auto t_begin = bc.point_begin(b2);
     auto t_end   = bc.point_end(b2);
@@ -54,9 +57,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
   }
 
   template <typename BoxContext, typename BOX>
-      void evalM2L(BoxContext& bc,
-                   const BOX& b1,
-                   const BOX& b2) const {
+  void evalM2L(BoxContext& bc,
+	       const BOX& b1,
+	       const BOX& b2) const {
     printf("M2L: %d to %d\n", b2.index(), b1.index());
 
     K.M2L(bc.multipole_expansion(b1),
@@ -64,19 +67,22 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,Options>>
           b2.center() - b1.center());
   }
 
-public:
+ public:
 
-  EvalInteraction(const Tree& t, const Kernel& k, const Options& options)
-      : tree(t), K(k), THETA(options.THETA) {
+  template <typename MAC>
+  EvalInteraction(const Tree& t, const Kernel& k, const MAC& mac)
+  : tree(t), K(k), acceptMultipole(mac) {
     // any precomputation here
   }
 
   template <typename BoxContext, typename BOX, typename Q>
-      void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
-    double r0_norm = norm(b1.center() - b2.center());
-    if (r0_norm * THETA > b1.radius() + b2.radius()) {
+  void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
+    if (acceptMultipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      evalM2L(bc, b1, b2);
+      if (EXECCODE == 0)
+	evalM2L(bc, b1, b2);
+      else if (EXECCODE == 1)
+	evalM2P(bc, b1, b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
       evalP2P(bc, b2, b1);
     } else {
@@ -85,7 +91,7 @@ public:
   }
 
   template <typename BoxContext>
-      void execute(BoxContext& bc) const {
+  void execute(BoxContext& bc) const {
     typedef typename Tree::box_type Box;
     typedef typename std::pair<Box, Box> box_pair;
     std::deque<box_pair> pairQ;
@@ -112,3 +118,17 @@ public:
     }
   }
 };
+
+
+/*
+template <typename Tree, typename Kernel, typename Options>
+EvalInteraction<Tree,Kernel,int>* make_inter(const Tree& tree,
+					     const Kernel& K,
+					     const Options& opts) {
+  if (opts.evaluator == FMMOptions::FMM)
+    return new EvalInteraction<Tree,Kernel,0>(tree,K,opts);
+  else
+    return new EvalInteraction<Tree,Kernel,1>(tree,K,opts);
+}
+*/
+

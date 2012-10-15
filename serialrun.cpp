@@ -51,7 +51,7 @@ int main(int argc, char **argv)
   int P = 5;
   bool checkErrors = true;
   FMMOptions opts;
-  opts.THETA = 1 / sqrtf(4);                                         // Multipole acceptance criteria
+  opts.set_theta(1 / sqrtf(4));    // Multipole acceptance criteria
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {

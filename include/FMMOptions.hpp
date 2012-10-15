@@ -5,7 +5,6 @@
  */
 
 
-
 /** Class to define compile-time and run-time FMM options */
 class FMMOptions
 {
@@ -18,8 +17,26 @@ public:
   EvaluatorType evaluator;
   double THETA;
 
-  FMMOptions()
-      : symmetric(false), tree(TOPDOWN), evaluator(FMM), THETA(0.5) {
+  struct DefaultMAC {
+    double theta_;
+    DefaultMAC(double theta) : theta_(theta) {}
+
+    template <typename BOX>
+    bool operator()(const BOX& b1, const BOX& b2) const {
+      double r0_norm = norm(b1.center() - b2.center());
+      return r0_norm * theta_ > b1.radius() + b2.radius();
+    }
   };
+
+  // TODO: Generalize type
+  DefaultMAC MAC;
+
+  FMMOptions()
+    : symmetric(false), tree(TOPDOWN), evaluator(FMM), MAC(DefaultMAC(0.5)) {
+  };
+
+  void set_theta(double theta) {
+    MAC = DefaultMAC(theta);
+  }
 };
 

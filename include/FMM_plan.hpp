@@ -13,11 +13,15 @@
 #include "Octree.hpp"
 #include <Logger.hpp>
 
-// TODO: Join these includes?
-#include "EvalUpward.hpp"
-#include "EvalInteraction.hpp"
-#include "EvalDownward.hpp"
+
 #include "Executor.hpp"
+
+// TODO: Join these includes?
+#include "Evaluator.hpp"
+#include "EvalP2MM2M.hpp"
+#include "EvalInteraction.hpp"
+#include "EvalL2LL2P.hpp"
+
 
 //! global logging
 Logger Log;
@@ -72,6 +76,7 @@ class FMM_plan//  : public fmm_wrapper
     return result;
   }
 
+  // TODO: Move to an exec context defined over a tree
   template <typename T>
   std::vector<T> permute(const std::vector<T>& v,
                          const std::vector<unsigned>& permute) {
@@ -81,6 +86,7 @@ class FMM_plan//  : public fmm_wrapper
     return temp;
   }
 
+  // TODO: Move to an exec context defined over a tree
   template <typename T>
   std::vector<T> ipermute(const std::vector<T>& v,
                           const std::vector<unsigned>& permute) {
@@ -91,25 +97,19 @@ class FMM_plan//  : public fmm_wrapper
   }
 
   //! Set the evaluator strategy of this plan at runtime
-  void set_evaluator(FMMOptions::EvaluatorType type) {
-    (void) type;
-    if (type == FMMOptions::FMM) {
-      auto eval = make_evaluator(new EvalUpward<tree_type,kernel_type,FMMOptions>(otree,K,options),
-                                 new EvalInteraction<tree_type,kernel_type,FMMOptions>(otree,K,options),
-                                 new EvalDownward<tree_type,kernel_type,FMMOptions>(otree,K,options));
+  void set_evaluator() {
+    if (options.evaluator == FMMOptions::FMM) {
+      auto eval = make_evaluator(make_P2MM2M(otree, K, options),
+				 new EvalInteraction<tree_type,kernel_type,0>(otree,K,options.MAC),
+				 make_L2LL2P(otree, K, options));
       evaluator = make_executor(otree, K, eval);
-    } else {
-
-    }
-    /*
-    if (type == FMMOptions::FMM) {
-      evaluator = new EvaluatorFMM<tree_type,kernel_type>(otree,K,options.THETA);
-    } else if (type == FMMOptions::TREECODE) {
-      evaluator = new EvaluatorTreecode<tree_type,kernel_type>(otree,K,options.THETA);
+    } else if (options.evaluator == FMMOptions::TREECODE) {
+      auto eval = make_evaluator(make_P2MM2M(otree, K, options),
+				 new EvalInteraction<tree_type,kernel_type,1>(otree,K,options.MAC));
+      evaluator = make_executor(otree, K, eval);
     } else {
       evaluator = NULL;
     }
-    */
   }
 
 public:
@@ -122,11 +122,13 @@ public:
         otree(get_boundingbox(points.begin(), points.end())) {
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
+    // setup the evaluator
+    set_evaluator();
   }
 
   // DESTRUCTOR
   ~FMM_plan() {
-    if (evaluator) delete evaluator;
+    delete evaluator;
   }
 
   // EXECUTE
@@ -134,9 +136,6 @@ public:
   std::vector<result_type> execute(const std::vector<charge_type>& charges,
                                    const std::vector<point_type>& t_points)
   {
-    // setup the evaluator
-    set_evaluator(options.evaluator);
-
     if (!evaluator) {
       printf("[E]: Evaluator not initialised -- returning..\n");
       return std::vector<result_type>(0);

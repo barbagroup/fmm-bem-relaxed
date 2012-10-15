@@ -5,13 +5,13 @@
 
 
 template <typename Tree, typename Kernel, typename Options>
-class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel,Options>>
+class EvalL2LL2P : public Evaluator<EvalL2LL2P<Tree,Kernel,Options>>
 {
   const Tree& tree;
   const Kernel& K;
 public:
 
-  EvalDownward(const Tree& t, const Kernel& k, const Options& options)
+  EvalL2LL2P(const Tree& t, const Kernel& k, const Options& options)
       : tree(t), K(k) {
     // any precomputation here
     (void) options;
@@ -68,4 +68,9 @@ public:
   }
 };
 
-
+template <typename Tree, typename Kernel, typename Options>
+EvalL2LL2P<Tree,Kernel,Options>* make_L2LL2P(const Tree& tree,
+					     const Kernel& kernel,
+					     const Options& opts) {
+  return new EvalL2LL2P<Tree,Kernel,Options>(tree, kernel, opts);
+}

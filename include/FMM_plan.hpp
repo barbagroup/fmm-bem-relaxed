@@ -110,15 +110,6 @@ class FMM_plan//  : public fmm_wrapper
     } else {
       evaluator = NULL;
     }
-    /*
-    if (type == FMMOptions::FMM) {
-      evaluator = new EvaluatorFMM<tree_type,kernel_type>(otree,K,options.THETA);
-    } else if (type == FMMOptions::TREECODE) {
-      evaluator = new EvaluatorTreecode<tree_type,kernel_type>(otree,K,options.THETA);
-    } else {
-      evaluator = NULL;
-    }
-    */
   }
 
 public:

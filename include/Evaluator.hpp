@@ -10,14 +10,14 @@ class EvalPair : public Evaluator<EvalPair<E1,E2>> {
   const E2* e2_;
 public:
   EvalPair(const Evaluator<E1>* e1, const Evaluator<E2>* e2)
-      : e1_(static_cast<const E1*>(e1)), e2_(static_cast<const E2*>(e2)) {
+  : e1_(static_cast<const E1*>(e1)), e2_(static_cast<const E2*>(e2)) {
   }
   ~EvalPair() {
     delete e1_;
     delete e2_;
   }
   template <typename BoxContext>
-      inline void execute(BoxContext& bc) const {
+  inline void execute(BoxContext& bc) const {
     e1_->execute(bc);
     e2_->execute(bc);
   }

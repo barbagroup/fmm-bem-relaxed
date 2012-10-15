@@ -100,12 +100,12 @@ class FMM_plan//  : public fmm_wrapper
   void set_evaluator() {
     if (options.evaluator == FMMOptions::FMM) {
       auto eval = make_evaluator(make_P2MM2M(otree, K, options),
-				 new EvalInteraction<tree_type,kernel_type,0>(otree,K,options.MAC),
+				 make_inter<0>(otree, K, options),
 				 make_L2LL2P(otree, K, options));
       evaluator = make_executor(otree, K, eval);
     } else if (options.evaluator == FMMOptions::TREECODE) {
       auto eval = make_evaluator(make_P2MM2M(otree, K, options),
-				 new EvalInteraction<tree_type,kernel_type,1>(otree,K,options.MAC));
+				 make_inter<1>(otree, K, options));
       evaluator = make_executor(otree, K, eval);
     } else {
       evaluator = NULL;
@@ -118,8 +118,8 @@ public:
 
   FMM_plan(Kernel& k, const std::vector<point_type>& points,
            FMMOptions& opts)
-      : options(opts), K(k), //evaluator(k),
-        otree(get_boundingbox(points.begin(), points.end())) {
+    : options(opts), K(k), //evaluator(k),
+      otree(get_boundingbox(points.begin(), points.end())) {
     // Construct the Octree
     otree.construct_tree(points.begin(),points.end());
     // setup the evaluator

@@ -120,15 +120,10 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
 };
 
 
-/*
-template <typename Tree, typename Kernel, typename Options>
-EvalInteraction<Tree,Kernel,int>* make_inter(const Tree& tree,
+template <int EXECCODE, typename Tree, typename Kernel, typename Options>
+EvalInteraction<Tree,Kernel,EXECCODE>* make_inter(const Tree& tree,
 					     const Kernel& K,
 					     const Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM)
-    return new EvalInteraction<Tree,Kernel,0>(tree,K,opts);
-  else
-    return new EvalInteraction<Tree,Kernel,1>(tree,K,opts);
+  return new EvalInteraction<Tree,Kernel,EXECCODE>(tree,K,opts.MAC);
 }
-*/
 

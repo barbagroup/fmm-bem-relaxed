@@ -43,6 +43,8 @@ class Octree
       assert(!bb.empty());
     }
 
+    MortonCoder() {};
+
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
       return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
@@ -227,7 +229,10 @@ class Octree
         : tree_(NULL) {
     }
 
-    Point point() const {
+    const point_type& point() const {
+      return tree_->point_[idx_];
+    }
+    point_type& point() {
       return tree_->point_[idx_];
     }
     unsigned index() const {
@@ -265,6 +270,9 @@ class Octree
     }
     double side_length() const {
       return tree_->coder_.bounding_box().dimensions()[0] / (1 << level());
+    }
+    double radius() const {
+      return side_length() / 2.0;
     }
     unsigned num_children() const {
       return data().num_children();
@@ -446,6 +454,8 @@ class Octree
       : coder_(bb) {
   }
 
+  Octree() {};
+
   /** Return the Bounding Box that this Octree encompasses
    */
   BoundingBox<point_type> bounding_box() const {
@@ -565,37 +575,37 @@ class Octree
 
   /** Return the root box of this tree
    */
-  Box root() {
+  Box root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
 
   /** Return an iterator to the first body in this tree */
-  body_iterator body_begin() {
+  body_iterator body_begin() const {
     return body_iterator(0, const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last body in this tree */
-  body_iterator body_end() {
+  body_iterator body_end() const {
     return body_iterator(point_.size(), const_cast<tree_type*>(this));
   }
   /** Return an iterator to the first box in this tree */
-  box_iterator box_begin() {
+  box_iterator box_begin() const {
     return box_iterator(0, const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last box in this tree */
-  box_iterator box_end() {
+  box_iterator box_end() const {
     return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
   }
   /** Return an iterator to the first box at level L in this tree
    * @pre L < levels()
    */
-  box_iterator box_begin(unsigned L) {
+  box_iterator box_begin(unsigned L) const {
     assert(L < levels());
     return box_iterator(level_offset_[L], const_cast<tree_type*>(this));
   }
   /** Return an iterator one past the last box at level L in this tree
    * @pre L < levels()
    */
-  box_iterator box_end(unsigned L) {
+  box_iterator box_end(unsigned L) const {
     assert(L < levels());
     return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
   }

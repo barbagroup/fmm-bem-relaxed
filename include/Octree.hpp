@@ -229,7 +229,10 @@ class Octree
         : tree_(NULL) {
     }
 
-    Point point() const {
+    const point_type& point() const {
+      return tree_->point_[idx_];
+    }
+    point_type& point() {
       return tree_->point_[idx_];
     }
     unsigned index() const {

@@ -91,12 +91,14 @@ class FMM_plan//  : public fmm_wrapper
   //! Set the evaluator strategy of this plan at runtime
   void set_evaluator(FMMOptions::EvaluatorType type) {
     (void) type;
-    //auto eval = make_evaluator(new NullEval(), new NullEval(), new NullEval());
-    auto eval = make_evaluator(new EvalUpward<tree_type,kernel_type,FMMOptions>(otree,K,options),
-                               new EvalInteraction<tree_type,kernel_type,FMMOptions>(otree,K,options),
-                               new EvalDownward<tree_type,kernel_type,FMMOptions>(otree,K,options));
-    evaluator = make_executor(otree, K, eval);
+    if (type == FMMOptions::FMM) {
+      auto eval = make_evaluator(new EvalUpward<tree_type,kernel_type,FMMOptions>(otree,K,options),
+                                 new EvalInteraction<tree_type,kernel_type,FMMOptions>(otree,K,options),
+                                 new EvalDownward<tree_type,kernel_type,FMMOptions>(otree,K,options));
+      evaluator = make_executor(otree, K, eval);
+    } else {
 
+    }
     /*
     if (type == FMMOptions::FMM) {
       evaluator = new EvaluatorFMM<tree_type,kernel_type>(otree,K,options.THETA);

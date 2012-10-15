@@ -130,7 +130,10 @@ public:
     (void) t_points; // Quiet compiler TODO
 
     // sort charges to match sorted body array
+    // TODO: not here
     auto pcharges = permute(charges, otree.getPermutation());
+
+
     std::vector<result_type> results(charges.size());
 
     evaluator->execute(pcharges, results);
@@ -146,8 +149,10 @@ public:
     //evaluator->downward(results);
 
     // inverse permute results
+    // TODO: not here
     auto ipresults = ipermute(results, otree.getPermutation());
-    // TODO, don't return this
+
+    // TODO: don't return this, provide accessor
     return ipresults;
   }
 };

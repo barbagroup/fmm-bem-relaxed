@@ -13,9 +13,11 @@
 #include "Octree.hpp"
 #include <Logger.hpp>
 
-//#include <EvaluatorBase.hpp>
-#include <Evaluator.hpp>
-
+// TODO: Join these includes?
+#include "EvalUpward.hpp"
+#include "EvalInteraction.hpp"
+#include "EvalDownward.hpp"
+#include "Executor.hpp"
 
 //! global logging
 Logger Log;

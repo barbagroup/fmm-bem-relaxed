@@ -271,6 +271,9 @@ class Octree
     double side_length() const {
       return tree_->coder_.bounding_box().dimensions()[0] / (1 << level());
     }
+    double radius() const {
+      return side_length() / 2.0;
+    }
     unsigned num_children() const {
       return data().num_children();
     }

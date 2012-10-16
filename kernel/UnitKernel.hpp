@@ -21,13 +21,11 @@
   THE SOFTWARE.
 */
 
-
 class CountingKernel
 {
  private:
   //! Precision
   typedef double real;
-  typedef std::complex<real> complex;
 
  public:
   //! Multipole expansion type
@@ -45,10 +43,8 @@ class CountingKernel
   //! The return type of a kernel evaluation
   typedef unsigned kernel_value_type;
   //! The product of the kernel_value_type and the charge_type
-  typedef unsigned result_type;
+  typedef real result_type;
 
-  //! Constructor
-  CountingKernel() {};
 
   /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M, double box_size) const {
@@ -86,11 +82,12 @@ class CountingKernel
            PointIter t_begin, PointIter t_end, ResultIter r_begin) const
   {
     (void) c_begin;
-    for ( ; t_begin!=t_end; ++t_begin, ++r_begin)
-    {
+    for ( ; t_begin != t_end; ++t_begin, ++r_begin) {
       result_type r(0);
       auto s = s_begin;
-      for ( ; s!= s_end; ++s) r++;
+      auto c = c_begin;
+      for ( ; s != s_end; ++s)
+	r += K(*s,*t) * (*c);
       *r_begin += r;
     }
   }

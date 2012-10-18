@@ -23,8 +23,8 @@ THE SOFTWARE.
 #include <FMM_plan.hpp>
 #include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
-#include <CountingKernel.hpp>
-//#include <CartesianLaplaceKernel.hpp>
+// #include <UnitKernel.hpp>
+// #include <CartesianLaplaceKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   // Init the FMM Kernel
   // SphericalLaplaceKernel K(P);
   typedef SphericalLaplaceKernel kernel_type;
-  kernel_type K(P);
+  kernel_type K;
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
@@ -152,7 +152,6 @@ int main(int argc, char **argv)
     printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
     printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
 #else
-    #pragma message "HERE"
     int i = 0;
     int wrong_results = 0;
     for (auto r1i = exact_result.begin(), r2i = result.begin();

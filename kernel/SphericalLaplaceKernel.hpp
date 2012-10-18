@@ -21,6 +21,9 @@
   THE SOFTWARE.
 */
 
+#include <complex>
+#include <vector>
+#include <Vec.hpp>
 
 class SphericalLaplaceKernel
 {
@@ -80,6 +83,8 @@ class SphericalLaplaceKernel
   //! The product of the kernel_value_type and the charge_type
   typedef Vec<4,real> result_type;
 
+  //! default constructor - use delegating constructor
+  SphericalLaplaceKernel() : SphericalLaplaceKernel(5) {};
   //! Constructor
   SphericalLaplaceKernel(int p)
       : P(p), prefactor(4*P*P), Anm(4*P*P), Cnm(P*P*P*P) {

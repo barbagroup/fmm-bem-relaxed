@@ -70,19 +70,19 @@ class KernelSkeleton
   }
 
   /** Kernel evaluation
-   * K(s,t)
+   * K(t,s)
    *
-   * @param[in] s,t The source and target points to evaluate the kernel
+   * @param[in] t,s The target and source points to evaluate the kernel
    */
-  kernel_value_type operator()(const point_type& s,
-                               const point_type& t) const {
-    (void) s;
+  kernel_value_type operator()(const point_type& t,
+                               const point_type& s) const {
     (void) t;
+    (void) s;
     return kernel_value_type(0);
   }
 
   /** Kernel vectorized non-symmetric P2P operation
-   * r_j += sum_i K(s_i,t_j) * c_i
+   * r_i += sum_j K(t_i,s_j) * c_j
    *
    * @param[in] s_begin,s_end Iterator pair to the source points
    * @param[in] c_begin Iterator to the source charges
@@ -118,7 +118,7 @@ class KernelSkeleton
   }
 
   /** Kernel P2M operation
-   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
+   * M = sum_j Op(s_j) * c_j where M is the multipole and s_i are the sources
    *
    * @param[in] p_begin,p_end Iterator pair to the points in this operation
    * @param[in] c_begin Corresponding charge iterator for the points

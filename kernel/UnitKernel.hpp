@@ -58,19 +58,19 @@ class CountingKernel
   }
 
   /** Kernel evaluation
-   * K(s,t)
+   * K(t,s)
    *
-   * @param[in] s,t The source and target points to evaluate the kernel
+   * @param[in] t,s The target and source points to evaluate the kernel
    */
-  kernel_value_type operator()(const point_type& s,
-                               const point_type& t) {
-    (void) s;
+  kernel_value_type operator()(const point_type& t,
+                               const point_type& s) {
     (void) t;
+    (void) s;
     return kernel_value_type(1);
   }
 
   /** Kernel vectorized non-symmetric P2P operation
-   * r_j += sum_i K(s_i,t_j) * c_i
+   * r_i += sum_j K(t_i,s_j) * c_j
    *
    * @param[in] s_begin,s_end Iterator pair to the source points
    * @param[in] c_begin Iterator to the source charges

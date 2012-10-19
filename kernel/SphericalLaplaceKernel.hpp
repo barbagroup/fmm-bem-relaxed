@@ -131,23 +131,25 @@ class SphericalLaplaceKernel
   }
 
   /** Kernel evaluation
-   * K(s,t)
+   * K(t,s)
    *
-   * @param[in] s,t The source and target points to evaluate the kernel
+   * @param[in] t,s The target and source points to evaluate the kernel
+   * @result The Laplace potential and force 4-vector on t from s:
+   * Potential: 1/|s-t|  Force: (s-t)/|s-t|^3
    */
-  kernel_value_type operator()(const point_type& s,
-                               const point_type& t) {
-    point_type dist = t - s;         //   Distance vector from source to target
+  kernel_value_type operator()(const point_type& t,
+                               const point_type& s) {
+    point_type dist = s - t;         //   Vector from target to source
     real R2 = normSq(dist);          //   R^2
     real invR2 = 1.0 / R2;           //   1 / R^2
-    if( R2 < 1e-8 ) invR2 = 0;       //   Exclude self interaction
+    if (R2 < 1e-8) invR2 = 0;        //   Exclude self interaction
     real invR = std::sqrt(invR2);    //   potential
     dist *= invR2 * invR;            //   force
-    return kernel_value_type(invR, -dist[0], -dist[1], -dist[2]);
+    return kernel_value_type(invR, dist[0], dist[1], dist[2]);
   }
 
   /** Kernel vectorized non-symmetric P2P operation
-   * r_j += sum_i K(s_i,t_j) * c_i
+   * r_i += sum_j K(t_i, s_j) * c_j
    *
    * @param[in] s_begin,s_end Iterator pair to the source points
    * @param[in] c_begin Iterator to the source charges
@@ -160,7 +162,7 @@ class SphericalLaplaceKernel
   {
     for( ; t_begin!=t_end; ++t_begin, ++r_begin) {    // Loop over target bodies
       result_type R(0);
-      // for( B_iter Bj=Cj->LEAF; Bj!=Cj->LEAF+Cj->NDLEAF; ++Bj ) {  //  Loop over source bodies
+
       ChargeIter c = c_begin;
       for(auto s = s_begin ; s!=s_end; ++s, ++c) {  //  Loop over source bodies
         auto dist = *t_begin - *s;                                   //   Distance vector from source to target

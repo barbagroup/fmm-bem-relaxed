@@ -16,6 +16,7 @@ public:
   TreeType tree;
   EvaluatorType evaluator;
   double THETA;
+  unsigned NCRIT;
 
   struct DefaultMAC {
     double theta_;
@@ -32,7 +33,7 @@ public:
   DefaultMAC MAC;
 
   FMMOptions()
-    : symmetric(false), tree(TOPDOWN), evaluator(FMM), MAC(DefaultMAC(0.5)) {
+    : symmetric(false), tree(TOPDOWN), evaluator(FMM), NCRIT(150), MAC(DefaultMAC(0.5)) {
   };
 
   void set_theta(double theta) {

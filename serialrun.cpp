@@ -56,8 +56,10 @@ int main(int argc, char **argv)
   int numBodies = 100;
   int P = 5;
   bool checkErrors = true;
+  bool printBox = false;
   FMMOptions opts;
   opts.set_theta(1 / sqrtf(4));    // Multipole acceptance criteria
+  opts.NCRIT = 100;
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {
@@ -83,6 +85,11 @@ int main(int argc, char **argv)
       } else {
         printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
       }
+    } else if (strcmp(argv[i],"-ncrit") == 0) {
+      i++;
+      opts.NCRIT = (unsigned)atoi(argv[i]);
+    } else if (strcmp(argv[i],"-printbox") == 0) {
+      printBox = true;
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
     }
@@ -91,7 +98,7 @@ int main(int argc, char **argv)
   // Init the FMM Kernel
   // SphericalLaplaceKernel K(P);
   typedef SphericalLaplaceKernel kernel_type;
-  kernel_type K;
+  kernel_type K(P);
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
@@ -112,7 +119,9 @@ int main(int argc, char **argv)
   // Build and execute the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
   FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
-  print_box(plan.otree.root());
+  if (printBox) {
+    print_box(plan.otree.root());
+  }
 
   //fmm_execute(plan, charges, jbodies);
   std::vector<result_type> result = plan.execute(charges, jpoints);

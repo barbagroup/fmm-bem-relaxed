@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 
   // init source
   std::vector<point_type> points(1);
-  points[0] = point_type(0,0,0);
+  points[0] = point_type(0.12,0.12,0.12);
 
   // init charge 
   std::vector<charge_type> charges(1);
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 
   // init target
   std::vector<point_type> target(1);
-  target[0] = point_type(1,1,1);
+  target[0] = point_type(0.9,0.9,0.9);
 
   // init results vectors for exact, FMM
   std::vector<result_type> exact(target.size());
@@ -52,11 +52,11 @@ int main(int argc, char **argv)
   K.init_local(L2,0);
 
   // setup intial multipole expansion
-  point_type source_center(0.125/2,0.125/2,0.125/2);
+  point_type source_center(0.125,0.125,0.125);
   K.P2M(points.begin(),points.end(),charges.begin(),source_center,M);
 
   // perform M2M
-  point_type M_trans_center(0.25/2,0.25/2,0.25/2);
+  point_type M_trans_center(0.25,0.25,0.25);
   auto M2M_translation = M_trans_center - source_center;
   K.M2M(M,M2,M2M_translation);
 

@@ -52,11 +52,11 @@ int main(int argc, char **argv)
   K.init_local(L2,0);
 
   // setup intial multipole expansion
-  point_type source_center(0.125,0.125,0.125);
+  point_type source_center(0.125/2,0.125/2,0.125/2);
   K.P2M(points.begin(),points.end(),charges.begin(),source_center,M);
 
   // perform M2M
-  point_type M_trans_center(0.25,0.25,0.25);
+  point_type M_trans_center(0.25/2,0.25/2,0.25/2);
   auto M2M_translation = M_trans_center - source_center;
   K.M2M(M,M2,M2M_translation);
 
@@ -80,7 +80,8 @@ int main(int argc, char **argv)
   K.L2L(L2,L,L2L_translation);
 
   // L2P
-  K.L2P(L,target_center,target.begin(),target.end(),FMM.begin());
+  // K.L2P(L,target_center,target.begin(),target.end(),FMM.begin());
+  K.L2P(L2,L_trans_center,target.begin(),target.end(),FMM.begin());
 
   // check errors
   double M2P_error = fabs(exact[0][0] - M2P[0][0]) / exact[0][0];

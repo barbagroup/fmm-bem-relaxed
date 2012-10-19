@@ -50,12 +50,15 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: single_body multi_level
+all: single_body multi_level scaling
 
 single_body: single_body.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 multi_level: multi_level.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+scaling: scaling.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's
@@ -67,7 +70,7 @@ multi_level: multi_level.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) single_body multi_level
+	-$(RM) single_body multi_level scaling
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

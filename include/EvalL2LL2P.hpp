@@ -24,7 +24,9 @@ public:
     auto t_end   = bc.point_end(box);
     auto r_begin = bc.result_begin(box);
 
+#ifdef DEBUG
     printf("L2P: %d\n",box.index());
+#endif
     K.L2P(bc.local_expansion(box), box.center(),
           t_begin, t_end,
           r_begin);
@@ -34,7 +36,9 @@ public:
       void evalL2L(BoxContext& bc,
                    const BOX& box,
                    const BOX& cbox) const {
+#ifdef DEBUG
     printf("L2L: %d to %d\n", box.index(), cbox.index());
+#endif
     K.L2L(bc.local_expansion(box),
           bc.local_expansion(cbox),
           cbox.center() - box.center());

@@ -19,7 +19,9 @@ class EvalP2MM2M : public Evaluator<EvalP2MM2M<Tree,Kernel,Options>>
     // Charge iterator
     auto c_begin = bc.charge_begin(box);
 
+#ifdef DEBUG
     printf("P2M: box: %d\n", box.index());
+#endif
     K.P2M(p_begin, p_end, c_begin,
           box.center(),
           bc.multipole_expansion(box));
@@ -29,7 +31,9 @@ class EvalP2MM2M : public Evaluator<EvalP2MM2M<Tree,Kernel,Options>>
       void evalM2M(BoxContext& bc,
                    const BOX& cbox,
                    const BOX& box) const {
+#ifdef DEBUG
     printf("M2M: %d to %d\n", cbox.index(), box.index());
+#endif
     K.M2M(bc.multipole_expansion(cbox),
           bc.multipole_expansion(box),
           box.center() - cbox.center());
@@ -45,7 +49,9 @@ public:
   template <typename BoxContext>
       void execute(BoxContext& bc) const {
     unsigned lowest_level = tree.levels();
+#ifdef DEBUG
     printf("lowest level in tree: %d\n",(int)lowest_level);
+#endif
 
     // For the lowest level up to the highest level
     for (unsigned l = tree.levels()-1; l != 0; --l) {

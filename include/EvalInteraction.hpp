@@ -31,7 +31,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
     // Result iters
     auto r2_begin = bc.result_begin(b2);
 
+#ifdef DEBUG
     printf("P2P: %d to %d\n",b1.index(),b2.index());
+#endif
     K.P2P(p1_begin, p1_end, c1_begin,
           p2_begin, p2_end,
           r2_begin);
@@ -48,7 +50,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
     // Target result iters
     auto r_begin = bc.result_begin(b2);
 
+#ifdef DEBUG
     printf("M2P: %d to %d\n", b1.index(), b2.index());
+#endif
 
     K.M2P(bc.multipole_expansion(b1),
           b1.center(),
@@ -60,7 +64,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
   void evalM2L(BoxContext& bc,
 	       const BOX& b1,
 	       const BOX& b2) const {
+#ifdef DEBUG
     printf("M2L: %d to %d\n", b2.index(), b1.index());
+#endif
 
     K.M2L(bc.multipole_expansion(b1),
           bc.local_expansion(b2),

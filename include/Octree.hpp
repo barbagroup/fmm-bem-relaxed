@@ -491,8 +491,8 @@ class Octree
     return permute_;
   }
 
-  template <typename IT>
-  void construct_tree(IT begin, IT end) {
+  template <typename IT, typename Options>
+  void construct_tree(IT begin, IT end, Options& options) {
     // Create a code-idx pair vector
     std::vector<point_type> points_tmp;
     std::vector<std::pair<code_type, unsigned>> code_idx;
@@ -515,7 +515,7 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = 15;
+    unsigned NCRIT = options.NCRIT;
 
     // Push the root box which contains all points
     box_data_.push_back( box_data(1, 0, 0, point_.size()) );

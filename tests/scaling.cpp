@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 
   FMMOptions opts;
   opts.set_theta(.5);
+  opts.NCRIT = 150;
 
   std::vector<std::pair<unsigned,double>> times;
   double tic, toc;

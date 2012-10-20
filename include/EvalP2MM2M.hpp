@@ -48,8 +48,8 @@ public:
 
   template <typename BoxContext>
       void execute(BoxContext& bc) const {
-    unsigned lowest_level = tree.levels();
 #ifdef DEBUG
+    unsigned lowest_level = tree.levels();
     printf("lowest level in tree: %d\n",(int)lowest_level);
 #endif
 

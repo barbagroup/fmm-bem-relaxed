@@ -121,7 +121,7 @@ public:
     : options(opts), K(k), //evaluator(k),
       otree(get_boundingbox(points.begin(), points.end())) {
     // Construct the Octree
-    otree.construct_tree(points.begin(),points.end());
+    otree.construct_tree(points.begin(),points.end(),opts);
     // setup the evaluator
     set_evaluator();
   }

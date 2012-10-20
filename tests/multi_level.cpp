@@ -1,4 +1,6 @@
 #include <SphericalLaplaceKernel.hpp>
+#include <UnitKernel.hpp>
+
 #include <Direct.hpp>
 #include <cstring>
 
@@ -6,6 +8,7 @@ int main(int argc, char **argv)
 {
   // typedefs
   typedef SphericalLaplaceKernel kernel_type;
+  //typedef UnitKernel kernel_type;
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
@@ -25,12 +28,13 @@ int main(int argc, char **argv)
     }
   }
   kernel_type K(P);
+  //kernel_type K;
 
   // init source
   std::vector<point_type> points(1);
   points[0] = point_type(0,0,0);
 
-  // init charge 
+  // init charge
   std::vector<charge_type> charges(1);
   charges[0] = 1.;
 
@@ -86,6 +90,8 @@ int main(int argc, char **argv)
   // check errors
   double M2P_error = fabs(exact[0][0] - M2P[0][0]) / exact[0][0];
   double FMM_error = fabs(exact[0][0] - FMM[0][0]) / exact[0][0];
+  //double M2P_error = fabs(exact[0] - M2P[0]) / exact[0];
+  //double FMM_error = fabs(exact[0] - FMM[0]) / exact[0];
 
   printf("M2P error: %.4lg\n",M2P_error);
   printf("FMM error: %.4lg\n",FMM_error);

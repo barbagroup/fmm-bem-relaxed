@@ -21,7 +21,7 @@
   THE SOFTWARE.
 */
 
-class CountingKernel
+class UnitKernel
 {
  private:
   //! Precision
@@ -79,17 +79,17 @@ class CountingKernel
    */
   template <typename PointIter, typename ChargeIter, typename ResultIter>
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-           PointIter t_begin, PointIter t_end, ResultIter r_begin) const
-  {
-    (void) c_begin;
+           PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
+#if 0
     for ( ; t_begin != t_end; ++t_begin, ++r_begin) {
       result_type r(0);
       auto s = s_begin;
       auto c = c_begin;
       for ( ; s != s_end; ++s)
-	r += K(*s,*t) * (*c);
+	r += K(*t_begin,*s) * (*c);
       *r_begin += r;
     }
+#endif
   }
 
   /** Kernel vectorized symmetric P2P operation
@@ -111,7 +111,7 @@ class CountingKernel
   }
 
   /** Kernel P2M operation
-   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
+   * M = sum_i Op(s_i) * c_i where M is the multipole and s_i are the sources
    *
    * @param[in] p_begin,p_end Iterator pair to the points in this operation
    * @param[in] c_begin Corresponding charge iterator for the points
@@ -122,9 +122,9 @@ class CountingKernel
   template <typename PointIter, typename ChargeIter>
   void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) {
-    (void) p_begin;
-    (void) p_end;
-    for ( ; p_begin != p_end; ++p_begin) M++;
+    (void) center;
+    for ( ; p_begin != p_end; ++p_begin, ++c_begin)
+      M += *c_begin;
   }
 
   /** Kernel M2M operator

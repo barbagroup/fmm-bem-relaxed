@@ -81,44 +81,8 @@ class KernelSkeleton
     return kernel_value_type(0);
   }
 
-  /** Kernel vectorized non-symmetric P2P operation
-   * r_i += sum_j K(t_i,s_j) * c_j
-   *
-   * @param[in] s_begin,s_end Iterator pair to the source points
-   * @param[in] c_begin Iterator to the source charges
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   */
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-           PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
-    (void) s_begin;
-    (void) s_end;
-    (void) c_begin;
-    (void) t_begin;
-    (void) t_end;
-    (void) r_begin;
-  }
-
-  /** Kernel vectorized symmetric P2P operation
-   * ...
-   */
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
-           PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
-           ResultIter r1_begin, ResultIter r2_begin) const {
-    (void) p1_begin;
-    (void) p1_end;
-    (void) c1_begin;
-    (void) p2_begin;
-    (void) p2_end;
-    (void) c2_begin;
-    (void) r1_begin;
-    (void) r2_begin;
-  }
-
   /** Kernel P2M operation
-   * M = sum_j Op(s_j) * c_j where M is the multipole and s_i are the sources
+   * M = sum_j Op(s_j) * c_j where M is the multipole and s_j are the sources
    *
    * @param[in] p_begin,p_end Iterator pair to the points in this operation
    * @param[in] c_begin Corresponding charge iterator for the points
@@ -223,5 +187,56 @@ class KernelSkeleton
     (void) t_begin;
     (void) t_end;
     (void) r_begin;
+  }
+
+  /******************/
+  /**** Optional ****/
+  /******************/
+
+  // The methods below may be implemented to potentially optimize the P2P operations
+  // If these methods are not implemented, the P2P will be delegated to the Direct.hpp
+  // methods which use the K.op() methods for evaluation.
+
+
+  /** Kernel vectorized non-symmetric P2P operation
+   * r_i += sum_j K(t_i,s_j) * c_j
+   *
+   * @param[in] s_begin,s_end Iterator pair to the source points
+   * @param[in] c_begin Iterator to the source charges
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   */
+  template <typename PointIter, typename ChargeIter, typename ResultIter>
+  void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
+           PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
+    (void) s_begin;
+    (void) s_end;
+    (void) c_begin;
+    (void) t_begin;
+    (void) t_end;
+    (void) r_begin;
+  }
+
+  /** Kernel vectorized symmetric P2P operation
+   * r2_i += sum_j K(p2_i, p1_j) * c1_j
+   * r1_j += sum_i K(p1_j, p2_i) * c2_i
+   *
+   * @param[in] s_begin,s_end Iterator pair to the source points
+   * @param[in] c_begin Iterator to the source charges
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   */
+  template <typename PointIter, typename ChargeIter, typename ResultIter>
+  void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
+           PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
+           ResultIter r1_begin, ResultIter r2_begin) const {
+    (void) p1_begin;
+    (void) p1_end;
+    (void) c1_begin;
+    (void) p2_begin;
+    (void) p2_end;
+    (void) c2_begin;
+    (void) r1_begin;
+    (void) r2_begin;
   }
 };

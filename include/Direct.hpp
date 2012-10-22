@@ -7,34 +7,34 @@
 #include <iterator>
 #include <vector>
 
-/** Type for Kernel::P2P forwarding identification */
-template <bool>
-struct UseP2P {};
-
-/** Use *Substitution Failure Is Not An Error* and variadic templates
- * to determine if a Kernel has a P2P method with the correct signature
- */
-template <typename Kernel, typename... Args>
-struct HasP2P
-{
-  template <class A, void (A::*)(Args...) const> struct SFINAE {};
-  template <class A> static constexpr void sfinae(SFINAE<A, &A::P2P>*);
-  template <class A> static constexpr char sfinae(...);
-  static constexpr bool value = std::is_void<decltype(sfinae<Kernel>(0))>::value;
-};
-
-
 
 class Direct
 {
  private:
+  /** Type for Kernel::P2P forwarding identification */
+  template <bool>
+  struct UseP2P {
+  };
+
+  /** Use *Substitution Failure Is Not An Error* and variadic templates
+   * to determine if a Kernel has a P2P method with the correct signature
+   */
+  template <typename K, typename... Args>
+  struct HasP2P {
+    template <class A, void (A::*)(Args...) const> struct SFINAE {};
+    template <class A> static constexpr void sfinae(SFINAE<A, &A::P2P>*);
+    template <class A> static constexpr char sfinae(...);
+    static constexpr bool value = std::is_void<decltype(sfinae<K>(0))>::value;
+  };
+
   /** Forwards any arguments to the Kernel's P2P function
    * @pre HasP2P<Kernel,Args...>::value == true
    */
   template <typename Kernel, typename... Args>
   inline static void matvec(UseP2P<true>, Kernel& K, Args&&... args)
   {
-    static_assert(HasP2P<Kernel,Args...>::value, "Attempting to use P2P that doesn't exist!");
+    static_assert(HasP2P<Kernel,Args...>::value,
+		  "Attempting to use P2P that doesn't exist!");
     K.P2P(args...);
   }
 
@@ -44,7 +44,8 @@ class Direct
    * @param[in] ...
    *
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter, typename ResultIter>
+  template <typename Kernel,
+	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(UseP2P<false>, Kernel& K,
                             PointIter s_begin, PointIter s_end, ChargeIter c_begin,
                             PointIter t_begin, PointIter t_end, ResultIter r_begin)
@@ -102,7 +103,8 @@ class Direct
 
   /** Non-symmetric P2P dispatch
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter, typename ResultIter>
+  template <typename Kernel,
+	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(Kernel& K,
                             PointIter s_begin, PointIter s_end, ChargeIter c_begin,
                             PointIter t_begin, PointIter t_end, ResultIter r_begin)
@@ -119,7 +121,8 @@ class Direct
 
   /** Symmetric P2P dispatch
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter, typename ResultIter>
+  template <typename Kernel,
+	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(Kernel& K,
                             PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
                             PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,

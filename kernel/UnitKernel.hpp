@@ -80,7 +80,6 @@ class UnitKernel
   template <typename PointIter, typename ChargeIter, typename ResultIter>
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
            PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
-#if 0
     for ( ; t_begin != t_end; ++t_begin, ++r_begin) {
       result_type r(0);
       auto s = s_begin;
@@ -89,7 +88,6 @@ class UnitKernel
 	r += K(*t_begin,*s) * (*c);
       *r_begin += r;
     }
-#endif
   }
 
   /** Kernel vectorized symmetric P2P operation

@@ -32,7 +32,7 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
     auto r2_begin = bc.result_begin(b2);
 
 #ifdef DEBUG
-    printf("P2P: %d to %d\n",b1.index(),b2.index());
+    printf("P2P: %d to %d\n", b1.index(), b2.index());
 #endif
     K.P2P(p1_begin, p1_end, c1_begin,
           p2_begin, p2_end,
@@ -101,6 +101,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
     typedef typename Tree::box_type Box;
     typedef typename std::pair<Box, Box> box_pair;
     std::deque<box_pair> pairQ;
+
+    if(tree.root().is_leaf())
+      return evalP2P(bc, tree.root(), tree.root());
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     pairQ.push_back(box_pair(tree.root(), tree.root()));

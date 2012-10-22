@@ -62,9 +62,7 @@ public:
 
         // Initialize box data
         double box_size = box.side_length();
-        // K.init_multipole(M[idx], box_size);
         K.init_multipole(bc.multipole_expansion(box), box_size);
-        // K.init_local(L[idx], box_size);
         K.init_local(bc.local_expansion(box), box_size);
 
         if (box.is_leaf()) {
@@ -77,8 +75,7 @@ public:
           // For all the children, M2M
           auto c_end = box.child_end();
           for (auto cit = box.child_begin(); cit != c_end; ++cit) {
-            auto cbox = *cit;
-            evalM2M(bc, cbox, box);
+            evalM2M(bc, *cit, box);
           }
         }
       }

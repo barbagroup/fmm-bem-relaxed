@@ -1,6 +1,6 @@
 #pragma once
 /*
-  Copyright (C) 2011 by Rio Yokota, Simon Layton, Lorena Barba
+  Copyright (C) 2012 by TODO
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -43,9 +43,8 @@ class KernelSkeleton
  public:
   //! The dimension of the Kernel
   static constexpr unsigned dimension = 3;
-  //! Point type
-  // typedef vec<dimension,real> point_type;
-  typedef Vec<dimension,real> point_type;
+  //! Point type -- Can use include/Vec.hpp or anything with op[]
+  typedef Vec<dimension,double> point_type;
   //! Charge type
   typedef real charge_type;
   //! The return type of a kernel evaluation
@@ -103,13 +102,13 @@ class KernelSkeleton
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source
    *
-   * @param[in] source The multipole source at the child level
-   * @param[in,out] target The multipole target to accumulate into
+   * @param[in] Msource The multipole source at the child level
+   * @param[in,out] Mtarget The multipole target to accumulate into
    * @param[in] translation The vector from source to target
    * @pre Msource includes the influence of all points within its box
    */
   void M2M(const multipole_type& Msource,
-           multipole_type& Mtarget,
+	   multipole_type& Mtarget,
            const point_type& translation) const {
     (void) Msource;
     (void) Mtarget;
@@ -126,7 +125,7 @@ class KernelSkeleton
    * @pre Msource includes the influence of all points within its box
    */
   void M2L(const multipole_type& Msource,
-                 local_type& Ltarget,
+	   local_type& Ltarget,
            const point_type& translation) const {
     (void) Msource;
     (void) Ltarget;
@@ -137,17 +136,17 @@ class KernelSkeleton
    * r_i += Op(M)
    *
    * @param[in] M The multpole expansion
-   * @param[in] Mcenter The center of the box with the multipole expansion
+   * @param[in] center The center of the box with the multipole expansion
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    * @pre M includes the influence of all points within its box
    */
   template <typename PointIter, typename ResultIter>
-  void M2P(const multipole_type& M, const point_type& Mcenter,
+  void M2P(const multipole_type& M, const point_type& center,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
     (void) M;
-    (void) Mcenter;
+    (void) center;
     (void) t_begin;
     (void) t_end;
     (void) r_begin;
@@ -192,11 +191,10 @@ class KernelSkeleton
   /******************/
   /**** Optional ****/
   /******************/
-
-  // The methods below may be implemented to potentially optimize the P2P operations
-  // If these methods are not implemented, the P2P will be delegated to the Direct.hpp
-  // methods which use the K.op() methods for evaluation.
-
+  /* The methods below may be implemented to potentially optimize the P2P operations
+   * If these methods are not implemented, the P2P will be delegated to the Direct.hpp
+   * methods which use K.operator()(point_type,point_type) for Kernel evaluations.
+   */
 
   /** Kernel vectorized non-symmetric P2P operation
    * r_i += sum_j K(t_i,s_j) * c_j
@@ -221,8 +219,8 @@ class KernelSkeleton
    * r2_i += sum_j K(p2_i, p1_j) * c1_j
    * r1_j += sum_i K(p1_j, p2_i) * c2_i
    *
-   * @param[in] s_begin,s_end Iterator pair to the source points
-   * @param[in] c_begin Iterator to the source charges
+   * @param[in] p1_begin,p1_end Iterator pair to the source points
+   * @param[in] p1_begin Iterator to the source charges
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    */

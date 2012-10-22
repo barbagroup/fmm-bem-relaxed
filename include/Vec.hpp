@@ -180,11 +180,11 @@ inline SmallVec<D,P> operator*(SmallVec<D,P> p, double d) {
   return p *= d;
 }
 template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(SmallVec<D,P> a, const SmallVec<D,P>& b) {
+inline SmallVec<D,P> operator*(double b, SmallVec<D,P> a) {
   return a *= b;
 }
 template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(double b, SmallVec<D,P> a) {
+inline SmallVec<D,P> operator*(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a *= b;
 }
 template <unsigned D, typename P>

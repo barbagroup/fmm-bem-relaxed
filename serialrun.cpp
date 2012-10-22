@@ -21,14 +21,13 @@ THE SOFTWARE.
 */
 
 #include <FMM_plan.hpp>
-#include <Dataset.hpp>
 #include <SphericalLaplaceKernel.hpp>
 // #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-// #define COUNTING_KERNEL
+// #define UNIT_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -42,7 +41,8 @@ void print_box(const Box& b, std::string padding = std::string()) {
       print_box(*ci, padding);
   } else {
     for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
-      std::cout << padding << "Point " << ci->index() << ": " << ci->morton_index() << "\t" << ci->point() << "\n";
+      std::cout << padding << "Point " << ci->index() << ": "
+		<< ci->morton_index() << "\t" << ci->point() << "\n";
   }
 }
 
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   bool printBox = false;
   FMMOptions opts;
   opts.set_theta(1 / sqrtf(4));    // Multipole acceptance criteria
-  opts.NCRIT = 100;
+  opts.NCRIT = 10;
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {
@@ -96,13 +96,11 @@ int main(int argc, char **argv)
   }
 
   // Init the FMM Kernel
-  // SphericalLaplaceKernel K(P);
   typedef SphericalLaplaceKernel kernel_type;
-  kernel_type K(P);
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
-
+  kernel_type K(P);
 
   // Init points and charges
   std::vector<point_type> points(numBodies);
@@ -137,7 +135,7 @@ int main(int argc, char **argv)
           points.begin(), points.end(),
           exact_result.begin());
 
-#ifndef COUNTING_KERNEL
+#ifndef UNIT_KERNEL
     double diff1=0, diff2=0, norm1=0, norm2=0;
     int i = 0;
     for (auto r1i = exact_result.begin(), r2i = result.begin();

@@ -163,5 +163,6 @@ class Direct
                             std::vector<typename Kernel::result_type>& r)
   {
     // TODO
+    Direct::matvec(K, p, p, c, r);
   }
 };

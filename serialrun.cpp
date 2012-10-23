@@ -22,12 +22,12 @@ THE SOFTWARE.
 
 #include <FMM_plan.hpp>
 #include <SphericalLaplaceKernel.hpp>
-// #include <UnitKernel.hpp>
+#include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-// #define UNIT_KERNEL
+#define UNIT_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -96,82 +96,68 @@ int main(int argc, char **argv)
   }
 
   // Init the FMM Kernel
+#ifndef UNIT_KERNEL
   typedef SphericalLaplaceKernel kernel_type;
+  kernel_type K(P);
+#else
+  typedef UnitKernel kernel_type;
+  kernel_type K;
+#endif
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
-  kernel_type K(P);
+
 
   // Init points and charges
   std::vector<point_type> points(numBodies);
   for (int k = 0; k < numBodies; ++k)
     points[k] = point_type(drand(), drand(), drand());
-  std::vector<point_type> jpoints = points;
+  //std::vector<point_type> target_points = points;
 
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)
     charges[k] = drand();
-  std::vector<charge_type> charges_copy = charges;
 
-
-  // Build and execute the FMM
+  // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
   FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
   if (printBox) {
     print_box(plan.otree.root());
   }
 
-  //fmm_execute(plan, charges, jbodies);
-  std::vector<result_type> result = plan.execute(charges, jpoints);
+  // Execute the FMM
+  //fmm_execute(plan, charges, target_points);
+  std::vector<result_type> result = plan.execute(charges, points);
 
-
+  // Check the result
   // TODO: More elegant
   if (checkErrors) {
-    std::vector<result_type> exact_result(numBodies, result_type(0));
+    std::vector<result_type> exact(numBodies);
 
-    // TODO: Use a Direct class to make this more intuitive and accessible
-    //SimpleEvaluator<SphericalLaplaceKernel>::evalP2P(K, test_bodies, jbodies);
-    K.P2P(jpoints.begin(), jpoints.end(), charges_copy.begin(),
-          points.begin(), points.end(),
-          exact_result.begin());
+    // Compute the result with a direct matrix-vector multiplication
+    Direct::matvec(K, points, charges, exact);
 
 #ifndef UNIT_KERNEL
-    double diff1=0, diff2=0, norm1=0, norm2=0;
-    int i = 0;
-    for (auto r1i = exact_result.begin(), r2i = result.begin();
-             r1i != exact_result.end(); ++r1i, ++r2i) {
+    result_type rdiff, rnorm;
+    for (unsigned k = 0; k < result.size(); ++k) {
+      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k][0], result[k][0]);
 
-      result_type exact = *r1i;
-      result_type r = *r2i;
-      printf("[%03d] exact: %lg, FMM: %lg\n",i++,exact[0],r[0]);
-
-      diff1 += (r[0] - exact[0]) * (r[0] - exact[0]);
-      norm1 += exact[0] * exact[0];
-
-      diff2 += (r[1] - exact[1]) * (r[1] - exact[1]);
-      diff2 += (r[2] - exact[2]) * (r[2] - exact[2]);
-      diff2 += (r[3] - exact[3]) * (r[3] - exact[3]);
-      norm2 += exact[1] * exact[1];
-      norm2 += exact[2] * exact[2];
-      norm2 += exact[3] * exact[3];
+      rdiff = (result[k] - exact[k]) * (result[k] - exact[k]);
+      rnorm = exact[k] * exact[k];
     }
 
-    printf("Error (pot) : %.4e\n",sqrt(diff1/norm1));
-    printf("Error (acc) : %.4e\n",sqrt(diff2/norm2));
+    printf("Error (pot) : %.4e\n", sqrt(rdiff[0] / rnorm[0]));
+    printf("Error (acc) : %.4e\n", sqrt((rdiff[1]+rdiff[2]+rdiff[3]) /
+					(rnorm[1]+rnorm[2]+rnorm[3])));
 #else
-    int i = 0;
     int wrong_results = 0;
-    for (auto r1i = exact_result.begin(), r2i = result.begin();
-              r1i != exact_result.end(); ++r1i, ++r2i) {
+    for (unsigned k = 0; k < result.size(); ++k) {
+      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
 
-      result_type exact = *r1i;
-      result_type r = *r2i;
-
-      if (*r1i != *r2i) wrong_results++;
-
-      printf("[%03d] exact: %d, FMM: %d\n",i++,*r1i,*r2i);
+      if ((exact[k] - result[k]) / exact[k] > 1e-13)
+	++wrong_results;
     }
-    printf("Wrong counts: %d\n",wrong_results);
+    printf("Wrong counts: %d\n", wrong_results);
 #endif
   }
 }

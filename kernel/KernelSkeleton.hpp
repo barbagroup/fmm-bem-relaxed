@@ -172,17 +172,17 @@ class KernelSkeleton
    * r_i += Op(L)
    *
    * @param[in] L The local expansion
-   * @param[in] Lcenter The center of the box with the local expansion
+   * @param[in] center The center of the box with the local expansion
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    * @pre L includes the influence of all points outside its box
    */
   template <typename PointIter, typename ResultIter>
-  void L2P(const local_type& L, const point_type& Lcenter,
+  void L2P(const local_type& L, const point_type& center,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
     (void) L;
-    (void) Lcenter;
+    (void) center;
     (void) t_begin;
     (void) t_end;
     (void) r_begin;

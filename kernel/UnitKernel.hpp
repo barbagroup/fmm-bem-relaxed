@@ -23,28 +23,22 @@
 
 class UnitKernel
 {
- private:
-  //! Precision
-  typedef double real;
-
  public:
-  //! Multipole expansion type
-  typedef unsigned multipole_type;
-  //! Local expansion type
-  typedef unsigned local_type;
-
   //! The dimension of the Kernel
   static constexpr unsigned dimension = 3;
   //! Point type
-  // typedef vec<dimension,real> point_type;
-  typedef Vec<dimension,real> point_type;
+  typedef Vec<dimension,double> point_type;
   //! Charge type
-  typedef real charge_type;
+  typedef double charge_type;
   //! The return type of a kernel evaluation
   typedef unsigned kernel_value_type;
   //! The product of the kernel_value_type and the charge_type
-  typedef real result_type;
+  typedef double result_type;
 
+  //! Multipole expansion type
+  typedef double multipole_type;
+  //! Local expansion type
+  typedef double local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M, double box_size) const {
@@ -63,49 +57,10 @@ class UnitKernel
    * @param[in] t,s The target and source points to evaluate the kernel
    */
   kernel_value_type operator()(const point_type& t,
-                               const point_type& s) {
+                               const point_type& s) const {
     (void) t;
     (void) s;
     return kernel_value_type(1);
-  }
-
-  /** Kernel vectorized non-symmetric P2P operation
-   * r_i += sum_j K(t_i,s_j) * c_j
-   *
-   * @param[in] s_begin,s_end Iterator pair to the source points
-   * @param[in] c_begin Iterator to the source charges
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   */
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-           PointIter t_begin, PointIter t_end, ResultIter r_begin) const {
-    for ( ; t_begin != t_end; ++t_begin, ++r_begin) {
-      result_type r(0);
-      auto s = s_begin;
-      auto c = c_begin;
-      for ( ; s != s_end; ++s)
-	r += K(*t_begin,*s) * (*c);
-      *r_begin += r;
-    }
-  }
-
-  /** Kernel vectorized symmetric P2P operation
-   * ...
-   */
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
-           PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
-           ResultIter r1_begin, ResultIter r2_begin) const {
-    // TODO...
-    (void) p1_begin;
-    (void) p1_end;
-    (void) c1_begin;
-    (void) p2_begin;
-    (void) p2_end;
-    (void) c2_begin;
-    (void) r1_begin;
-    (void) r2_begin;
   }
 
   /** Kernel P2M operation
@@ -119,7 +74,7 @@ class UnitKernel
    */
   template <typename PointIter, typename ChargeIter>
   void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) {
+           const point_type& center, multipole_type& M) const {
     (void) center;
     for ( ; p_begin != p_end; ++p_begin, ++c_begin)
       M += *c_begin;
@@ -135,7 +90,7 @@ class UnitKernel
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     (void) translation;
     Mtarget += Msource;
   }
@@ -151,7 +106,7 @@ class UnitKernel
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) {
+           const point_type& translation) const {
     (void) translation;
     Ltarget += Msource;
   }
@@ -160,17 +115,18 @@ class UnitKernel
    * r_i += Op(M)
    *
    * @param[in] M The multpole expansion
-   * @param[in] Mcenter The center of the box with the multipole expansion
+   * @param[in] center The center of the box with the multipole expansion
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    * @pre M includes the influence of all points within its box
    */
   template <typename PointIter, typename ResultIter>
-  void M2P(const multipole_type& M, const point_type& Mcenter,
+  void M2P(const multipole_type& M, const point_type& center,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
-    (void) Mcenter;
-    for ( ; t_begin != t_end; ++t_begin, ++r_begin) *r_begin += M;
+    (void) center;
+    for ( ; t_begin != t_end; ++t_begin, ++r_begin)
+      *r_begin += M;
   }
 
   /** Kernel L2L operator
@@ -192,16 +148,17 @@ class UnitKernel
    * r_i += Op(L)
    *
    * @param[in] L The local expansion
-   * @param[in] Lcenter The center of the box with the local expansion
+   * @param[in] center The center of the box with the local expansion
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    * @pre L includes the influence of all points outside its box
    */
   template <typename PointIter, typename ResultIter>
-  void L2P(const local_type& L, const point_type& Lcenter,
+  void L2P(const local_type& L, const point_type& center,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
-    (void) Lcenter;
-    for ( ; t_begin!=t_end; ++t_begin, ++r_begin) *r_begin += L;
+    (void) center;
+    for ( ; t_begin!=t_end; ++t_begin, ++r_begin)
+      *r_begin += L;
   }
 };

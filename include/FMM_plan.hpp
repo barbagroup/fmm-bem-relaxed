@@ -69,27 +69,6 @@ class FMM_plan//  : public fmm_wrapper
     return result;
   }
 
-  // TODO: Move to an exec context defined over a tree
-  template <typename T>
-  std::vector<T> permute(const std::vector<T>& v,
-                         const std::vector<unsigned>& permute) {
-    std::vector<T> temp(v.size());
-    for (unsigned i=0; i < v.size(); ++i)
-      temp[i] = v[permute[i]];
-    return temp;
-  }
-
-  // TODO: Move to an exec context defined over a tree
-  template <typename T>
-  std::vector<T> ipermute(const std::vector<T>& v,
-                          const std::vector<unsigned>& permute) {
-    std::vector<T> temp(v.size());
-    for (unsigned i = 0; i < v.size(); ++i)
-      temp[permute[i]] = v[i];
-    return temp;
-  }
-
-
 public:
 
   // CONSTRUCTOR
@@ -132,16 +111,14 @@ public:
 
     // sort charges to match sorted body array
     // TODO: not here
-    auto pcharges = permute(charges, otree.getPermutation());
+    auto pcharges = otree.permute(charges);
 
-
-    std::vector<result_type> results(charges.size());
-
+    std::vector<result_type> results(pcharges.size());
     executor->execute(pcharges, results);
 
     // inverse permute results
     // TODO: not here
-    auto ipresults = ipermute(results, otree.getPermutation());
+    auto ipresults = otree.ipermute(results);
 
     // TODO: don't return this, provide accessor
     return ipresults;

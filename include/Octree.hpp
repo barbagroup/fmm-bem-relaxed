@@ -609,6 +609,34 @@ class Octree
     assert(L < levels());
     return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
   }
+
+  /** Permute a vector to the same order of the input points.
+   *
+   * @param[in] v The vector associated with the original input points
+   * @returns A vector whose elements have been permuted into the same
+   * order as the points in this tree.
+   */
+  template <typename T>
+  std::vector<T> permute(const std::vector<T>& v) {
+    std::vector<T> temp(v.size());
+    for (unsigned i=0; i < v.size(); ++i)
+      temp[i] = v[permute_[i]];
+    return temp;
+  }
+
+  /** Inverse permute a vector from the same order of the input points.
+   *
+   * @param[in] v The vector associated with the current points in the tree
+   * @returns A vector whose elements have been permuted into the same
+   * order as the original input points of this tree.
+   */
+  template <typename T>
+  std::vector<T> ipermute(const std::vector<T>& v) {
+    std::vector<T> temp(v.size());
+    for (unsigned i = 0; i < v.size(); ++i)
+      temp[permute_[i]] = v[i];
+    return temp;
+  }
 };
 
 

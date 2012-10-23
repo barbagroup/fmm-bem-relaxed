@@ -26,11 +26,11 @@
  * Tree/FMM code.
  *
  * This class acts as a starting point for defining Kernels that may be
- * used with the treecode and fast multipole method implementations provided in
- * TODO.txt...
+ * used with the treecode and fast multipole method implementations.
  *
- * Not all methods must be implemented, but most constexr and typedefs should
- * be kept for compatibility.
+ * Not all methods must be implemented (these are labeled in *Optional*
+ * sections), and arbitrary data and helper methods may be added beyond
+ * the interface detailed below.
  */
 class KernelSkeleton
 {
@@ -72,6 +72,7 @@ class KernelSkeleton
    * K(t,s)
    *
    * @param[in] t,s The target and source points to evaluate the kernel
+   * @return The Kernel evaluation, K(t,s)
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) const {

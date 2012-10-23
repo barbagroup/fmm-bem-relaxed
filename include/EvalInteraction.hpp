@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Evaluator.hpp"
+#include "Direct.hpp"
 
 #include <functional>
 
-template <typename Tree, typename Kernel, int EXECCODE>
-class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
+template <typename Tree, typename Kernel, FMMOptions::EvaluatorType TYPE>
+class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
 {
   const Tree& tree;
   const Kernel& K;
@@ -34,9 +35,10 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
 #ifdef DEBUG
     printf("P2P: %d to %d\n", b1.index(), b2.index());
 #endif
-    K.P2P(p1_begin, p1_end, c1_begin,
-          p2_begin, p2_end,
-          r2_begin);
+    Direct::matvec(K,
+		   p1_begin, p1_end, c1_begin,
+		   p2_begin, p2_end,
+		   r2_begin);
   }
 
   template <typename BoxContext, typename BOX>
@@ -85,9 +87,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
   void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
     if (acceptMultipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      if (EXECCODE == 0)
+      if (TYPE == FMMOptions::FMM)
 	evalM2L(bc, b1, b2);
-      else if (EXECCODE == 1)
+      else if (TYPE == FMMOptions::TREECODE)
 	evalM2P(bc, b1, b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
       evalP2P(bc, b2, b1);
@@ -128,11 +130,18 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,EXECCODE>>
   }
 };
 
-
-template <int EXECCODE, typename Tree, typename Kernel, typename Options>
-EvalInteraction<Tree,Kernel,EXECCODE>* make_inter(const Tree& tree,
-					     const Kernel& K,
-					     const Options& opts) {
-  return new EvalInteraction<Tree,Kernel,EXECCODE>(tree,K,opts.MAC);
+template <typename Tree, typename Kernel, typename Options>
+EvalInteraction<Tree,Kernel,FMMOptions::FMM>*
+make_fmm_inter(const Tree& tree,
+	       const Kernel& K,
+	       const Options& opts) {
+  return new EvalInteraction<Tree,Kernel,FMMOptions::FMM>(tree,K,opts.MAC);
 }
 
+template <typename Tree, typename Kernel, typename Options>
+EvalInteraction<Tree,Kernel,FMMOptions::TREECODE>*
+make_tree_inter(const Tree& tree,
+		const Kernel& K,
+		const Options& opts) {
+  return new EvalInteraction<Tree,Kernel,FMMOptions::TREECODE>(tree,K,opts.MAC);
+}

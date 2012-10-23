@@ -1,16 +1,39 @@
 #pragma once
 
-#include "Evaluator.hpp"
+/** @class ExecutorBase
+ * @brief Abstract Executor class
+ */
+template <typename Tree, typename Kernel>
+struct ExecutorBase {
+  ExecutorBase() {}
+  virtual ~ExecutorBase() {};
+  // TODO: improve
+  virtual void execute(const std::vector<typename Kernel::charge_type>& charges,
+                       std::vector<typename Kernel::result_type>& results) = 0;
+};
 
+#include "Evaluator.hpp"
 #include <TransformIterator.hpp>
 
-
-template <typename Tree, typename Kernel>
-class BoxContext {
-  //! Tree type
-  typedef Tree tree_type;
+/** @class Executor
+ * @brief A very general Executor class. This provides a context to any tree
+ * provides the following interface:
+ * Tree::box_type
+ *   int index() const                  // Each box has a unique index
+ *   body_iterator body_begin() const
+ *   body_iterator body_end() const     // Iterator pair to the box's bodies
+ * Tree::body_type
+ *   int index() const                  // Each body has a unique index
+ *   Kernel::point_type point() const   // A body has a point_type location
+ * This class assumes nothing else about the tree.
+ */
+template <typename Tree, typename Kernel, typename E>
+class MinimalExecutor : public ExecutorBase<Tree,Kernel>
+{
   //! Tree box type
   typedef typename Tree::box_type box_type;
+  //! Tree body type
+  typedef typename Tree::body_type body_type;
   //! Kernel charge type
   typedef typename Kernel::multipole_type multipole_type;
   //! Kernel result type
@@ -22,41 +45,74 @@ class BoxContext {
   //! Kernel result type
   typedef typename Kernel::result_type result_type;
 
+private:
   //! Multipole expansions corresponding to Box indices in Tree
-  std::vector<multipole_type> M;
+  std::vector<multipole_type> M_;
   //! Local expansions corresponding to Box indices in the Tree
-  std::vector<local_type> L;
-  //! Charges corresponding to bodies in the Tree
-  std::vector<charge_type> charges;
-  //! Results correspondint to bodies in the Tree
-  std::vector<result_type> results;
+  std::vector<local_type> L_;
+  //! Evaluator algorithm to apply
+  const E* eval_;
 
+  //! Anonymous struct to convert body_type to point_type (TODO: Use lambdas?)
   struct {
-    const point_type& operator()(const typename Tree::body_type& b) const {
+    const point_type& operator()(const body_type& b) const {
       return b.point();
     }
   } body2point;
 
- public:
-  BoxContext(const Tree& tree)
-      : M(tree.boxes()), L(tree.boxes()),
-        charges(tree.bodies()), results(tree.bodies()) {
+  //! Charges corresponding to bodies in the Tree
+  typedef typename std::vector<charge_type>::const_iterator charge_iterator;
+  //! Anonymous struct to convert body_type to charge_type (TODO: Use lambdas?)
+  struct {
+    charge_iterator charges_begin;
+    const charge_type& operator()(const body_type& b) const {
+      return charges_begin[b.index()];
+    }
+  } body2charge;
+
+  //! Results corresponding to bodies in the Tree
+  typedef typename std::vector<result_type>::iterator result_iterator;
+  //! Anonymous struct to convert body_type to result_type (TODO: Use lambdas?)
+  struct {
+    result_iterator results_begin;
+    result_type& operator()(const body_type& b) const {
+      return results_begin[b.index()];
+    }
+  } body2result;
+
+public:
+  //! Constructor
+  MinimalExecutor(const Tree& tree, const Kernel& K, const Evaluator<E>* eval)
+      : M_(tree.boxes()), L_(tree.boxes()),
+	eval_(static_cast<const E*>(eval)) {
+    (void) K;
+  }
+  // Destructor
+  ~MinimalExecutor() {
+    delete eval_;
   }
 
-  // Accessors
+  // Virtual function to run this Executor
+  void execute(const std::vector<typename Kernel::charge_type>& charges,
+               std::vector<typename Kernel::result_type>& results) {
+    body2charge.charges_begin = charges.begin();
+    body2result.results_begin = results.begin();
+    eval_->execute(*this);
+  }
+
+  // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& b) {
-    return M[b.index()];
+    return M_[b.index()];
   }
   inline const multipole_type& multipole_expansion(const box_type& b) const {
-    return M[b.index()];
+    return M_[b.index()];
   }
   inline local_type& local_expansion(const box_type& b) {
-    return L[b.index()];
+    return L_[b.index()];
   }
   inline const multipole_type& local_expansion(const box_type& b) const {
-    return L[b.index()];
+    return L_[b.index()];
   }
-
   inline auto point_begin(const box_type& b)
       -> decltype(make_transform_iterator(b.body_begin(), body2point)) {
     return make_transform_iterator(b.body_begin(), body2point);
@@ -65,74 +121,77 @@ class BoxContext {
       -> decltype(make_transform_iterator(b.body_end(), body2point)) {
     return make_transform_iterator(b.body_end(), body2point);
   }
-
-  inline typename std::vector<charge_type>::const_iterator charge_begin(const box_type& b) const {
-    return charges.begin() + b.body_begin()->index();
+  /*
+    // This assumes the the body indices are consecutive within a box
+    // The assumption is true for Octree,
+    // but should be left for an "optimized" Evaluator that
+    // explicitely makes this assumption
+  inline charge_iterator charge_begin(const box_type& b) const {
+    return charges_begin + b.body_begin()->index();
   }
-  inline typename std::vector<charge_type>::const_iterator charge_end(const box_type& b) const {
-    return charges.begin() + b.body_end()->index();
+  inline charge_iterator charge_end(const box_type& b) const {
+    return charges_begin + b.body_end()->index();
   }
-  inline typename std::vector<result_type>::iterator result_begin(const box_type& b) {
-    return results.begin() + b.body_begin()->index();
+  */
+  inline auto charge_begin(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_begin(), body2charge)) {
+    return make_transform_iterator(b.body_begin(), body2charge);
   }
-  inline typename std::vector<result_type>::iterator result_end(const box_type& b) {
-    return results.begin() + b.body_end()->index();
+  inline auto charge_end(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_end(), body2charge)) {
+    return make_transform_iterator(b.body_end(), body2charge);
   }
-
-  // TODO: What to do with these...
-  template <typename Vector>
-  inline void set_charges(Vector& c) {
-    charges = c;
+  /*
+    // This assumes the the body indices are consecutive within a box
+    // The assumption is true for Octree,
+    // but should be left for an "optimized" Evaluator that
+    // explicitely makes this assumption
+  inline result_iterator result_begin(const box_type& b) {
+    return results_begin + b.body_begin()->index();
   }
-  template <typename Vector>
-  inline void set_results(Vector& r) {
-    results = r;
+  inline result_iterator result_end(const box_type& b) {
+    return results_begin + b.body_end()->index();
   }
-  inline std::vector<result_type> get_results() {
-    return results;
+  */
+  inline auto result_begin(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_begin(), body2result)) {
+    return make_transform_iterator(b.body_begin(), body2result);
+  }
+  inline auto result_end(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_end(), body2result)) {
+    return make_transform_iterator(b.body_end(), body2result);
   }
 };
 
-
-
-template <typename Tree, typename Kernel>
-struct ExecutorBase {
-  ExecutorBase() {}
-  virtual ~ExecutorBase() {};
-  // TODO: improve
-  virtual void execute(const std::vector<typename Kernel::charge_type>& charges,
-                       std::vector<typename Kernel::result_type>& results) = 0;
-};
-
-
+//! Type hiding constructor for MinimalExecutor
 template <typename Tree, typename Kernel, typename E>
-class Executor : public ExecutorBase<Tree,Kernel>
-{
-  BoxContext<Tree,Kernel> bc_;
-  const E* eval_;
-
- public:
-  Executor(const Tree& tree, const Kernel& K, const Evaluator<E>* eval)
-      : bc_(tree), eval_(static_cast<const E*>(eval)) {
-    (void) K;
-  }
-  ~Executor() {
-    delete eval_;
-  }
-
-  void execute(const std::vector<typename Kernel::charge_type>& charges,
-               std::vector<typename Kernel::result_type>& results) {
-    bc_.set_charges(charges);
-    bc_.set_results(results);
-    eval_->execute(bc_);
-    results = bc_.get_results();
-  }
-};
+ExecutorBase<Tree,Kernel>* make_minimal_executor(const Tree& tree,
+						 const Kernel& K,
+						 const Evaluator<E>* eval) {
+  return new MinimalExecutor<Tree, Kernel, E>(tree, K, eval);
+}
 
 
-template <typename Tree, typename Kernel, typename E>
+#include "EvalP2MM2M.hpp"
+#include "EvalInteraction.hpp"
+#include "EvalL2LL2P.hpp"
+
+//! Type hiding factory for Executor based on FMMOptions (TODO: File organization)
+template <typename Tree, typename Kernel, typename Options>
 ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree,
                                          const Kernel& K,
-                                         const Evaluator<E>* eval) {
-  return new Executor<Tree, Kernel, E>(tree, K, eval);
+                                         const Options& opts) {
+  if (opts.evaluator == FMMOptions::FMM) {
+    auto upward   = make_P2MM2M(tree, K, opts);
+    auto inter    = make_fmm_inter(tree, K, opts);
+    auto downward = make_L2LL2P(tree, K, opts);
+    auto eval = make_evaluator(upward, inter, downward);
+    return make_minimal_executor(tree, K, eval);
+  } else if (opts.evaluator == FMMOptions::TREECODE) {
+    auto upward = make_P2MM2M(tree, K, opts);
+    auto inter  = make_tree_inter(tree, K, opts);
+    auto eval = make_evaluator(upward, inter);
+    return make_minimal_executor(tree, K, eval);
+  }
+  return NULL;
 }

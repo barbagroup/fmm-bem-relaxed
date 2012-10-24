@@ -54,33 +54,18 @@ class CartesianYukawaKernel
   std::vector<unsigned> index;
 
  private:
-  unsigned setIndex(const int P, const unsigned i, const unsigned j, const unsigned k) const
-  {
-    unsigned II=0, ii, jj; 
-    for (ii=0; ii<i; ii++)
-    {   
-        for (jj=1; jj<P+2-ii; jj++)
-        {   
-            II+=jj;
-        }   
-    }   
-    for (jj=P+2-j; jj<P+2; jj++)
-    {   
-        II+=jj-i;
-    }   
-    II+=k;
-
-    return II;
+  static unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
+    unsigned II=0, ii, jj;
+    for (unsigned ii = 0; ii < i; ++ii) {
+      for (unsigned jj = 1; jj < P+2-ii; ++jj) {
+	II += jj;
+      }
+    }
+    for (unsigned jj = P+2-j; jj < P+2; ++jj) {
+      II += jj-i;
+    }
+    return II + k;
   }
-
-  unsigned fact(unsigned N) const {
-    unsigned f = 1;
-
-    for (unsigned ii=1; ii<N+1; ii++) f *= ii;
-
-    return f;
-  }
-
 
  public:
   //! Multipole expansion type
@@ -169,29 +154,29 @@ class CartesianYukawaKernel
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
            PointIter t_begin, PointIter t_end, ResultIter r_begin) const
   {
-    for( ; t_begin!=t_end; ++t_begin, ++r_begin) {  
+    for( ; t_begin!=t_end; ++t_begin, ++r_begin) {
       result_type R(0);
 
       ChargeIter c = c_begin;
-      for(auto s = s_begin ; s!=s_end; ++s, ++c) {  
+      for(auto s = s_begin ; s!=s_end; ++s, ++c) {
         auto dist = *t_begin - *s;
-        real r2 = normSq(dist);  
+        real r2 = normSq(dist);
         real r  = std::sqrt(r2);
         real invR2 = 1.0/r2;
         real invR  = 1.0/r;
         if( r < 1e-8 ) { invR = 0; invR2 = 0; };
         real aux = exp(-Kappa*r)*invR;
-        R[0] += (*c)*aux;                        
+        R[0] += (*c)*aux;
         aux *= (Kappa*r+1)*invR2;
-        R[1] += (*c)*dist[0]*aux;                    
-        R[2] += (*c)*dist[1]*aux;                   
-        R[3] += (*c)*dist[2]*aux;                  
+        R[1] += (*c)*dist[0]*aux;
+        R[2] += (*c)*dist[1]*aux;
+        R[3] += (*c)*dist[2]*aux;
       }
 
-      (*r_begin)[0] += R[0];                               
-      (*r_begin)[1] -= R[1];                              
-      (*r_begin)[2] -= R[2];                             
-      (*r_begin)[3] -= R[3];                            
+      (*r_begin)[0] += R[0];
+      (*r_begin)[1] -= R[1];
+      (*r_begin)[2] -= R[2];
+      (*r_begin)[3] -= R[3];
     }
   }
 
@@ -230,8 +215,8 @@ class CartesianYukawaKernel
       auto scal = *c_begin;
 
       for (unsigned i=0; i<MTERMS; i++)
-      {   
-        M[i] += scal * pow(dist[0],I[i]) * pow(dist[1],J[i]) * pow(dist[2],K[i]); 
+      {
+        M[i] += scal * pow(dist[0],I[i]) * pow(dist[1],J[i]) * pow(dist[2],K[i]);
       }
     }
   }
@@ -355,14 +340,38 @@ class CartesianYukawaKernel
   }
 
  private:
-  unsigned comb(unsigned N, unsigned k) const 
+  /* No longer needed?
+  static constexpr unsigned fact(unsigned N) const {
+  // WARNING: Overflows when N > 13
+    unsigned f = 1;
+    for (unsigned ii = 1; ii < N+1; ++ii)
+      f *= ii;
+    return f;
+  }
+  */
+
+  /** Compute "n choose k" combinatorial
+   * @returns n! / (k! (n-k)!)
+   */
+  unsigned comb(unsigned n, unsigned k) const
   {
-    // N choose k
-    // N! / (k!(N-k)!)
-    return fact(N) / (fact(k)*fact(N-k));
+    // WARNING: Overflows really quickly
+    //return fact(n) / (fact(k)*fact(n-k));
+
+    // Better (and faster) way:
+    if (k > n) return 0;
+    if (2*k > n) k = n-k;
+    if (k == 0) return 1;
+
+    unsigned result = n;
+    for (unsigned i = 2; i <= k; ++i) {
+      result *= (n-i+1);
+      result /= i;
+    }
+    return result;
   }
 
-  void getCoeff(real_vec& a, real_vec& ax, real_vec& ay, real_vec& az, point_type& dX) const 
+  void getCoeff(real_vec& a, real_vec& ax, real_vec& ay, real_vec& az, point_type& dX) const
   {
     real_vec b(a.size(),0);
     real dx = dX[0], dy = dX[1], dz = dX[2];
@@ -389,12 +398,12 @@ class CartesianYukawaKernel
     a[P+1] = -R2_1*dy*(Kappa*b[0]+a[0]);
     a[1]   = -R2_1*dz*(Kappa*b[0]+a[0]);
 
-    ax[0]  = a[I]; 
-    ay[0]  = a[P+1]; 
-    az[0]  = a[1]; 
+    ax[0]  = a[I];
+    ay[0]  = a[P+1];
+    az[0]  = a[1];
 
     for (i=2; i<P+1; i++)
-    {   
+    {
       Cb   = -Kappa/i;
       C    = R2_1/i;
       I    = setIndex(P,i,0,0);

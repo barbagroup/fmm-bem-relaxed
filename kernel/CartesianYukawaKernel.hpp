@@ -156,15 +156,17 @@ class CartesianYukawaKernel
       ChargeIter c = c_begin;
       for(auto s = s_begin ; s!=s_end; ++s, ++c) {
         auto dist = *t_begin - *s;
-        real R2 = normSq(dist);
-        real invR2 = 1.0 / R2;
-        if( R2 < 1e-8 ) invR2 = 0;
-        real invR = (*c) * std::sqrt(invR2);
-        dist *= invR2 * invR;
-        R[0] += invR;
-        R[1] += dist[0];
-        R[2] += dist[1];
-        R[3] += dist[2];
+        real r2 = normSq(dist);
+        real r  = std::sqrt(r2);
+        real invR2 = 1.0/r2;
+        real invR  = 1.0/r;
+        if( r < 1e-8 ) { invR = 0; invR2 = 0; };
+        real aux = exp(-Kappa*r)*invR;
+        R[0] += (*c)*aux;
+        aux *= (Kappa*r+1)*invR2;
+        R[1] += (*c)*dist[0]*aux;
+        R[2] += (*c)*dist[1]*aux;
+        R[3] += (*c)*dist[2]*aux;
       }
 
       (*r_begin)[0] += R[0];

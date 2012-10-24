@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef YUKAWA_KERNEL
   typedef CartesianYukawaKernel kernel_type;
-  kernel_type K(6,0);
+  kernel_type K(6,0.5);
 #endif
 #ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;

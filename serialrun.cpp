@@ -25,12 +25,14 @@ THE SOFTWARE.
 #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
 #include <CartesianLaplaceKernel2.hpp>
+#include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
 // #define UNIT_KERNEL
 //#define SPH_KERNEL
-#define CART_KERNEL
+//#define CART_KERNEL
+#define YUKAWA_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -71,6 +73,7 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
       opts.THETA = (double)atof(argv[i]);
+      opts.set_theta(opts.THETA);
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     } else if (strcmp(argv[i],"-bottomup") == 0) {
@@ -102,6 +105,10 @@ int main(int argc, char **argv)
 #ifdef CART_KERNEL
   typedef CartesianLaplaceKernel<5> kernel_type;
   kernel_type K;
+#endif
+#ifdef YUKAWA_KERNEL
+  typedef CartesianYukawaKernel kernel_type;
+  kernel_type K(6,0);
 #endif
 #ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;
@@ -141,7 +148,7 @@ int main(int argc, char **argv)
     // Compute the result with a direct matrix-vector multiplication
     Direct::matvec(K, points, charges, exact);
 
-#if defined(SPH_KERNEL) || defined(CART_KERNEL)
+#if defined(SPH_KERNEL) || defined(CART_KERNEL) || defined(YUKAWA_KERNEL)
     result_type rdiff, rnorm;
     for (unsigned k = 0; k < result.size(); ++k) {
       printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k][0], result[k][0]);

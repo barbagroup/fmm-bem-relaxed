@@ -58,7 +58,13 @@ single_body: single_body.o
 multi_level: multi_level.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+multi_yukawa: multi_yukawa.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 scaling: scaling.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+yukawa: single_yukawa.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's

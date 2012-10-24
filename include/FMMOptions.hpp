@@ -33,7 +33,11 @@ public:
   DefaultMAC MAC;
 
   FMMOptions()
-    : symmetric(false), tree(TOPDOWN), evaluator(FMM), NCRIT(126), MAC(DefaultMAC(0.5)) {
+    : symmetric(false),
+      tree(TOPDOWN),
+      evaluator(FMM),
+      NCRIT(126),
+      MAC(DefaultMAC(0.5)) {
   };
 
   void set_theta(double theta) {

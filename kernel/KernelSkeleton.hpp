@@ -103,33 +103,33 @@ class KernelSkeleton
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source
    *
-   * @param[in] Msource The multipole source at the child level
-   * @param[in,out] Mtarget The multipole target to accumulate into
+   * @param[in] source The multipole source at the child level
+   * @param[in,out] target The multipole target to accumulate into
    * @param[in] translation The vector from source to target
    * @pre Msource includes the influence of all points within its box
    */
-  void M2M(const multipole_type& Msource,
-	   multipole_type& Mtarget,
+  void M2M(const multipole_type& source,
+	   multipole_type& target,
            const point_type& translation) const {
-    (void) Msource;
-    (void) Mtarget;
+    (void) source;
+    (void) target;
     (void) translation;
   }
 
   /** Kernel M2L operation
    * L += Op(M)
    *
-   * @param[in] Msource The multpole expansion source
-   * @param[in,out] Ltarget The local expansion target
+   * @param[in] source The multpole expansion source
+   * @param[in,out] target The local expansion target
    * @param[in] translation The vector from source to target
    * @pre translation obeys the multipole-acceptance criteria
    * @pre Msource includes the influence of all points within its box
    */
-  void M2L(const multipole_type& Msource,
-	   local_type& Ltarget,
+  void M2L(const multipole_type& source,
+	   local_type& target,
            const point_type& translation) const {
-    (void) Msource;
-    (void) Ltarget;
+    (void) source;
+    (void) target;
     (void) translation;
   }
 
@@ -161,11 +161,11 @@ class KernelSkeleton
    * @param[in] translation The vector from source to target
    * @pre Lsource includes the influence of all points outside its box
    */
-  void L2L(const local_type& Lsource,
-           local_type& Ltarget,
+  void L2L(const local_type& source,
+           local_type& target,
            const point_type& translation) const {
-    (void) Lsource;
-    (void) Ltarget;
+    (void) source;
+    (void) target;
     (void) translation;
   }
 

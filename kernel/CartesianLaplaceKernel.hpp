@@ -25,7 +25,7 @@
 #include <vector>
 #include <Vec.hpp>
 
-class CartesianLaplaceKernel 
+class CartesianLaplaceKernel
 {
  private:
   typedef double real;
@@ -167,7 +167,7 @@ class CartesianLaplaceKernel
       M[7] += scal * dist[0] * dist[1];
       M[8] += scal * dist[1] * dist[2];
       M[9] += scal * dist[2] * dist[0];
-    } 
+    }
   }
 
   /** Kernel M2M operator
@@ -308,7 +308,7 @@ class CartesianLaplaceKernel
     Ltarget[3] += Lsource[6] * dist[2] * dist[2] / 2;
   }
 
-  /** Kernel M2P operation
+  /** Kernel L2P operation
    * r_i += Op(L)
    *
    * @param[in] L The local expansion

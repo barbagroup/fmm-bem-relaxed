@@ -24,10 +24,13 @@ THE SOFTWARE.
 #include <SphericalLaplaceKernel.hpp>
 #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
+#include <CartesianLaplaceKernel2.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-#define UNIT_KERNEL
+// #define UNIT_KERNEL
+//#define SPH_KERNEL
+#define CART_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -54,7 +57,6 @@ inline double drand() {
 int main(int argc, char **argv)
 {
   int numBodies = 100;
-  int P = 5;
   bool checkErrors = true;
   bool printBox = false;
   FMMOptions opts;
@@ -66,9 +68,6 @@ int main(int argc, char **argv)
     if (strcmp(argv[i],"-N") == 0) {
       i++;
       numBodies = atoi(argv[i]);
-    } else if (strcmp(argv[i],"-P") == 0) {
-      i++;
-      P = atoi(argv[i]);
     } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
       opts.THETA = (double)atof(argv[i]);
@@ -96,10 +95,15 @@ int main(int argc, char **argv)
   }
 
   // Init the FMM Kernel
-#ifndef UNIT_KERNEL
+#ifdef SPH_KERNEL
   typedef SphericalLaplaceKernel kernel_type;
-  kernel_type K(P);
-#else
+  kernel_type K(5);
+#endif
+#ifdef CART_KERNEL
+  typedef CartesianLaplaceKernel<5> kernel_type;
+  kernel_type K;
+#endif
+#ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;
   kernel_type K;
 #endif
@@ -137,7 +141,7 @@ int main(int argc, char **argv)
     // Compute the result with a direct matrix-vector multiplication
     Direct::matvec(K, points, charges, exact);
 
-#ifndef UNIT_KERNEL
+#if defined(SPH_KERNEL) || defined(CART_KERNEL)
     result_type rdiff, rnorm;
     for (unsigned k = 0; k < result.size(); ++k) {
       printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k][0], result[k][0]);
@@ -149,7 +153,8 @@ int main(int argc, char **argv)
     printf("Error (pot) : %.4e\n", sqrt(rdiff[0] / rnorm[0]));
     printf("Error (acc) : %.4e\n", sqrt((rdiff[1]+rdiff[2]+rdiff[3]) /
 					(rnorm[1]+rnorm[2]+rnorm[3])));
-#else
+#endif
+#ifdef UNIT_KERNEL
     int wrong_results = 0;
     for (unsigned k = 0; k < result.size(); ++k) {
       printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);

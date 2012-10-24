@@ -17,11 +17,12 @@ class SmallVec;
  * A general class that endows types with vector operations. If the base type
  * is a primitive type, the Vec stores information as an array of that type.
  * If the base type is not a primitive type, then it must implement the bracket
- * operator (lvalue and rvalue).
+ * operator (lvalue and rvalue)
  *
- * Vec<3, float> v1;
+ * All of the following result in nearly the same public Vec interface
+ * Vec<3, double> v1;
  * Vec<3, double[3]> v2;
- * Vec<3, MyClassThatImplementsOpBracket> v3;
+ * Vec<3, MyClassThatImplementsOpBracketWithDoubles> v3;
  */
 template <unsigned DIM, typename DATA>
 using Vec = typename std::conditional<std::is_fundamental<DATA>::value,
@@ -141,11 +142,19 @@ class SmallVec {
     return a[i];
   }
 
+  /** Compute the dot product of this SmallVec with another SmallVec */
+  inline value_type dot(const SmallVec& b) const {
+    value_type d(0);
+    for_i d += a[i]*b[i];
+    return d;
+  }
+  /** Compute the dot product of this SmallVec with another SmallVec */
+  inline friend value_type dot(const SmallVec& a, const SmallVec& b) {
+    return a.dot(b);
+  }
   /** Compute the squared L2 norm of this SmallVec */
   inline friend value_type normSq(const SmallVec& b) {
-    value_type c(0);
-    for_i c += b[i]*b[i];
-    return c;
+    return b.dot(b);
   }
   /** Compute the L2 norm of this SmallVec */
   inline friend value_type norm(const SmallVec& b) {

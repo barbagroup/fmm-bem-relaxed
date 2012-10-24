@@ -4,18 +4,13 @@
 #include <algorithm>
 
 // FMM includes
-
-// #include <Evaluator.hpp>
 #include <FMMOptions.hpp>
-// #include <SimpleEvaluator.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
 #include "Octree.hpp"
 #include <Logger.hpp>
 
-
 #include "Executor.hpp"
-
 
 //! global logging
 Logger Log;
@@ -41,7 +36,10 @@ template <class Kernel>
 class FMM_plan//  : public fmm_wrapper
 {
  public:
-  typedef typename Kernel::point_type point_type;  // TODO: Better point support
+  typedef typename Kernel::point_type point_type;
+  // TODO: Better point support?
+  // Want all derived classes to use the following fmmplan::point_type wrapper?
+  //typedef typename Vec<Kernel::dimension, typename Kernel::point_type> point_type;
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 
@@ -50,7 +48,6 @@ class FMM_plan//  : public fmm_wrapper
 
   //private:
   FMMOptions& options;
-  // SimpleEvaluator<Kernel> evaluator;
   ExecutorBase<tree_type,kernel_type>* executor;
   Kernel& K;
   Octree<point_type> otree;

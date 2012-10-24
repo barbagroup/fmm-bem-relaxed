@@ -144,13 +144,17 @@ class CartesianYukawaKernel
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) {
-    point_type dist = s - t;         //   Vector from target to source
-    real R2 = normSq(dist);          //   R^2
-    real invR2 = 1.0 / R2;           //   1 / R^2
-    if (R2 < 1e-8) invR2 = 0;        //   Exclude self interaction
-    real invR = std::sqrt(invR2);    //   potential
-    dist *= invR2 * invR;            //   force
-    return kernel_value_type(invR, dist[0], dist[1], dist[2]);
+    point_type dist = s - t; 
+    real R2 = normSq(dist); 
+    real R  = std::sqrt(R2);
+    real invR2 = 1.0 / R2; 
+    real invR = std::sqrt(invR2);
+    if (R2 < 1e-8) {invR=0; invR2 = 0;}
+    auto aux = exp(-Kappa*R)*invR;
+    auto r = aux;
+    aux *= (Kappa*R+1)*invR2;
+    dist *= aux;
+    return kernel_value_type(r, dist[0], dist[1], dist[2]);
   }
 
   /** Kernel vectorized non-symmetric P2P operation

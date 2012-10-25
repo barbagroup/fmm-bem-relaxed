@@ -24,8 +24,7 @@ THE SOFTWARE.
 #include <SphericalLaplaceKernel.hpp>
 #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
-//#include <CartesianLaplaceKernel2.hpp>
-#include <CartesianLaplaceKernel3.hpp>
+#include <CartesianLaplaceKernel2.hpp>
 //#include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
@@ -55,6 +54,11 @@ void print_box(const Box& b, std::string padding = std::string()) {
 // Random number in [0,1)
 inline double drand() {
   return ::drand48();
+}
+
+// Random number in [A,B)
+inline double drand(double A, double B) {
+  return (B-A) * drand() + A;
 }
 
 int main(int argc, char **argv)
@@ -128,7 +132,7 @@ int main(int argc, char **argv)
 
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)
-    charges[k] = 1;//drand();
+    charges[k] = drand();
 
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);

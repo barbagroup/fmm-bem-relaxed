@@ -17,7 +17,7 @@ class Direct
   };
 
   /** Use *Substitution Failure Is Not An Error* and variadic templates
-   * to determine if a Kernel has a P2P method with the correct signature
+   * to determine if a Kernel has a P2P method with a certain signature
    */
   template <typename K, typename... Args>
   struct HasP2P {
@@ -26,6 +26,7 @@ class Direct
     template <class A> static constexpr char sfinae(...);
     static constexpr bool value = std::is_void<decltype(sfinae<K>(0))>::value;
   };
+
 
   /** Forwards any arguments to the Kernel's P2P function
    * @pre HasP2P<Kernel,Args...>::value == true
@@ -72,7 +73,8 @@ class Direct
    *
    * @param[in] ...
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter, typename ResultIter>
+  template <typename Kernel,
+	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(UseP2P<false>, Kernel& K,
                             PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
                             PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,

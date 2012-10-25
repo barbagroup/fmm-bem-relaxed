@@ -24,15 +24,16 @@ THE SOFTWARE.
 #include <SphericalLaplaceKernel.hpp>
 #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
-#include <CartesianLaplaceKernel2.hpp>
-#include <CartesianYukawaKernel.hpp>
+//#include <CartesianLaplaceKernel2.hpp>
+#include <CartesianLaplaceKernel3.hpp>
+//#include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-// #define UNIT_KERNEL
+//#define UNIT_KERNEL
 //#define SPH_KERNEL
-//#define CART_KERNEL
-#define YUKAWA_KERNEL
+#define CART_KERNEL
+//#define YUKAWA_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -127,7 +128,7 @@ int main(int argc, char **argv)
 
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)
-    charges[k] = drand();
+    charges[k] = 1;//drand();
 
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);

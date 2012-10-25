@@ -34,7 +34,7 @@ struct TempKernel {
 
   void P2P(int a) const { std::cout << "In P2P(int)\n"; }
 
-#if 0
+#if 1
   template <typename PointIter, typename ChargeIter, typename ResultIter>
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
            PointIter t_begin, PointIter t_end, ResultIter r_begin) const {

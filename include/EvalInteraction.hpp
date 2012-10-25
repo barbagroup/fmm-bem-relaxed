@@ -64,15 +64,15 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
 
   template <typename BoxContext, typename BOX>
   void evalM2L(BoxContext& bc,
-	       const BOX& b1,
-	       const BOX& b2) const {
+	       const BOX& source,
+	       const BOX& target) const {
 #ifdef DEBUG
-    printf("M2L: %d to %d\n", b2.index(), b1.index());
+    printf("M2L: %d to %d\n", source.index(), target.index());
 #endif
 
-    K.M2L(bc.multipole_expansion(b1),
-          bc.local_expansion(b2),
-          b2.center() - b1.center());
+    K.M2L(bc.multipole_expansion(source),
+          bc.local_expansion(target),
+          target.center() - source.center());
   }
 
  public:

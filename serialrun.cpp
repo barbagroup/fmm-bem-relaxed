@@ -25,14 +25,14 @@ THE SOFTWARE.
 #include <UnitKernel.hpp>
 // #include <CartesianLaplaceKernel.hpp>
 #include <CartesianLaplaceKernel2.hpp>
-#include <CartesianYukawaKernel.hpp>
+//#include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-// #define UNIT_KERNEL
+//#define UNIT_KERNEL
 //#define SPH_KERNEL
-//#define CART_KERNEL
-#define YUKAWA_KERNEL
+#define CART_KERNEL
+//#define YUKAWA_KERNEL
 
 template <typename Box>
 void print_box(const Box& b, std::string padding = std::string()) {
@@ -54,6 +54,11 @@ void print_box(const Box& b, std::string padding = std::string()) {
 // Random number in [0,1)
 inline double drand() {
   return ::drand48();
+}
+
+// Random number in [A,B)
+inline double drand(double A, double B) {
+  return (B-A) * drand() + A;
 }
 
 int main(int argc, char **argv)

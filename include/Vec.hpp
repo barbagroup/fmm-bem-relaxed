@@ -8,6 +8,7 @@
 #include <type_traits>
 #include <cstdarg>
 #include <math.h>
+#include <assert.h>
 
 //! Predeclaration of SmallVec
 template <unsigned DIM, typename DATA>
@@ -134,11 +135,13 @@ class SmallVec {
   /** Access the @a i th (lvalue) element of this SmallVec
    * @pre i < dimension */
   inline value_type& operator[](unsigned i) {
+    //assert(i < dimension);
     return a[i];
   }
   /** Access the @a i th (rvalue) element of this SmallVec
    * @pre i < dimension */
   inline const value_type& operator[](unsigned i) const {
+    //assert(i < dimension);
     return a[i];
   }
 

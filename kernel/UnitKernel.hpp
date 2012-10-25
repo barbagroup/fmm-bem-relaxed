@@ -41,14 +41,12 @@ class UnitKernel
   typedef double local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, double box_size) const {
+  void init_multipole(multipole_type& M, double) const {
     M = 0;
-    (void) box_size;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, double box_size) const {
+  void init_local(local_type& L, double) const {
     L = 0;
-    (void) box_size;
   }
 
   /** Kernel evaluation
@@ -56,10 +54,8 @@ class UnitKernel
    *
    * @param[in] t,s The target and source points to evaluate the kernel
    */
-  kernel_value_type operator()(const point_type& t,
-                               const point_type& s) const {
-    (void) t;
-    (void) s;
+  kernel_value_type operator()(const point_type&,
+                               const point_type&) const {
     return kernel_value_type(1);
   }
 
@@ -74,8 +70,7 @@ class UnitKernel
    */
   template <typename PointIter, typename ChargeIter>
   void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) const {
-    (void) center;
+           const point_type&, multipole_type& M) const {
     for ( ; p_begin != p_end; ++p_begin, ++c_begin)
       M += *c_begin;
   }
@@ -88,27 +83,25 @@ class UnitKernel
    * @param[in] translation The vector from source to target
    * @pre Msource includes the influence of all points within its box
    */
-  void M2M(const multipole_type& Msource,
-           multipole_type& Mtarget,
-           const point_type& translation) const {
-    (void) translation;
-    Mtarget += Msource;
+  void M2M(const multipole_type& source,
+           multipole_type& target,
+           const point_type&) const {
+    target += source;
   }
 
   /** Kernel M2L operation
    * L += Op(M)
    *
-   * @param[in] Msource The multpole expansion source
-   * @param[in,out] Ltarget The local expansion target
+   * @param[in] source The multpole expansion source
+   * @param[in,out] target The local expansion target
    * @param[in] translation The vector from source to target
    * @pre translation obeys the multipole-acceptance criteria
    * @pre Msource includes the influence of all points within its box
    */
-  void M2L(const multipole_type& Msource,
-                 local_type& Ltarget,
-           const point_type& translation) const {
-    (void) translation;
-    Ltarget += Msource;
+  void M2L(const multipole_type& source,
+                 local_type& target,
+           const point_type&) const {
+    target += source;
   }
 
   /** Kernel M2P operation
@@ -121,10 +114,9 @@ class UnitKernel
    * @pre M includes the influence of all points within its box
    */
   template <typename PointIter, typename ResultIter>
-  void M2P(const multipole_type& M, const point_type& center,
+  void M2P(const multipole_type& M, const point_type&,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
-    (void) center;
     for ( ; t_begin != t_end; ++t_begin, ++r_begin)
       *r_begin += M;
   }
@@ -137,11 +129,10 @@ class UnitKernel
    * @param[in] translation The vector from source to target
    * @pre Lsource includes the influence of all points outside its box
    */
-  void L2L(const local_type& Lsource,
-           local_type& Ltarget,
-           const point_type& translation) const {
-    (void) translation;
-    Ltarget += Lsource;
+  void L2L(const local_type& source,
+           local_type& target,
+           const point_type&) const {
+    target += source;
   }
 
   /** Kernel L2P operation
@@ -154,10 +145,9 @@ class UnitKernel
    * @pre L includes the influence of all points outside its box
    */
   template <typename PointIter, typename ResultIter>
-  void L2P(const local_type& L, const point_type& center,
+  void L2P(const local_type& L, const point_type&,
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
-    (void) center;
     for ( ; t_begin!=t_end; ++t_begin, ++r_begin)
       *r_begin += L;
   }

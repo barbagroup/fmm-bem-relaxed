@@ -30,8 +30,8 @@ THE SOFTWARE.
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define UNIT_KERNEL
-//#define SPH_KERNEL
-#define CART_KERNEL
+#define SPH_KERNEL
+//#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
 template <typename Box>
@@ -41,14 +41,16 @@ void print_box(const Box& b, std::string padding = std::string()) {
             << b.morton_index() << "    " << b.center() << "\n";
 
   padding.append(2,' ');
+  for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
+    std::cout << padding << "Point " << ci->index() << ": "
+	      << ci->morton_index() << "\t" << ci->point() << "\n";
+
   if (!b.is_leaf()) {
     for (auto ci = b.child_begin(); ci != b.child_end(); ++ci)
       print_box(*ci, padding);
-  } else {
-    for (auto ci = b.body_begin(); ci != b.body_end(); ++ci)
-      std::cout << padding << "Point " << ci->index() << ": "
-		<< ci->morton_index() << "\t" << ci->point() << "\n";
-  }
+  }// else {
+
+    //}
 }
 
 // Random number in [0,1)
@@ -65,10 +67,10 @@ int main(int argc, char **argv)
 {
   int numBodies = 100;
   bool checkErrors = true;
-  bool printBox = false;
+  bool printBox = true;
   FMMOptions opts;
-  opts.set_theta(1 / sqrtf(4));    // Multipole acceptance criteria
-  opts.NCRIT = 10;
+  opts.set_mac_theta(0.5);    // Multipole acceptance criteria
+  opts.set_max_per_box(10);
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {
@@ -77,24 +79,23 @@ int main(int argc, char **argv)
       numBodies = atoi(argv[i]);
     } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
-      opts.THETA = (double)atof(argv[i]);
-      opts.set_theta(opts.THETA);
+      opts.set_mac_theta((double)atof(argv[i]));
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     } else if (strcmp(argv[i],"-bottomup") == 0) {
       opts.tree = FMMOptions::BOTTOMUP;
-    } else if (strcmp(argv[i],"-evaluator") == 0) {
+    } else if (strcmp(argv[i],"-eval") == 0) {
       i++;
       if (strcmp(argv[i],"FMM") == 0) {
         opts.evaluator = FMMOptions::FMM;
-      } else if (strcmp(argv[i],"TREECODE") == 0) {
+      } else if (strcmp(argv[i],"TREE") == 0) {
         opts.evaluator = FMMOptions::TREECODE;
       } else {
         printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
       }
     } else if (strcmp(argv[i],"-ncrit") == 0) {
       i++;
-      opts.NCRIT = (unsigned)atoi(argv[i]);
+      opts.set_max_per_box((unsigned)atoi(argv[i]));
     } else if (strcmp(argv[i],"-printbox") == 0) {
       printBox = true;
     } else {

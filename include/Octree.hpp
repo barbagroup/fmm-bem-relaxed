@@ -225,8 +225,7 @@ class Octree
 
   struct Body {
     /** Construct an invalid Body */
-    Body()
-        : tree_(NULL) {
+    Body() : idx_(0), tree_(NULL) {
     }
 
     const point_type& point() const {
@@ -255,8 +254,7 @@ class Octree
   // A tree-aligned box
   struct Box {
     /** Construct an invalid Box */
-    Box()
-        : tree_(NULL) {
+    Box() : idx_(0), tree_(NULL) {
     }
 
     unsigned index() const {
@@ -295,26 +293,17 @@ class Octree
 
     /** The begin iterator to the Points contained in this box */
     body_iterator body_begin() const {
-      if (is_leaf()) {
+      if (is_leaf())
         return body_iterator(data().child_begin_, tree_);
-      } else {
-        unsigned body_begin_idx = data().child_begin_;
-        while (!tree_->box_data_[body_begin_idx].is_leaf()) {
-          body_begin_idx = tree_->box_data_[body_begin_idx].child_begin_;
-        }
-        return body_iterator(tree_->box_data_[body_begin_idx].child_begin_, tree_);
-      }
+      else
+	return child_begin()->body_begin();
     }
     /** The end iterator to the Points contained in this box */
     body_iterator body_end() const {
-      if (is_leaf()) {
+      if (is_leaf())
         return body_iterator(data().child_end_, tree_);
-      } else {
-        unsigned body_end_idx = data().child_end_ - 1;
-        while (!tree_->box_data_[body_end_idx].is_leaf())
-          body_end_idx = tree_->box_data_[body_end_idx].child_end_ - 1;
-        return body_iterator(tree_->box_data_[body_end_idx].child_end_, tree_);
-      }
+      else
+	return (--child_end())->body_end();
     }
 
     /** The begin iterator to the child Boxes contained in this box */
@@ -357,9 +346,13 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid box_iterator */
-    box_iterator() {
+    box_iterator() : idx_(0), tree_(NULL) {
     }
 
+    box_iterator& operator--() {
+      --idx_;
+      return *this;
+    }
     box_iterator& operator++() {
       ++idx_;
       return *this;
@@ -413,7 +406,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid iterator */
-    body_iterator() {
+    body_iterator() : idx_(0), tree_(0) {
     }
 
     body_iterator& operator++() {

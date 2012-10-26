@@ -43,7 +43,8 @@ using Vec = typename std::conditional<std::is_fundamental<DATA>::value,
  */
 template <unsigned DIM, typename POINT>
 class SmallVec {
- private:
+  static_assert(DIM > 0, "SmallVec DIM must be greater than 0");
+
   POINT a;
 
  public:

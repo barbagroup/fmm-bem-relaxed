@@ -13,7 +13,7 @@ inline double drand()
   return ::drand48();
 }
 
-int main(int argc, char **argv)
+int main()
 {
   typedef SphericalLaplaceKernel kernel_type;
   kernel_type K(5);
@@ -22,38 +22,38 @@ int main(int argc, char **argv)
   typedef kernel_type::result_type result_type;
 
   FMMOptions opts;
-  opts.set_theta(.5);
-  opts.NCRIT = 150;
+  opts.set_mac_theta(.5);
+  opts.set_max_per_box(126);
 
   std::vector<std::pair<unsigned,double>> times;
   double tic, toc;
 
-  for (unsigned it=0; it!=25; ++it)
-  {
-    int numBodies = int(pow(10,(it+24)/8.));
+  for (double n = 4; n <= 6; n += 0.125) {
+    int numBodies = int(pow(10,n));
 
     std::vector<point_type> points(numBodies);
     for (int k=0; k<numBodies; ++k) {
       points[k] = point_type(drand(),drand(),drand());
     }
-    auto jpoints = points;
 
     std::vector<charge_type> charges(numBodies);
     for (int k=0; k<numBodies; ++k) {
       charges[k] = drand();
     }
 
+    FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
+
     // initialise plan & solve
     tic = get_time();
-    FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
-    auto result = plan.execute(charges,jpoints);
+    auto result = plan.execute(charges,points);
     toc = get_time();
-    
+
+    printf("%d\t%.3e\n", numBodies, toc-tic);
     times.push_back(std::make_pair(numBodies,toc-tic));
   }
 
   for (auto it=times.begin(); it!=times.end(); ++it) {
-    printf("%d : %.3e\n",it->first,it->second);
+    printf("%d\t%.3e\n", it->first, it->second);
   }
 }
 

@@ -1,23 +1,12 @@
 #pragma once
 
-/** @class ExecutorBase
- * @brief Abstract Executor class
- */
-template <typename Tree, typename Kernel>
-struct ExecutorBase {
-  ExecutorBase() {}
-  virtual ~ExecutorBase() {};
-  // TODO: improve
-  virtual void execute(const std::vector<typename Kernel::charge_type>& charges,
-                       std::vector<typename Kernel::result_type>& results) = 0;
-};
-
+#include "ExecutorBase.hpp"
 #include "Evaluator.hpp"
 #include <TransformIterator.hpp>
 
 /** @class Executor
  * @brief A very general Executor class. This provides a context to any tree
- * provides the following interface:
+ * that provides the following interface:
  * Tree::box_type
  *   int index() const                  // Each box has a unique index
  *   body_iterator body_begin() const
@@ -163,35 +152,11 @@ public:
   }
 };
 
+
 //! Type hiding constructor for MinimalExecutor
 template <typename Tree, typename Kernel, typename E>
 ExecutorBase<Tree,Kernel>* make_minimal_executor(const Tree& tree,
 						 const Kernel& K,
 						 const Evaluator<E>* eval) {
   return new MinimalExecutor<Tree, Kernel, E>(tree, K, eval);
-}
-
-
-#include "EvalP2MM2M.hpp"
-#include "EvalInteraction.hpp"
-#include "EvalL2LL2P.hpp"
-
-//! Type hiding factory for Executor based on FMMOptions (TODO: File organization)
-template <typename Tree, typename Kernel, typename Options>
-ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree,
-                                         const Kernel& K,
-                                         const Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM) {
-    auto upward   = make_P2MM2M(tree, K, opts);
-    auto inter    = make_fmm_inter(tree, K, opts);
-    auto downward = make_L2LL2P(tree, K, opts);
-    auto eval = make_evaluator(upward, inter, downward);
-    return make_minimal_executor(tree, K, eval);
-  } else if (opts.evaluator == FMMOptions::TREECODE) {
-    auto upward = make_P2MM2M(tree, K, opts);
-    auto inter  = make_tree_inter(tree, K, opts);
-    auto eval = make_evaluator(upward, inter);
-    return make_minimal_executor(tree, K, eval);
-  }
-  return NULL;
 }

@@ -9,12 +9,12 @@
 class FMMOptions
 {
 public:
-  typedef enum {TOPDOWN, BOTTOMUP} TreeType;
-  typedef enum {FMM, TREECODE} EvaluatorType;
+  enum TreeType {TOPDOWN, BOTTOMUP};
+  enum EvalType {FMM, TREECODE};
 
   bool symmetric;
   TreeType tree;
-  EvaluatorType evaluator;
+  EvalType evaluator;
   double THETA;
   unsigned NCRIT;
 
@@ -40,8 +40,12 @@ public:
       MAC(DefaultMAC(0.5)) {
   };
 
-  void set_theta(double theta) {
+  void set_mac_theta(double theta) {
     MAC = DefaultMAC(theta);
+  }
+
+  void set_max_per_box(unsigned ncrit) {
+    NCRIT = ncrit;
   }
 };
 

@@ -7,10 +7,11 @@
 #include <FMMOptions.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
-#include "Octree.hpp"
+
 #include <Logger.hpp>
 
-#include "Executor.hpp"
+#include <tree/Octree.hpp>
+#include <executor/make_executor.hpp>
 
 //! global logging
 Logger Log;
@@ -62,7 +63,7 @@ class FMM_plan//  : public fmm_wrapper
     auto dim = result.dimensions();
     auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
     result |= result.min() + point_type(maxdim, maxdim, maxdim) * (1 + 1e-6);
-    std::cout << "Bounding Box: " << result << "\n";
+    //std::cout << "Bounding Box: " << result << "\n";
     return result;
   }
 

@@ -7,10 +7,11 @@
 #include <FMMOptions.hpp>
 #include <Vec.hpp>
 #include "BoundingBox.hpp"
-#include "Octree.hpp"
+
 #include <Logger.hpp>
 
-#include "Executor.hpp"
+#include <tree/Octree.hpp>
+#include <executor/make_executor.hpp>
 
 //! global logging
 Logger Log;

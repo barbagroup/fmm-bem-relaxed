@@ -3,9 +3,13 @@
 #include "Evaluator.hpp"
 #include "Direct.hpp"
 
+#include "M2L.hpp"
+#include "M2P.hpp"
+#include "P2P.hpp"
+
 #include <functional>
 
-template <typename Tree, typename Kernel, FMMOptions::EvaluatorType TYPE>
+template <typename Tree, typename Kernel, FMMOptions::EvalType TYPE>
 class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
 {
   const Tree& tree;
@@ -13,67 +17,6 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
 
   std::function<bool(typename Tree::box_type,
 		     typename Tree::box_type)> acceptMultipole;
-
-  /** One-sided P2P!!
-   */
-  template <typename BoxContext, typename BOX>
-  void evalP2P(BoxContext& bc,
-	       const BOX& b1,
-	       const BOX& b2) const {
-    // Point iters
-    auto p1_begin = bc.point_begin(b1);
-    auto p1_end   = bc.point_end(b1);
-    auto p2_begin = bc.point_begin(b2);
-    auto p2_end   = bc.point_end(b2);
-
-    // Charge iters
-    auto c1_begin = bc.charge_begin(b1);
-
-    // Result iters
-    auto r2_begin = bc.result_begin(b2);
-
-#ifdef DEBUG
-    printf("P2P: %d to %d\n", b1.index(), b2.index());
-#endif
-    Direct::matvec(K,
-		   p1_begin, p1_end, c1_begin,
-		   p2_begin, p2_end,
-		   r2_begin);
-  }
-
-  template <typename BoxContext, typename BOX>
-  void evalM2P(BoxContext& bc,
-	       const BOX& b1,
-	       const BOX& b2) const {
-    // Target point iters
-    auto t_begin = bc.point_begin(b2);
-    auto t_end   = bc.point_end(b2);
-
-    // Target result iters
-    auto r_begin = bc.result_begin(b2);
-
-#ifdef DEBUG
-    printf("M2P: %d to %d\n", b1.index(), b2.index());
-#endif
-
-    K.M2P(bc.multipole_expansion(b1),
-          b1.center(),
-          t_begin, t_end,
-          r_begin);
-  }
-
-  template <typename BoxContext, typename BOX>
-  void evalM2L(BoxContext& bc,
-	       const BOX& source,
-	       const BOX& target) const {
-#ifdef DEBUG
-    printf("M2L: %d to %d\n", source.index(), target.index());
-#endif
-
-    K.M2L(bc.multipole_expansion(source),
-          bc.local_expansion(target),
-          target.center() - source.center());
-  }
 
  public:
 
@@ -88,11 +31,11 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
     if (acceptMultipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM)
-	evalM2L(bc, b1, b2);
+	M2L::eval(K, bc, b1, b2);
       else if (TYPE == FMMOptions::TREECODE)
-	evalM2P(bc, b1, b2);
+	M2P::eval(K, bc, b1, b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
-      evalP2P(bc, b2, b1);
+      P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -105,7 +48,7 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
     std::deque<box_pair> pairQ;
 
     if(tree.root().is_leaf())
-      return evalP2P(bc, tree.root(), tree.root());
+      return P2P::eval(K, bc, tree.root(), tree.root(), P2P::ONE_SIDED());
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     pairQ.push_back(box_pair(tree.root(), tree.root()));

@@ -9,12 +9,12 @@
 class FMMOptions
 {
 public:
-  typedef enum {TOPDOWN, BOTTOMUP} TreeType;
-  typedef enum {FMM, TREECODE} EvaluatorType;
+  enum TreeType {TOPDOWN, BOTTOMUP};
+  enum EvalType {FMM, TREECODE};
 
   bool symmetric;
   TreeType tree;
-  EvaluatorType evaluator;
+  EvalType evaluator;
   double THETA;
   unsigned NCRIT;
 

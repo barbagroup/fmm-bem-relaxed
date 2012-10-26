@@ -28,7 +28,7 @@ int main()
   std::vector<std::pair<unsigned,double>> times;
   double tic, toc;
 
-  for (double n = 2; n <= 7; n += 0.25) {
+  for (double n = 4; n <= 6; n += 0.125) {
     int numBodies = int(pow(10,n));
 
     std::vector<point_type> points(numBodies);

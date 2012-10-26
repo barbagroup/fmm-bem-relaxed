@@ -1,14 +1,14 @@
 #pragma once
-/*
- * Direct calculations for error checking purposes
- * Using K(x,y) interface
+/** @file Direct.hpp
+ * @brief Dispatch methods for P2P stage
+ *
  */
 
 #include <iterator>
 #include <vector>
 
 
-class Direct
+struct Direct
 {
  private:
   /** Type for Kernel::P2P forwarding identification */

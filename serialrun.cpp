@@ -69,14 +69,8 @@ int main(int argc, char **argv)
   bool checkErrors = true;
   bool printBox = true;
   FMMOptions opts;
-<<<<<<< HEAD
-  opts.set_theta(1 / sqrtf(4));    // Multipole acceptance criteria
-  opts.NCRIT = 10;
-  unsigned P = 6; // default truncation #
-=======
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
->>>>>>> 8bd2c507e457c3bdb38ab70b1b3dfbdbffccc4f9
 
   // parse command line args
   for (int i = 1; i < argc; ++i) {
@@ -104,9 +98,6 @@ int main(int argc, char **argv)
       opts.set_max_per_box((unsigned)atoi(argv[i]));
     } else if (strcmp(argv[i],"-printbox") == 0) {
       printBox = true;
-    } else if (strcmp(argv[i],"-P") == 0) {
-      i++;
-      P = atoi(argv[i]);
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
     }
@@ -115,16 +106,15 @@ int main(int argc, char **argv)
   // Init the FMM Kernel
 #ifdef SPH_KERNEL
   typedef SphericalLaplaceKernel kernel_type;
-  kernel_type K(P);
+  kernel_type K(5);
 #endif
 #ifdef CART_KERNEL
-  (void) P;
   typedef CartesianLaplaceKernel<5> kernel_type;
   kernel_type K;
 #endif
 #ifdef YUKAWA_KERNEL
   typedef CartesianYukawaKernel kernel_type;
-  kernel_type K(P,0.5);
+  kernel_type K(6,0.5);
 #endif
 #ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;

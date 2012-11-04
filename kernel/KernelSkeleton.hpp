@@ -1,37 +1,10 @@
 #pragma once
-/*
-  Copyright (C) 2012 by TODO
-
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-*/
-
-/** @class KernelSkeleton
- * @brief Example Kernel that can be followed to develop Kernel classes for
- * Tree/FMM code.
- *
- * This class acts as a starting point for defining Kernels that may be
- * used with the treecode and fast multipole method implementations.
- *
- * Not all methods must be implemented (these are labeled in *Optional*
- * sections), and arbitrary data and helper methods may be added beyond
- * the interface detailed below.
+/** @file KernelSkeleton
+ * @brief An example Kernel implementation that explains the required and
+ * optionals methods and types to be included in a Kernel class.
  */
+
+
 class KernelSkeleton
 {
  private:
@@ -58,18 +31,18 @@ class KernelSkeleton
   typedef std::vector<real> local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, double box_size) const {
+  void init_multipole(multipole_type& M, double box_size) {
     (void) M;
     (void) box_size;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, double box_size) const {
+  void init_local(local_type& L, double box_size) {
     (void) L;
     (void) box_size;
   }
 
   /** Kernel evaluation
-   * K(t,s)
+   * K(t,s) where s is the source point and t is the target point
    *
    * @param[in] t,s The target and source points to evaluate the kernel
    * @return The Kernel evaluation, K(t,s)
@@ -82,20 +55,17 @@ class KernelSkeleton
   }
 
   /** Kernel P2M operation
-   * M = sum_j Op(s_j) * c_j where M is the multipole and s_j are the sources
+   * M += Op(s) * c where M is the multipole and s is the source
    *
-   * @param[in] p_begin,p_end Iterator pair to the points in this operation
-   * @param[in] c_begin Corresponding charge iterator for the points
+   * @param[in] source The point source
+   * @param[in] charge The source's corresponding charge
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
-   * @pre M is the result of init_multipole
    */
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+  void P2M(const point_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
-    (void) p_begin;
-    (void) p_end;
-    (void) c_begin;
+    (void) source;
+    (void) charge;
     (void) center;
     (void) M;
   }
@@ -116,8 +86,25 @@ class KernelSkeleton
     (void) translation;
   }
 
+  /** Kernel M2P operation
+   * r += Op(M) where M is the multipole and r is the result
+   *
+   * @param[in] M The multpole expansion
+   * @param[in] center The center of the box with the multipole expansion
+   * @param[in] target The target point position
+   * @param[in,out] result The target's corresponding result to accumulate into
+   * @pre M includes the influence of all points within its box
+   */
+  void M2P(const multipole_type& M, const point_type& center,
+           const point_type& target, result_type& result) const {
+    (void) M;
+    (void) center;
+    (void) target;
+    (void) result;
+  }
+
   /** Kernel M2L operation
-   * L += Op(M)
+   * L += Op(M) where L is the local expansion and M is the multipole
    *
    * @param[in] source The multpole expansion source
    * @param[in,out] target The local expansion target
@@ -131,26 +118,6 @@ class KernelSkeleton
     (void) source;
     (void) target;
     (void) translation;
-  }
-
-  /** Kernel M2P operation
-   * r_i += Op(M)
-   *
-   * @param[in] M The multpole expansion
-   * @param[in] center The center of the box with the multipole expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre M includes the influence of all points within its box
-   */
-  template <typename PointIter, typename ResultIter>
-  void M2P(const multipole_type& M, const point_type& center,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
-    (void) M;
-    (void) center;
-    (void) t_begin;
-    (void) t_end;
-    (void) r_begin;
   }
 
   /** Kernel L2L operator
@@ -170,7 +137,7 @@ class KernelSkeleton
   }
 
   /** Kernel L2P operation
-   * r_i += Op(L)
+   * r += Op(L) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion
@@ -178,26 +145,40 @@ class KernelSkeleton
    * @param[in] r_begin Iterator to the result accumulator
    * @pre L includes the influence of all points outside its box
    */
-  template <typename PointIter, typename ResultIter>
   void L2P(const local_type& L, const point_type& center,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
+           const point_type& target, result_type& result) const {
     (void) L;
     (void) center;
-    (void) t_begin;
-    (void) t_end;
-    (void) r_begin;
+    (void) target;
+    (void) result;
   }
 
-  /******************/
-  /**** Optional ****/
-  /******************/
-  /* The methods below may be implemented to potentially optimize the P2P operations
-   * If these methods are not implemented, the P2P will be delegated to the Direct.hpp
-   * methods which use K.operator()(point_type,point_type) for Kernel evaluations.
+
+  /*******************************************************************/
+  /************************* Optional ********************************/
+  /*******************************************************************/
+  /* The methods below may be implemented to potentially optimize the P2P
+   * operations. If these methods are not implemented, the P2P will be delegated
+   * to the Direct.hpp methods which use K.operator()(point_type,point_type) for
+   * Kernel evaluations.
    */
 
-  /** Kernel vectorized non-symmetric P2P operation
+
+  /** Optional Kernel value source and target transposition
+   * K(t,s) -> K(s,t)
+   * Often, a kernel has a symmetry in s and t that can be computed faster than
+   * by calling the evaluation operator. If this function is implemented, the
+   * computation may use it to prevent uneccessary calls to the evaluation
+   * operator and accelerate the P2P evaluations and
+   *
+   * @param[in] kst A kernel value that was returned from operator()(s,t)
+   * @returns The value of K(t,s)
+   */
+  kernel_value_type transpose(const kernel_value_type& kst) const {
+    return kst;
+  }
+
+  /** Optional Kernel vectorized non-symmetric P2P operation
    * r_i += sum_j K(t_i,s_j) * c_j
    *
    * @param[in] s_begin,s_end Iterator pair to the source points
@@ -216,7 +197,7 @@ class KernelSkeleton
     (void) r_begin;
   }
 
-  /** Kernel vectorized symmetric P2P operation
+  /** Optional Kernel vectorized symmetric P2P operation
    * r2_i += sum_j K(p2_i, p1_j) * c1_j
    * r1_j += sum_i K(p1_j, p2_i) * c2_i
    *
@@ -237,5 +218,65 @@ class KernelSkeleton
     (void) c2_begin;
     (void) r1_begin;
     (void) r2_begin;
+  }
+
+
+  /** Optional Kernel vectorized P2M operation
+   * M = sum_j Op(s_j) * c_j where M is the multipole and s_j are the sources
+   *
+   * @param[in] p_begin,p_end Iterator pair to the points in this operation
+   * @param[in] c_begin Corresponding charge iterator for the points
+   * @param[in] center The center of the box containing the multipole expansion
+   * @param[in,out] M The multipole expansion to accumulate into
+   * @pre M is the result of init_multipole
+   */
+  template <typename PointIter, typename ChargeIter>
+  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+           const point_type& center, multipole_type& M) const {
+    (void) p_begin;
+    (void) p_end;
+    (void) c_begin;
+    (void) center;
+    (void) M;
+  }
+
+  /** Optional Kernel vectorized M2P operation
+   * r_i += Op(M) where M is the multipole and r_i are the results
+   *
+   * @param[in] M The multpole expansion
+   * @param[in] center The center of the box with the multipole expansion
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   * @pre M includes the influence of all points within its box
+   */
+  template <typename PointIter, typename ResultIter>
+  void M2P(const multipole_type& M, const point_type& center,
+           PointIter t_begin, PointIter t_end,
+           ResultIter r_begin) const {
+    (void) M;
+    (void) center;
+    (void) t_begin;
+    (void) t_end;
+    (void) r_begin;
+  }
+
+  /** Optional Kernel vectorized L2P operation
+   * r_i += Op(L) where L is the local expansion and r_i are the results
+   *
+   * @param[in] L The local expansion
+   * @param[in] center The center of the box with the local expansion
+   * @param[in] t_begin,t_end Iterator pair to the target points
+   * @param[in] r_begin Iterator to the result accumulator
+   * @pre L includes the influence of all points outside its box
+   */
+  template <typename PointIter, typename ResultIter>
+  void L2P(const local_type& L, const point_type& center,
+           PointIter t_begin, PointIter t_end,
+           ResultIter r_begin) const {
+    (void) L;
+    (void) center;
+    (void) t_begin;
+    (void) t_end;
+    (void) r_begin;
   }
 };

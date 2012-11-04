@@ -1,6 +1,6 @@
 #pragma once
 
-#include "BoundingBox.hpp"
+#include <BoundingBox.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -317,6 +317,15 @@ class Octree
       return box_iterator(data().child_end_, tree_);
     }
 
+    /** Write a Box to an output stream */
+    inline friend std::ostream& operator<<(std::ostream& s,
+					   const box_type& b) {
+      return s << "Box " << b.index()
+	       << " (Level " << b.level() << ", Parent " << b.parent().index()
+	       << ", Bodies " << b.body_begin()->index()
+	       << "-" << (--b.body_end())->index()
+	       << "): " << b.center();
+    }
    private:
     unsigned idx_;
     tree_type* tree_;
@@ -413,6 +422,10 @@ class Octree
       ++idx_;
       return *this;
     }
+    body_iterator& operator--() {
+      --idx_;
+      return *this;
+    }
     body_iterator& operator+(int n) {
       idx_ += n;
       return *this;
@@ -479,27 +492,22 @@ class Octree
     return level_offset_.size() - 1;
   }
 
-  std::vector<unsigned>& getPermutation()
-  {
-    return permute_;
-  }
 
-  template <typename IT, typename Options>
-  void construct_tree(IT begin, IT end, Options& options) {
+  template <typename IT>
+  void construct_tree(IT p_begin, IT p_end, unsigned NCRIT = 126) {
     // Create a code-idx pair vector
-    std::vector<point_type> points_tmp;
     std::vector<std::pair<code_type, unsigned>> code_idx;
     unsigned idx = 0;
-    for ( ; begin != end; ++begin, ++idx) {
-      assert(coder_.bounding_box().contains(*begin));
-      points_tmp.push_back(*begin);
-      code_idx.push_back(std::make_pair(coder_.code(*begin), idx));
+    for (IT pi = p_begin; pi != p_end; ++pi, ++idx) {
+      assert(coder_.bounding_box().contains(*pi));
+      code_idx.push_back(std::make_pair(coder_.code(*pi), idx));
     }
 
     // TODO: Use radix or bucket sort for efficiency
     // or incrementally sort...
     std::sort(code_idx.begin(), code_idx.end());
 
+    std::vector<point_type> points_tmp(p_begin, p_end);
     // Extract the code, permutation vector, and sorted point
     for (auto it = code_idx.begin(); it != code_idx.end(); ++it) {
       mc_.push_back(it->first);
@@ -508,10 +516,9 @@ class Octree
     }
 
     // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = options.NCRIT;
 
     // Push the root box which contains all points
-    box_data_.push_back( box_data(1, 0, 0, point_.size()) );
+    box_data_.push_back( box_data(1, 0, 0, code_idx.size()) );
     level_offset_.push_back(0);
 
     // For every box that is created
@@ -565,6 +572,7 @@ class Octree
 
     level_offset_.push_back(box_data_.size());
   }
+
 
   /** Return the root box of this tree
    */
@@ -629,6 +637,26 @@ class Octree
     for (unsigned i = 0; i < v.size(); ++i)
       temp[permute_[i]] = v[i];
     return temp;
+  }
+
+  /** Write an Octree to an output stream */
+  inline friend std::ostream& operator<<(std::ostream& s,
+					 const tree_type& t) {
+    struct {
+      inline std::ostream& print(std::ostream& ss,
+				 const box_type& b) {
+	ss << std::string(2*b.level(), ' ') << b;
+	if (!b.is_leaf()) {
+	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
+	    ss << "\n";
+	    print(ss,*ci);
+	  }
+	}
+	return ss;
+      }
+    } level_traverse;
+
+    return level_traverse.print(s, t.root());
   }
 };
 

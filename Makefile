@@ -50,10 +50,10 @@ LIBS +=
 # 'make' - default rule
 all: serialrun
 
-eval_test: eval_test.o
+serialrun: serialrun.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-serialrun: serialrun.o
+test_tree: test_tree.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's

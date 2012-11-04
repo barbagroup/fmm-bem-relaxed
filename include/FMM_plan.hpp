@@ -1,8 +1,5 @@
 #pragma once
 
-// system includes
-#include <algorithm>
-
 // FMM includes
 #include <FMMOptions.hpp>
 #include <Vec.hpp>
@@ -15,11 +12,6 @@
 
 //! global logging
 Logger Log;
-
-// forward declarations
-//template <class Tree, class Kernel>
-//class EvaluatorBase;
-
 
 /** Simple wrapper class for FMM_plan */
 /*
@@ -48,7 +40,6 @@ class FMM_plan//  : public fmm_wrapper
   typedef Kernel kernel_type;
 
   //private:
-  FMMOptions& options;
   ExecutorBase<tree_type,kernel_type>* executor;
   Kernel& K;
   Octree<point_type> otree;
@@ -73,10 +64,10 @@ public:
 
   FMM_plan(Kernel& k, const std::vector<point_type>& points,
            FMMOptions& opts)
-    : options(opts), K(k), //evaluator(k),
+    : K(k), //evaluator(k),
       otree(get_boundingbox(points.begin(), points.end())) {
     // Construct the Octree
-    otree.construct_tree(points.begin(),points.end(),opts);
+    otree.construct_tree(points.begin(), points.end(), opts.NCRIT);
     // setup the executor
     set_options(opts);
   }

@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   // check errors
   double M2P_error = fabs(exact[0][0] - M2P[0][0]) / exact[0][0];
 
-  for (int i=0; i<M2.size(); i++) {
+  for (unsigned i=0; i<M2.size(); i++) {
     printf("M[%02d]: %lg\n",i,M2[i]);
   }
 

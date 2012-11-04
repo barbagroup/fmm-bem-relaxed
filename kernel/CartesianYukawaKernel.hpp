@@ -40,14 +40,14 @@ class CartesianYukawaKernel
   std::vector<unsigned> index;
 
  private:
-  static unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
-    unsigned II=0, ii, jj;
-    for (unsigned ii = 0; ii < i; ++ii) {
-      for (unsigned jj = 1; jj < P+2-ii; ++jj) {
+  static unsigned setIndex(int P, int i, int j, int k) {
+    unsigned II=0;
+    for (int ii = 0; ii < i; ++ii) {
+      for (int jj = 1; jj < P+2-ii; ++jj) {
 	II += jj;
       }
     }
-    for (unsigned jj = P+2-j; jj < P+2; ++jj) {
+    for (int jj = P+2-j; jj < P+2; ++jj) {
       II += jj-i;
     }
     return II + k;
@@ -82,9 +82,9 @@ class CartesianYukawaKernel
     index = std::vector<unsigned>(MTERMS,0);
 
     unsigned idx=0;
-    for (unsigned ii=0; ii<P+1; ii++) {
-      for (unsigned jj=0; jj<P+1-ii; jj++) {
-        for (unsigned kk=0; kk<P+1-ii-jj; kk++) {
+    for (int ii=0; ii<P+1; ii++) {
+      for (int jj=0; jj<P+1-ii; jj++) {
+        for (int kk=0; kk<P+1-ii-jj; kk++) {
           index[idx] = setIndex(P,ii,jj,kk);
           I[idx] = ii;
           J[idx] = jj;
@@ -120,8 +120,8 @@ class CartesianYukawaKernel
     real invR  = 1.0/r;
     if( r < 1e-8 ) { invR = 0; invR2 = 0; };
     real pot = exp(-Kappa*r) * invR;
-    dist *= aux * (Kappa * r + 1) * invR2;
-    return kernel_value_type(aux, -acc[0], -acc[1], -acc[2]);
+    dist *= pot * (Kappa * r + 1) * invR2;
+    return kernel_value_type(pot, -dist[0], -dist[1], -dist[2]);
   }
 
   /** Kernel vectorized non-symmetric P2P operation

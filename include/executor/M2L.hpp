@@ -18,6 +18,6 @@ struct M2L
 
     K.M2L(bc.multipole_expansion(source),
           bc.local_expansion(target),
-          target.center() - source.center());
+          bc.center(target) - bc.center(source));
   }
 };

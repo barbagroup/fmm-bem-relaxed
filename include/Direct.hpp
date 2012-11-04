@@ -21,9 +21,9 @@ struct Direct
   template <typename K, typename... Args>
   struct HasP2P {
     template <class A, void (A::*)(Args...) const> struct SFINAE {};
-    template <class A> static constexpr void sfinae(SFINAE<A, &A::P2P>*);
-    template <class A> static constexpr char sfinae(...);
-    static constexpr bool value = std::is_void<decltype(sfinae<K>(0))>::value;
+    template <class A> static std::true_type  sfinae(SFINAE<A, &A::P2P>*);
+    template <class A> static std::false_type sfinae(...);
+    static constexpr bool value = decltype(sfinae<K>(0))::value;
   };
 
   /** Use *Substitution Failure Is Not An Error*
@@ -36,7 +36,7 @@ struct Direct
     template <class A, kv_type (A::*)(const kv_type&) const> struct SFINAE {};
     template <class A> static constexpr void sfinae(SFINAE<A, &A::transpose>*);
     template <class A> static constexpr char sfinae(...);
-    static constexpr bool value = std::is_void<decltype(sfinae<K>(0))>::value;
+    static constexpr bool value = decltype(sfinae<K>(0))::value;
   };
 
 

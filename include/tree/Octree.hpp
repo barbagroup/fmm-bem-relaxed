@@ -1,10 +1,12 @@
 #pragma once
 
-#include "BoundingBox.hpp"
+#include <BoundingBox.hpp>
 
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
+
+#include "Util.hpp"
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;
@@ -168,10 +170,10 @@ class Octree
      * TODO: optimize
      */
     unsigned level() const {
-      constexpr static unsigned lookup[] = {0, 3, 0, 3, 4, 7, 0, 9,
-                                        3, 4, 5, 6, 7, 8, 1, 10,
-                                        2, 4, 6, 9, 5, 5, 8, 2,
-                                        6, 9, 7, 2, 8, 1, 1, 10};
+      static constexpr unsigned lookup[] = {0, 3, 0, 3, 4, 7, 0, 9,
+                                            3, 4, 5, 6, 7, 8, 1, 10,
+                                            2, 4, 6, 9, 5, 5, 8, 2,
+                                            6, 9, 7, 2, 8, 1, 1, 10};
       unsigned v = key_ & ~leaf_bit;
       v |= v >> 1;
       v |= v >> 2;
@@ -317,6 +319,15 @@ class Octree
       return box_iterator(data().child_end_, tree_);
     }
 
+    /** Write a Box to an output stream */
+    inline friend std::ostream& operator<<(std::ostream& s,
+					   const box_type& b) {
+      return s << "Box " << b.index()
+	       << " (Level " << b.level() << ", Parent " << b.parent().index()
+	       << ", Bodies " << b.body_begin()->index()
+	       << "-" << (--b.body_end())->index()
+	       << "): " << b.center();
+    }
    private:
     unsigned idx_;
     tree_type* tree_;
@@ -413,6 +424,10 @@ class Octree
       ++idx_;
       return *this;
     }
+    body_iterator& operator--() {
+      --idx_;
+      return *this;
+    }
     body_iterator& operator+(int n) {
       idx_ += n;
       return *this;
@@ -479,99 +494,172 @@ class Octree
     return level_offset_.size() - 1;
   }
 
-  std::vector<unsigned>& getPermutation()
-  {
-    return permute_;
-  }
-
-  template <typename IT, typename Options>
-  void construct_tree(IT begin, IT end, Options& options) {
+#if 0
+  template <typename PointIter>
+  void construct_tree(PointIter p_begin, PointIter p_end, unsigned NCRIT = 126) {
     // Create a code-idx pair vector
-    std::vector<point_type> points_tmp;
-    std::vector<std::pair<code_type, unsigned>> code_idx;
+    typedef std::pair<code_type, unsigned> code_pair;
+    std::vector<code_pair> codes;
     unsigned idx = 0;
-    for ( ; begin != end; ++begin, ++idx) {
-      assert(coder_.bounding_box().contains(*begin));
-      points_tmp.push_back(*begin);
-      code_idx.push_back(std::make_pair(coder_.code(*begin), idx));
+    for (PointIter pi = p_begin; pi != p_end; ++pi, ++idx) {
+      assert(coder_.bounding_box().contains(*pi));
+      codes.push_back(std::make_pair(coder_.code(*pi), idx));
     }
 
-    // TODO: Use radix or bucket sort for efficiency
-    // or incrementally sort...
-    std::sort(code_idx.begin(), code_idx.end());
+    // TODO: Use radix sort for efficiency or incrementally sort...
+    std::sort(codes.begin(), codes.end());
 
+    std::vector<point_type> points_tmp(p_begin, p_end);
     // Extract the code, permutation vector, and sorted point
-    for (auto it = code_idx.begin(); it != code_idx.end(); ++it) {
+    for (auto it = codes.begin(); it != codes.end(); ++it) {
       mc_.push_back(it->first);
       permute_.push_back(it->second);
       point_.push_back(points_tmp[permute_.back()]);
     }
 
-    // Add the boxes (in a pretty dumb way...)
-    unsigned NCRIT = options.NCRIT;
-
     // Push the root box which contains all points
-    box_data_.push_back( box_data(1, 0, 0, point_.size()) );
+    box_data_.push_back(box_data(1, 0, 0, mc_.size()));
     level_offset_.push_back(0);
 
     // For every box that is created
     // TODO: Can do this in one scan through the morton codes...
     for (unsigned k = 0; k != box_data_.size(); ++k) {
-
       if (box_data_[k].num_children() <= NCRIT) {
         box_data_[k].set_leaf(true);
-      } else {
-        // Get the key and interval
-        code_type key_p = box_data_[k].key_;
-        auto mc_begin = mc_.begin() + box_data_[k].child_begin_;
-        auto mc_end = mc_.begin() + box_data_[k].child_end_;
+        continue;
+      }
 
-        // Split this box - point offsets become box offsets
-        box_data_[k].child_begin_ = box_data_.size();
-        box_data_[k].child_end_ = box_data_.size();
+      // Get the key and interval
+      auto mc_begin = mc_.begin() + box_data_[k].child_begin_;
+      auto mc_end   = mc_.begin() + box_data_[k].child_end_;
+      unsigned shift    = 3*(MortonCoder::levels - box_data_[k].level() - 1);
+      unsigned box_code = (*mc_begin) & (code_type(-1) << (shift+1));
 
-        // For each octant
-        for (int oct = 0; oct < 8; ++oct) {
-          // Construct the new box key
-          code_type key_c = (key_p << 3) | oct;
+      // Find the child box offsets
+      // Construct off such that off[i],off[i+1] are the begin,end of child i
+      std::vector<typename std::vector<code_type>::iterator> off(9);
+      off[0] = mc_begin;
+      off[8] = mc_end;
+      off[4] = std::upper_bound(off[0], off[8], box_code | (4 << shift));
+      off[2] = std::upper_bound(off[0], off[4], box_code | (2 << shift));
+      off[1] = std::upper_bound(off[0], off[2], box_code | (1 << shift));
+      off[3] = std::upper_bound(off[2], off[4], box_code | (3 << shift));
+      off[6] = std::upper_bound(off[4], off[8], box_code | (6 << shift));
+      off[5] = std::upper_bound(off[4], off[6], box_code | (5 << shift));
+      off[7] = std::upper_bound(off[6], off[8], box_code | (7 << shift));
 
-          // Construct a temporary child box
-          box_data box_c(key_c, k);
+      // Split this box - point offsets become box offsets
+      box_data_[k].child_begin_ = box_data_.size();
+      box_data_[k].child_end_   = box_data_.size();
 
-          // Find the morton start and end of this child
-          // TODO: Can do this MUCH better
-          auto begin_c = std::lower_bound(mc_begin, mc_end, box_c.get_mc_lower_bound());
-          auto end_c = std::upper_bound(mc_begin, mc_end, box_c.get_mc_upper_bound());
+      // For each bucket
+      for (int c = 0; c < 8; ++c) {
+        unsigned begin_c = off[c]   - mc_.begin();
+        unsigned end_c   = off[c+1] - mc_.begin();
 
-          // If this child contains points, add this child box
-          if (end_c - begin_c > 0) {
-            // Increment parent child offset
-            ++box_data_[k].child_end_;
-            // Set the child body offsets
-            box_c.child_begin_ = begin_c - mc_.begin();
-            box_c.child_end_ = end_c - mc_.begin();
+        // If this child contains points, add this child box
+        if (end_c - begin_c > 0) {
+          // Construct the new box
+          code_type key_c = (box_data_[k].key_ << 3) | c;
+          box_data box_c(key_c, k, begin_c, end_c);
 
-            // TODO: Optimize on key
-            // If this is starting a new level, record it
-            if (box_c.level() > levels())
-              level_offset_.push_back(box_data_.size());
+          // TODO: Optimize on key
+          // If this is starting a new level, record it
+          if (box_c.level() > levels())
+            level_offset_.push_back(box_data_.size());
 
-            // Add the child
-            box_data_.push_back(box_c);
-          }
+          // Increment parent child offset
+          ++box_data_[k].child_end_;
+          // Add the child
+          box_data_.push_back(box_c);
         }
       }
     }
 
     level_offset_.push_back(box_data_.size());
   }
+#endif
 
-  /** Return the root box of this tree
-   */
+#if 1
+  template <typename PointIter>
+  void construct_tree(PointIter p_begin, PointIter p_end, unsigned NCRIT = 126) {
+    // Create a code-idx pair vector
+    typedef std::pair<code_type, unsigned> code_pair;
+    std::vector<code_pair> codes;
+    unsigned idx = 0;
+    for (PointIter pi = p_begin; pi != p_end; ++pi, ++idx) {
+      assert(coder_.bounding_box().contains(*pi));
+      codes.push_back(std::make_pair(coder_.code(*pi), idx));
+    }
+
+    // Push the root box which contains all points
+    box_data_.push_back(box_data(1, 0, 0, codes.size()));
+    level_offset_.push_back(0);
+
+    // For every box that is created
+    for (unsigned k = 0; k != box_data_.size(); ++k) {
+
+      // If this box is has few enough points, mark as leaf and continue
+      if (box_data_[k].num_children() <= NCRIT) {
+        box_data_[k].set_leaf(true);
+        continue;
+      }
+
+      // Get the box data
+      auto code_begin = codes.begin() + box_data_[k].child_begin_;
+      auto code_end   = codes.begin() + box_data_[k].child_end_;
+      unsigned shift  = 3*(MortonCoder::levels - box_data_[k].level() - 1);
+
+      // Sort the points in this box into the eight "bucket" children
+      auto off = bucket_sort(code_begin, code_end, 8,
+                             [shift] (code_pair& v)
+                             { return (v.first >> shift) & 7; });
+
+      // Split this box - point offsets become box offsets
+      box_data_[k].child_begin_ = box_data_.size();
+      box_data_[k].child_end_   = box_data_.size();
+
+      // For each bucket
+      for (int c = 0; c < 8; ++c) {
+        unsigned begin_c = off[c]   - codes.begin();
+        unsigned end_c   = off[c+1] - codes.begin();
+
+        // If this child contains points, add this child box
+        if (end_c - begin_c > 0) {
+          // Construct the new box
+          code_type key_c = (box_data_[k].key_ << 3) | c;
+          box_data box_c(key_c, k, begin_c, end_c);
+
+          // TODO: Optimize on key
+          // If this is starting a new level, record it
+          if (box_c.level() > levels())
+            level_offset_.push_back(box_data_.size());
+
+          // Increment parent child offset
+          ++box_data_[k].child_end_;
+          // Add the child
+          box_data_.push_back(box_c);
+        }
+      }
+    }
+
+    level_offset_.push_back(box_data_.size());
+
+    // Copy the points to a vector
+    std::vector<point_type> points_tmp(p_begin, p_end);
+    // Extract the code, permutation vector, and sorted point
+    for (auto it = codes.begin(); it != codes.end(); ++it) {
+      mc_.push_back(it->first);
+      permute_.push_back(it->second);
+      point_.push_back(points_tmp[permute_.back()]);
+    }
+  }
+#endif
+
+  /** Return the root box of this tree */
   Box root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
-
   /** Return an iterator to the first body in this tree */
   body_iterator body_begin() const {
     return body_iterator(0, const_cast<tree_type*>(this));
@@ -629,6 +717,26 @@ class Octree
     for (unsigned i = 0; i < v.size(); ++i)
       temp[permute_[i]] = v[i];
     return temp;
+  }
+
+  /** Write an Octree to an output stream */
+  inline friend std::ostream& operator<<(std::ostream& s,
+					 const tree_type& t) {
+    struct {
+      inline std::ostream& print(std::ostream& ss,
+				 const box_type& b) {
+	ss << std::string(2*b.level(), ' ') << b;
+	if (!b.is_leaf()) {
+	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
+	    ss << "\n";
+	    print(ss,*ci);
+	  }
+	}
+	return ss;
+      }
+    } level_traverse;
+
+    return level_traverse.print(s, t.root());
   }
 };
 

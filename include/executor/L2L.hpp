@@ -6,6 +6,8 @@
 
 struct L2L
 {
+
+
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
 			  BoxContext& bc,
@@ -18,7 +20,7 @@ struct L2L
 
     K.L2L(bc.local_expansion(source),
           bc.local_expansion(target),
-          target.center() - source.center());
+          bc.center(target) - bc.center(source));
   }
 
   template <typename Kernel, typename BoxContext, typename Box>

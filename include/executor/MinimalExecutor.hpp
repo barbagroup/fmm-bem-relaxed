@@ -9,6 +9,7 @@
  * that provides the following interface:
  * Tree::box_type
  *   int index() const                  // Each box has a unique index
+ *   point_type center() const          // Each box has a center point
  *   body_iterator body_begin() const
  *   body_iterator body_end() const     // Iterator pair to the box's bodies
  * Tree::body_type
@@ -101,6 +102,9 @@ public:
   }
   inline const multipole_type& local_expansion(const box_type& b) const {
     return L_[b.index()];
+  }
+  inline point_type center(const box_type& b) const {
+    return b.center();
   }
   inline auto point_begin(const box_type& b)
       -> decltype(make_transform_iterator(b.body_begin(), body2point)) {

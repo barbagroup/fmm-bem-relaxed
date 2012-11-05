@@ -1,25 +1,11 @@
 #pragma once
-/*
-  Copyright (C) 2011 by Rio Yokota, Simon Layton, Lorena Barba
+/** @file CartesianYukawaKernel.hpp
+ * @brief Implements the Yukawa kernel with cartesian expansions
+ * The Yukawa kernel is defined by
+ * K(t,s) = exp(-Kappa * |t-s|) / |t-s|       // Potential
+ * K(t,s) = -(Kappa * |t-s| + 1) exp(-Kappa * |t-s|) / |t-s|
+ */
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-*/
 
 #include <complex>
 #include <vector>
@@ -57,14 +43,14 @@ class CartesianYukawaKernel
   IndexCache cache;
 
  private:
-  static unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
-    unsigned II=0, ii, jj;
-    for (unsigned ii = 0; ii < i; ++ii) {
-      for (unsigned jj = 1; jj < P+2-ii; ++jj) {
+  static unsigned setIndex(int P, int i, int j, int k) {
+    unsigned II=0;
+    for (int ii = 0; ii < i; ++ii) {
+      for (int jj = 1; jj < P+2-ii; ++jj) {
 	II += jj;
       }
     }
-    for (unsigned jj = P+2-j; jj < P+2; ++jj) {
+    for (int jj = P+2-j; jj < P+2; ++jj) {
       II += jj-i;
     }
     return II + k;
@@ -135,9 +121,9 @@ class CartesianYukawaKernel
     index = std::vector<unsigned>(MTERMS,0);
 
     unsigned idx=0;
-    for (unsigned ii=0; ii<P+1; ii++) {
-      for (unsigned jj=0; jj<P+1-ii; jj++) {
-        for (unsigned kk=0; kk<P+1-ii-jj; kk++) {
+    for (int ii=0; ii<P+1; ii++) {
+      for (int jj=0; jj<P+1-ii; jj++) {
+        for (int kk=0; kk<P+1-ii-jj; kk++) {
           index[idx] = setIndex(P,ii,jj,kk);
           I[idx] = ii;
           J[idx] = jj;
@@ -163,22 +149,18 @@ class CartesianYukawaKernel
    * K(t,s)
    *
    * @param[in] t,s The target and source points to evaluate the kernel
-   * @result The Laplace potential and force 4-vector on t from s:
-   * Potential: 1/|s-t|  Force: (s-t)/|s-t|^3
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) {
-    point_type dist = s - t; 
-    real R2 = normSq(dist); 
-    real R  = std::sqrt(R2);
-    real invR2 = 1.0 / R2; 
-    real invR = std::sqrt(invR2);
-    if (R2 < 1e-8) {invR=0; invR2 = 0;}
-    auto aux = exp(-Kappa*R)*invR;
-    auto r = aux;
-    aux *= (Kappa*R+1)*invR2;
-    dist *= aux;
-    return kernel_value_type(r, dist[0], dist[1], dist[2]);
+    point_type dist = t - s;
+    real r2 = normSq(dist);
+    real r  = std::sqrt(r2);
+    real invR2 = 1.0/r2;
+    real invR  = 1.0/r;
+    if( r < 1e-8 ) { invR = 0; invR2 = 0; };
+    real pot = exp(-Kappa*r) * invR;
+    dist *= pot * (Kappa * r + 1) * invR2;
+    return kernel_value_type(pot, -dist[0], -dist[1], -dist[2]);
   }
 
   /** Kernel vectorized non-symmetric P2P operation
@@ -204,12 +186,12 @@ class CartesianYukawaKernel
         real invR2 = 1.0/r2;
         real invR  = 1.0/r;
         if( r < 1e-8 ) { invR = 0; invR2 = 0; };
-        real aux = exp(-Kappa*r)*invR;
-        R[0] += (*c)*aux;
-        aux *= (Kappa*r+1)*invR2;
-        R[1] += (*c)*dist[0]*aux;
-        R[2] += (*c)*dist[1]*aux;
-        R[3] += (*c)*dist[2]*aux;
+        real aux = (*c) * exp(-Kappa*r) * invR;
+        R[0] += aux;
+        dist *= aux * (Kappa*r+1) * invR2;
+        R[1] += dist[0];
+        R[2] += dist[1];
+        R[3] += dist[2];
       }
 
       (*r_begin)[0] += R[0];
@@ -217,24 +199,6 @@ class CartesianYukawaKernel
       (*r_begin)[2] -= R[2];
       (*r_begin)[3] -= R[3];
     }
-  }
-
-  /** Kernel vectorized symmetric P2P operation
-   * ...
-   */
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
-           PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
-           ResultIter r1_begin, ResultIter r2_begin) const {
-    // TODO...
-    (void) p1_begin;
-    (void) p1_end;
-    (void) c1_begin;
-    (void) p2_begin;
-    (void) p2_end;
-    (void) c2_begin;
-    (void) r1_begin;
-    (void) r2_begin;
   }
 
   /** Kernel P2M operation

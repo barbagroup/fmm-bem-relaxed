@@ -1,4 +1,4 @@
-#include "include/Octree.hpp"
+#include "include/tree/Octree.hpp"
 #include "include/Vec.hpp"
 
 #include <iostream>
@@ -50,16 +50,7 @@ int main(int argc, char** argv)
 
   otree.construct_tree(points.begin(), points.end());
 
-  std::string padding = "";
-  print_box(*otree.box_begin());
-
-  int L = 3;
-  for (auto bi = otree.box_begin(L); bi != otree.box_end(L); ++bi) {
-    auto b = *bi;
-    std::cout << padding << "Box " << b.index()
-              << " (Level " << b.level() << ", Parent " << b.parent().index() << "): "
-              << b.morton_index() << "    " << b.center() << "\n";
-  }
+  std::cout << otree << "\n";
 
   return 0;
 }

@@ -18,7 +18,7 @@ struct M2M
 
     K.M2M(bc.multipole_expansion(source),
           bc.multipole_expansion(target),
-          target.center() - source.center());
+          bc.center(target) - bc.center(source));
   }
 
   template <typename Kernel, typename BoxContext, typename Box>

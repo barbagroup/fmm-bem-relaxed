@@ -23,7 +23,7 @@ struct TempKernel {
   typedef double result_type;
 
   kernel_value_type operator()(const point_type& t,
-                               const point_type& s) {
+                               const point_type& s) const {
     (void) t;
     (void) s;
 
@@ -33,6 +33,11 @@ struct TempKernel {
   }
 
   void P2P(int a) const { std::cout << "In P2P(int)\n"; }
+
+  kernel_value_type transpose(const kernel_value_type& kst) const {
+    std::cout << "In Transpose\n";
+    return kernel_value_type(1);
+  }
 
 #if 1
   template <typename PointIter, typename ChargeIter, typename ResultIter>
@@ -79,7 +84,7 @@ int main() {
   std::vector<result_type> exact(target.size());
 
   // test direct
-  Direct::matvec(K,points.begin(),points.end(),charges.begin(),target.begin(),target.end(),exact.begin());
+  Direct::matvec(K, points, charges, exact);
 
   std::cout << exact[0] << "\n";
 }

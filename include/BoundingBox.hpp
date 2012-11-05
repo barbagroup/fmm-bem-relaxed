@@ -30,13 +30,13 @@ class BoundingBox {
   }
   /** Construct the minimal bounding box containing @a p.
    * @post contains(@a p) && min() == @a p && max() == @a p */
-  explicit BoundingBox(const Point& p)
+  explicit BoundingBox(const point_type& p)
     : empty_(false), min_(p), max_(p) {
   }
   /** Construct the minimal bounding box containing a given sphere.
    * @param[in] center center of the sphere
    * @param[in] radius radius of the sphere */
-  BoundingBox(const Point& center, double radius)
+  BoundingBox(const point_type& center, double radius)
     : empty_(false) {
     radius = fabs(radius);
     min_ = center - radius;
@@ -44,7 +44,7 @@ class BoundingBox {
   }
   /** Construct the minimal bounding box containing @a p1 and @a p2.
    * @post contains(@a p1) && contains(@a p2) */
-  BoundingBox(const Point& p1, const Point& p2)
+  BoundingBox(const point_type& p1, const point_type& p2)
     : empty_(false), min_(p1), max_(p1) {
     *this |= p2;
   }
@@ -71,31 +71,31 @@ class BoundingBox {
    * @post empty() || contains(min())
    *
    * The minimum corner has minimum x, y, and z coordinates of any corner.
-   * An empty box has min() == Point(). */
-  const Point& min() const {
+   * An empty box has min() == point_type(). */
+  const point_type& min() const {
     return min_;
   }
   /** Return the maximum corner of the bounding box.
    * @post empty() || contains(max()) */
-  const Point& max() const {
+  const point_type& max() const {
     return max_;
   }
   /** Return the dimensions of the bounding box.
    * @return max() - min()
    */
-  Point dimensions() const {
+  point_type dimensions() const {
     return max_ - min_;
   }
   /** Return the center of the bounding box. */
-  Point center() const {
+  point_type center() const {
     return (min_ + max_) / 2;
   }
 
   /** Test if point @a p is in the bounding box. */
-  bool contains(const Point& p) const {
+  bool contains(const point_type& p) const {
     if (empty())
       return false;
-    for (unsigned i=0; i!=Point::dimension; ++i)
+    for (unsigned i=0; i!=point_type::dimension; ++i)
       if (p[i] < min_[i] || p[i] > max_[i])
         return false;
     return true;
@@ -110,7 +110,7 @@ class BoundingBox {
   bool intersects(const BoundingBox& box) const {
     if (empty() || box.empty())
       return false;
-    for (unsigned i=0; i!=Point::dimension; ++i)
+    for (unsigned i=0; i!=point_type::dimension; ++i)
       if (box.min_[i] > max_[i] || box.max_[i] < min_[i])
         return false;
     return true;
@@ -119,12 +119,12 @@ class BoundingBox {
   /** Extend the bounding box to contain @a p.
    * @post contains(@a p) is true
    * @post if old contains(@a x) was true, then new contains(@a x) is true */
-  BoundingBox& operator|=(const Point& p) {
+  BoundingBox& operator|=(const point_type& p) {
     if (empty_) {
       empty_ = false;
       min_ = max_ = p;
     } else {
-      for (unsigned i=0; i!=Point::dimension; ++i) {
+      for (unsigned i=0; i!=point_type::dimension; ++i) {
         min_[i] = std::min(min_[i], p[i]);
         max_[i] = std::max(max_[i], p[i]);
       }
@@ -153,7 +153,7 @@ class BoundingBox {
   BoundingBox &operator&=(const BoundingBox& box) {
     if (empty() || box.empty())
       goto erase;
-    for (int i = 0; i!=Point::dimension; ++i) {
+    for (int i = 0; i!=point_type::dimension; ++i) {
       if (min_[i] > box.max_[i] || max_[i] < box.min_[i])
 	goto erase;
       if (min_[i] < box.min_[i])
@@ -171,28 +171,30 @@ class BoundingBox {
    * @post empty() */
   void clear() {
     empty_ = true;
-    min_ = max_ = Point();
+    min_ = max_ = point_type();
+  }
+
+  /** Write a BoundingBox to an output stream.
+   *
+   * An empty BoundingBox is written as "[]". A nonempty BoundingBox is
+   * written as "[min:max] (dim)".
+   */
+  inline friend std::ostream& operator<<(std::ostream& s,
+					 const BoundingBox<point_type>& box) {
+    if (box.empty())
+      return (s << '[' << ']');
+    else
+      return (s << '[' << box.min() << ':' << box.max() << "] ("
+	      << box.dimensions() << ')');
   }
 
  private:
   bool empty_;
-  Point min_;
-  Point max_;
+  point_type min_;
+  point_type max_;
 };
 
-/** Write a BoundingBox to an output stream.
- *
- * An empty BoundingBox is written as "[]". A nonempty BoundingBox is
- * written as "[minx miny minz:maxx maxy maxz]", where all coordinates
- * are double-precision numbers.
- */
-template <typename P>
-inline std::ostream& operator<<(std::ostream& s, const BoundingBox<P>& box) {
-  if (box.empty())
-    return (s << '[' << ']');
-  else
-    return (s << '[' << box.min() << ':' << box.max() << "] (" << box.dimensions() << ')');
-}
+
 
 /** Return a bounding box that contains @a box and @a p. */
 template <typename P>

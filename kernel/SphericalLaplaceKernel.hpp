@@ -1,25 +1,8 @@
 #pragma once
-/*
-  Copyright (C) 2011 by Rio Yokota, Simon Layton, Lorena Barba
+/** @file SphericalLaplaceKernel.hpp
+ * @brief
+ */
 
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files (the "Software"), to deal
-  in the Software without restriction, including without limitation the rights
-  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-  copies of the Software, and to permit persons to whom the Software is
-  furnished to do so, subject to the following conditions:
-
-  The above copyright notice and this permission notice shall be included in
-  all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-  THE SOFTWARE.
-*/
 
 #include <complex>
 #include <vector>
@@ -145,6 +128,47 @@ class SphericalLaplaceKernel
     real invR = std::sqrt(invR2);    //   potential
     dist *= invR2 * invR;            //   force
     return kernel_value_type(invR, dist[0], dist[1], dist[2]);
+  }
+
+  /** Optional Kernel value source and target transposition
+   * K(t,s) -> K(s,t)
+   * Often, a kernel has a symmetry in s and t that can be computed faster than
+   * by calling the evaluation operator. If this function is implemented, the
+   * computation may use it to prevent uneccessary calls to the evaluation
+   * operator and accelerate the P2P evaluations and
+   *
+   * @param[in] kst A kernel value that was returned from operator()(s,t)
+   * @returns The value of K(t,s)
+   */
+  kernel_value_type transpose(const kernel_value_type& kst) const {
+    return kernel_value_type(kst[0], -kst[1], -kst[2], -kst[3]);
+  }
+
+  /** Kernel P2M operation
+   * M += Op(s) * c where M is the multipole and s is the source
+   *
+   * @param[in] source The point source
+   * @param[in] charge The source's corresponding charge
+   * @param[in] center The center of the box containing the multipole expansion
+   * @param[in,out] M The multipole expansion to accumulate into
+   */
+  void P2M(const point_type& source, const charge_type& charge,
+           const point_type& center, multipole_type& M) const {
+    std::cout << "Using Scalar P2M\n";
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    point_type dist = source - center;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      for( int m=0; m<=n; ++m ) {
+        const int nm  = n * n + n + m;
+        const int nms = n * (n + 1) / 2 + m;
+        M[nms] += charge * Ynm[nm];
+      }
+    }
+    M.RMAX = std::max(M.RMAX, norm(dist));
+    M.RCRIT = std::min(M.RCRIT, M.RMAX);
   }
 
   /** Kernel P2M operation

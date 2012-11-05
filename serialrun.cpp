@@ -11,8 +11,8 @@
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-//#define UNIT_KERNEL
-#define SPH_KERNEL
+#define UNIT_KERNEL
+//#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
@@ -28,7 +28,7 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
-  int numBodies = 100;
+  int numBodies = 1000;
   bool checkErrors = true;
   bool printBox = true;
   FMMOptions opts;

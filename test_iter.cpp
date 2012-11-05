@@ -11,6 +11,10 @@ struct MyOp {
   }
 };
 
+template <typename IT>
+transform_iterator<IT,OP>
+
+
 int main(int argc, char** argv)
 {
   std::vector<int> vec(10);

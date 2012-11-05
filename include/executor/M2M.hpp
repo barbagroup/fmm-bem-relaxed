@@ -20,15 +20,4 @@ struct M2M
           bc.multipole_expansion(target),
           bc.center(target) - bc.center(source));
   }
-
-  template <typename Kernel, typename BoxContext, typename Box>
-  inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& box)
-  {
-    // For all the children, M2M
-    auto c_end = box.child_end();
-    for (auto cit = box.child_begin(); cit != c_end; ++cit)
-      M2M::eval(K, bc, *cit, box);
-  }
 };

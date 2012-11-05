@@ -30,8 +30,10 @@ public:
           // If leaf, make L2P calls
 	  L2P::eval(K, bc, box);
         } else {
-          // If not leaf, make L2L calls
-	  L2L::eval(K, bc, box);
+	  // If not leaf, then for all the children L2L
+	  auto c_end = box.child_end();
+	  for (auto cit = box.child_begin(); cit != c_end; ++cit)
+	    L2L::eval(K, bc, box, *cit);
         }
       }
     }

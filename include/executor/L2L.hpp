@@ -6,8 +6,6 @@
 
 struct L2L
 {
-
-
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
 			  BoxContext& bc,
@@ -21,16 +19,5 @@ struct L2L
     K.L2L(bc.local_expansion(source),
           bc.local_expansion(target),
           bc.center(target) - bc.center(source));
-  }
-
-  template <typename Kernel, typename BoxContext, typename Box>
-  inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& box)
-  {
-    // For all the children, L2L
-    auto c_end = box.child_end();
-    for (auto cit = box.child_begin(); cit != c_end; ++cit)
-      L2L::eval(K, bc, box, *cit);
   }
 };

@@ -417,7 +417,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid iterator */
-    body_iterator() : idx_(0), tree_(0) {
+    body_iterator() : idx_(0), tree_(NULL) {
     }
 
     body_iterator& operator++() {

@@ -31,12 +31,12 @@ class KernelSkeleton
   typedef std::vector<real> local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, double box_size) {
+  void init_multipole(multipole_type& M, double box_size) const {
     (void) M;
     (void) box_size;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, double box_size) {
+  void init_local(local_type& L, double box_size) const {
     (void) L;
     (void) box_size;
   }

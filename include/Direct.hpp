@@ -195,8 +195,8 @@ struct Direct
   template <typename Kernel>
   inline static void matvec(Kernel& K,
                             const std::vector<typename Kernel::point_type>& s,
-                            const std::vector<typename Kernel::point_type>& t,
                             const std::vector<typename Kernel::charge_type>& c,
+                            const std::vector<typename Kernel::point_type>& t,
                             std::vector<typename Kernel::result_type>& r)
   {
     Direct::matvec(K,
@@ -213,6 +213,6 @@ struct Direct
                             std::vector<typename Kernel::result_type>& r)
   {
     // TODO
-    Direct::matvec(K, p, p, c, r);
+    Direct::matvec(K, p, c, p, r);
   }
 };

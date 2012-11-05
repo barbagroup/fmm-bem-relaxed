@@ -32,6 +32,7 @@ class CartesianYukawaKernel
   typedef double real;
   typedef std::complex<real> complex;
   typedef std::vector<real> real_vec;
+  struct IndexCache;
 
   //! Expansion order
   const int P;
@@ -52,6 +53,8 @@ class CartesianYukawaKernel
   std::vector<unsigned> I, J, K;
   //! indices of multipole terms
   std::vector<unsigned> index;
+  //! Cache of indices
+  IndexCache cache;
 
  private:
   static unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
@@ -66,6 +69,42 @@ class CartesianYukawaKernel
     }
     return II + k;
   }
+
+  //! store all possible index combinations returned from setIndex
+  struct IndexCache
+  {
+   private:
+    unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
+      unsigned II=0, ii, jj;
+      for (unsigned ii = 0; ii < i; ++ii) {
+        for (unsigned jj = 1; jj < P+2-ii; ++jj) {
+          II += jj;
+        }
+      }
+      for (unsigned jj = P+2-j; jj < P+2; ++jj) {
+        II += jj-i;
+      }
+      return II + k;
+    }
+
+    std::vector<std::vector<std::vector<unsigned>>> indices;
+
+   public:
+    IndexCache(unsigned P) {
+      indices = std::vector<std::vector<std::vector<unsigned>(P+1)>(P+1)>(P+1);
+      for (unsigned i=0; i<P+1; i++) {
+        for (unsigned j=0; j<P+1-i; j++) {
+          for (unsigned k=0; k<P+1-i-j) {
+            indices[i][j][k] = setIndex(P,i,j,k);
+          }
+        }
+      }
+    }
+
+    unsigned operator()(unsigned i, unsigned j, unsigned k) const {
+      return indices[i][j][k];
+    }
+  };
 
  public:
   //! Multipole expansion type
@@ -89,7 +128,7 @@ class CartesianYukawaKernel
   CartesianYukawaKernel() : CartesianYukawaKernel(2,1.) {};
   //! Constructor
   CartesianYukawaKernel(int p, double kappa)
-      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6) {
+      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), cache(P) {
     I = std::vector<unsigned>(MTERMS,0);
     J = std::vector<unsigned>(MTERMS,0);
     K = std::vector<unsigned>(MTERMS,0);

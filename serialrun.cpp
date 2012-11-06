@@ -29,7 +29,7 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
-  int numBodies = 100;
+  int numBodies = 1000;
   bool checkErrors = true;
   bool printBox = true;
   FMMOptions opts;

@@ -35,8 +35,10 @@ public:
           // If leaf, make P2M calls
 	  P2M::eval(K, bc, box);
         } else {
-          // If not leaf, make M2M calls
-	  M2M::eval(K, bc, box);
+          // If not leaf, then for all the children M2M
+	  auto c_end = box.child_end();
+	  for (auto cit = box.child_begin(); cit != c_end; ++cit)
+	    M2M::eval(K, bc, *cit, box);
         }
       }
     }

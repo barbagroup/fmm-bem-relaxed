@@ -10,11 +10,11 @@
  *
  * @param[in] begin,end Iterator pair to the sequence to be bucketed
  * @param[in] num_buckets The number of buckets to be used
- * @param[in] map Functor that maps elements in the range [begin,end) to [0,num_buckets)
+ * @param[in] map Functor that maps elements in [begin,end) to [0,num_buckets)
  * @returns Vector of iterators:
- *          bucket_off[i],bucket_off[i+1] are the start,end of bucket i
+ *          bucket_off[i],bucket_off[i+1] are the [begin,end) of ith bucket
  * @post For all elements i and j such that begin <= i < j < end,
- * then 0 <= map(i) <= map(j) < num_buckets
+ *       then 0 <= map(i) <= map(j) < num_buckets
  */
 template <typename Iterator, typename BucketMap>
 std::vector<typename std::vector<typename Iterator::value_type>::iterator>

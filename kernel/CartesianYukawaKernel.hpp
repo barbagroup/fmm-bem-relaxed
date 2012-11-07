@@ -39,63 +39,49 @@ class CartesianYukawaKernel
   std::vector<unsigned> I, J, K;
   //! indices of multipole terms
   std::vector<unsigned> index;
-  //! Cache of indices
 
  private:
-  static unsigned setIndex(int P, int i, int j, int k) {
-    unsigned II=0;
-    for (int ii = 0; ii < i; ++ii) {
-      for (int jj = 1; jj < P+2-ii; ++jj) {
-	II += jj;
-      }
-    }
-    for (int jj = P+2-j; jj < P+2; ++jj) {
-      II += jj-i;
-    }
-    return II + k;
-  }
-
   //! store all possible index combinations returned from setIndex
   struct IndexCache
   {
    private:
-    unsigned setIndex(unsigned P, unsigned i, unsigned j, unsigned k) const {
+    unsigned setIndex(unsigned i, unsigned j, unsigned k) const {
       unsigned II=0;
       for (unsigned ii = 0; ii < i; ++ii) {
-        for (unsigned jj = 1; jj < P+2-ii; ++jj) {
+        for (unsigned jj = 1; jj < P_+2-ii; ++jj) {
           II += jj;
         }
       }
-      for (unsigned jj = P+2-j; jj < P+2; ++jj) {
+      for (unsigned jj = P_+2-j; jj < P_+2; ++jj) {
         II += jj-i;
       }
       return II + k;
     }
 
-    std::vector<std::vector<std::vector<unsigned>>> indices;
+    // use 1D vector & index into it
+    std::vector<unsigned> indices; 
+    unsigned P_;
 
    public:
-    IndexCache(unsigned P) {
+    IndexCache(unsigned P) : P_(P) {
       (void) P; // quiet warning for now
-      /*
-      indices = std::vector<std::vector<std::vector<unsigned>(P+1)>(P+1)>(P+1);
-      for (unsigned i=0; i<P+1; i++) {
-        for (unsigned j=0; j<P+1-i; j++) {
-          for (unsigned k=0; k<P+1-i-j) {
-            indices[i][j][k] = setIndex(P,i,j,k);
+      indices = std::vector<unsigned>((P_+1)*(P_+1)*(P_+1),0);
+      for (unsigned i=0; i<P_+1; i++) {
+        for (unsigned j=0; j<P_+1-i; j++) {
+          for (unsigned k=0; k<P_+1-i-j; k++) {
+            indices[i*(P_+1)*(P_+1)+j*(P_+1) + k] = setIndex(i,j,k);
           }
         }
       }
-      */
     }
 
-    unsigned operator()(unsigned i, unsigned j, unsigned k) const {
-      return indices[i][j][k];
+    inline unsigned operator()(unsigned i, unsigned j, unsigned k) const {
+      return indices[i*(P_+1)*(P_+1)+j*(P_+1)+k];
     }
   };
 
  public:
-  IndexCache cache;
+  IndexCache index_cache;
   //! Multipole expansion type
   typedef std::vector<real> multipole_type;
   //! Local expansion type
@@ -120,7 +106,7 @@ class CartesianYukawaKernel
   CartesianYukawaKernel() : CartesianYukawaKernel(2,1.) {};
   //! Constructor
   CartesianYukawaKernel(int p, double kappa)
-      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), cache(P) {
+      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), index_cache(P) {
     I = std::vector<unsigned>(MTERMS,0);
     J = std::vector<unsigned>(MTERMS,0);
     K = std::vector<unsigned>(MTERMS,0);
@@ -130,7 +116,7 @@ class CartesianYukawaKernel
     for (int ii=0; ii<P+1; ii++) {
       for (int jj=0; jj<P+1-ii; jj++) {
         for (int kk=0; kk<P+1-ii-jj; kk++) {
-          index[idx] = setIndex(P,ii,jj,kk);
+          index[idx] = index_cache(ii,jj,kk); // setIndex(P,ii,jj,kk);
           I[idx] = ii;
           J[idx] = jj;
           K[idx] = kk;
@@ -250,7 +236,7 @@ class CartesianYukawaKernel
         for (unsigned jj=0; jj<J[i]+1; jj++) {
           for (unsigned kk=0; kk<K[i]+1; kk++) {
 
-            unsigned Midx = setIndex(P,ii,jj,kk);
+            unsigned Midx = index_cache(ii,jj,kk); // setIndex(P,ii,jj,kk);
             Mtarget[i] += Msource[Midx]*comb(I[i],I[Midx])*comb(J[i],J[Midx])*comb(K[i],K[Midx])*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx]);
           }
         }
@@ -398,7 +384,7 @@ class CartesianYukawaKernel
     a[0] = b[0]/R;
 
     // Two indices = 0
-    I = setIndex(P,1,0,0);
+    I = index_cache(1,0,0); // setIndex(P,1,0,0);
     b[I]   = -Kappa * (dx*a[0]); // 1,0,0
     b[P+1] = -Kappa * (dy*a[0]); // 0,1,0
     b[1]   = -Kappa * (dz*a[0]); // 0,0,1
@@ -415,14 +401,14 @@ class CartesianYukawaKernel
     {
       Cb   = -Kappa/i;
       C    = R2_1/i;
-      I    = setIndex(P,i,0,0);
-      Im1x = setIndex(P,i-1,0,0);
-      Im2x = setIndex(P,i-2,0,0);
+      I    = index_cache(i,0,0); // setIndex(P,i,0,0);
+      Im1x = index_cache(i-1,0,0); // setIndex(P,i-1,0,0);
+      Im2x = index_cache(i-2,0,0); // setIndex(P,i-2,0,0);
       b[I] = Cb * (dx*a[Im1x] + a[Im2x]);
       a[I] = C * ( -Kappa*(dx*b[Im1x] + b[Im2x]) -(2*i-1)*dx*a[Im1x] - (i-1)*a[Im2x] );
       ax[Im1x] = a[I]*i;
 
-      I    = setIndex(P,0,i,0);
+      I    = index_cache(0,i,0); // setIndex(P,0,i,0);
       Im1y = I-(P+2-i);
       Im2y = Im1y-(P+2-i+1);
       b[I] = Cb * (dy*a[Im1y] + a[Im2y]);
@@ -440,21 +426,21 @@ class CartesianYukawaKernel
 
     Cb   = -Kappa/2;
     C    = R2_1/2.;
-    I    = setIndex(P,1,1,0);
+    I    = index_cache(1,1,0); //setIndex(P,1,1,0);
     Im1x = P+1;
     Im1y = I-P;
     b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y]);
     a[I] = C * ( -Kappa*(dx*b[Im1x]+dy*b[Im1y]) - 3*(dx*a[Im1x]+dy*a[Im1y]) );
     ax[Im1x] = a[I];
     ay[Im1y] = a[I];
-    I    = setIndex(P,1,0,1);
+    I    = index_cache(1,0,1); // setIndex(P,1,0,1);
     Im1x = 1;
     Im1z = I-1;
     b[I] = Cb * (dx*a[Im1x] + dz*a[Im1z]);
     a[I] = C * ( -Kappa*(dx*b[Im1x]+dz*b[Im1z]) - 3*(dx*a[Im1x]+dz*a[Im1z]) );
     ax[Im1x] = a[I];
     az[Im1z] = a[I];
-    I    = setIndex(P,0,1,1);
+    I    = index_cache(0,1,1); // setIndex(P,0,1,1);
     Im1y = I-(P+1);
     Im1z = I-1;
     b[I] = Cb * (dy*a[Im1y] + dz*a[Im1z]);
@@ -467,8 +453,8 @@ class CartesianYukawaKernel
       Cb   = -Kappa/(i+1);
       C    = R2_1/(1+i);
       C1   = 1+2*i;
-      I    = setIndex(P,1,i,0);
-      Im1x = setIndex(P,0,i,0);
+      I    = index_cache(1,i,0); // setIndex(P,1,i,0);
+      Im1x = index_cache(0,i,0); // setIndex(P,0,i,0);
       Im1y = I-(P+1-i);
       Im2y = Im1y-(P+2-i);
       b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y] + a[Im2y]);
@@ -476,8 +462,8 @@ class CartesianYukawaKernel
       ax[Im1x] = a[I];
       ay[Im1y] = a[I]*i;
 
-      I    = setIndex(P,1,0,i);
-      Im1x = setIndex(P,0,0,i);
+      I    = index_cache(1,0,i); // setIndex(P,1,0,i);
+      Im1x = index_cache(0,0,i); // setIndex(P,0,0,i);
       Im1z = I-1;
       Im2z = I-2;
       b[I] = Cb * (dx*a[Im1x] + dz*a[Im1z] + a[Im2z]);
@@ -485,7 +471,7 @@ class CartesianYukawaKernel
       ax[Im1x] = a[I];
       az[Im1z] = a[I]*i;
 
-      I    = setIndex(P,0,1,i);
+      I    = index_cache(0,1,i); // setIndex(P,0,1,i);
       Im1y = I-(P+1);
       Im1z = I-1;
       Im2z = I-2;
@@ -494,25 +480,25 @@ class CartesianYukawaKernel
       ay[Im1y] = a[I];
       az[Im1z] = a[I]*i;
 
-      I    = setIndex(P,i,1,0);
+      I    = index_cache(i,1,0); // setIndex(P,i,1,0);
       Im1y = I-(P+1-i);
-      Im1x = setIndex(P,i-1,1,0);
-      Im2x = setIndex(P,i-2,1,0);
+      Im1x = index_cache(i-1,1,0); // setIndex(P,i-1,1,0);
+      Im2x = index_cache(i-2,1,0); // setIndex(P,i-2,1,0);
       b[I] = Cb * (dy*a[Im1y] + dx*a[Im1x] + a[Im2x]);
       a[I] = C * ( -Kappa*(dy*b[Im1y]+dx*b[Im1x]+b[Im2x]) - C1*(dy*a[Im1y]+dx*a[Im1x]) - (1+i-1)*(a[Im2x]) );
       ax[Im1x] = a[I]*i;
       ay[Im1y] = a[I];
 
-      I    = setIndex(P,i,0,1);
+      I    = index_cache(i,0,1); // setIndex(P,i,0,1);
       Im1z = I-1;
-      Im1x = setIndex(P,i-1,0,1);
-      Im2x = setIndex(P,i-2,0,1);
+      Im1x = index_cache(i-1,0,1); // setIndex(P,i-1,0,1);
+      Im2x = index_cache(i-2,0,1); // setIndex(P,i-2,0,1);
       b[I] = Cb * (dz*a[Im1z] + dx*a[Im1x] + a[Im2x]);
       a[I] = C * ( -Kappa*(dz*b[Im1z]+dx*b[Im1x]+b[Im2x]) - C1*(dz*a[Im1z]+dx*a[Im1x]) - (1+i-1)*(a[Im2x]) );
       ax[Im1x] = a[I]*i;
       az[Im1z] = a[I];
 
-      I    = setIndex(P,0,i,1);
+      I    = index_cache(0,i,1); // setIndex(P,0,i,1);
       Im1z = I-1;
       Im1y = I-(P+2-i);
       Im2y = Im1y-(P+3-i);
@@ -530,9 +516,9 @@ class CartesianYukawaKernel
         Cb   = -Kappa/(i+j);
         C    = R2_1/(i+j);
         C1   = 2*(i+j)-1;
-        I    = setIndex(P,i,j,0);
-        Im1x = setIndex(P,i-1,j,0);
-        Im2x = setIndex(P,i-2,j,0);
+        I    = index_cache(i,j,0); // setIndex(P,i,j,0);
+        Im1x = index_cache(i-1,j,0); // setIndex(P,i-1,j,0);
+        Im2x = index_cache(i-2,j,0); // setIndex(P,i-2,j,0);
         Im1y = I-(P+2-j-i);
         Im2y = Im1y-(P+3-j-i);
         b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y] + a[Im2x] + a[Im2y]);
@@ -540,9 +526,9 @@ class CartesianYukawaKernel
         ax[Im1x] = a[I]*i;
         ay[Im1y] = a[I]*j;
 
-        I    = setIndex(P,i,0,j);
-        Im1x = setIndex(P,i-1,0,j);
-        Im2x = setIndex(P,i-2,0,j);
+        I    = index_cache(i,0,j); // setIndex(P,i,0,j);
+        Im1x = index_cache(i-1,0,j); // setIndex(P,i-1,0,j);
+        Im2x = index_cache(i-2,0,j); // setIndex(P,i-2,0,j);
         Im1z = I-1;
         Im2z = I-2;
         b[I] = Cb * (dx*a[Im1x] + dz*a[Im1z] + a[Im2x] + a[Im2z]);
@@ -550,7 +536,7 @@ class CartesianYukawaKernel
         ax[Im1x] = a[I]*i;
         az[Im1z] = a[I]*j;
 
-        I    = setIndex(P,0,i,j);
+        I    = index_cache(0,i,j); // setIndex(P,0,i,j);
         Im1y = I-(P+2-i);
         Im2y = Im1y-(P+3-i);
         Im1z = I-1;
@@ -567,9 +553,9 @@ class CartesianYukawaKernel
       // Two index = 1, other>=1
       C    = R2_1/3;
       Cb   = -Kappa/3;
-      I    = setIndex(P,1,1,1);
-      Im1x = setIndex(P,0,1,1);
-      Im1y = setIndex(P,1,0,1);
+      I    = index_cache(1,1,1); // setIndex(P,1,1,1);
+      Im1x = index_cache(0,1,1); // setIndex(P,0,1,1);
+      Im1y = index_cache(1,0,1); // setIndex(P,1,0,1);
       Im1y = I-(P);
       Im1z = I-1;
       b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y] + dz*a[Im1z]);
@@ -582,19 +568,19 @@ class CartesianYukawaKernel
         Cb   = -Kappa/(2+i);
         C    = R2_1/(i+2);
         C1   = 2*i+3;
-        I    = setIndex(P,i,1,1);
-        Im1x = setIndex(P,i-1,1,1);
+        I    = index_cache(i,1,1); // setIndex(P,i,1,1);
+        Im1x = index_cache(i-1,1,1); // setIndex(P,i-1,1,1);
         Im1y = I-(P+1-i);
         Im1z = I-1;
-        Im2x = setIndex(P,i-2,1,1);
+        Im2x = index_cache(i-2,1,1); // setIndex(P,i-2,1,1);
         b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y] + dz*a[Im1z] + a[Im2x]);
         a[I] = C * ( -Kappa*(dx*b[Im1x]+dy*b[Im1y]+dz*b[Im1z]+b[Im2x]) - C1*(dx*a[Im1x]+dy*a[Im1y]+dz*a[Im1z]) - (i+1)*(a[Im2x]) );
         ax[Im1x] = a[I]*i;
         ay[Im1y] = a[I];
         az[Im1z] = a[I];
 
-        I    = setIndex(P,1,i,1);
-        Im1x = setIndex(P,0,i,1);
+        I    = index_cache(1,i,1); // setIndex(P,1,i,1);
+        Im1x = index_cache(0,i,1); // setIndex(P,0,i,1);
         Im1y = I-(P+1-i);
         Im2y = Im1y-(P+2-i);
         Im1z = I-1 ;
@@ -604,8 +590,8 @@ class CartesianYukawaKernel
         ay[Im1y] = a[I]*i;
         az[Im1z] = a[I];
 
-        I    = setIndex(P,1,1,i);
-        Im1x = setIndex(P,0,1,i);
+        I    = index_cache(1,1,i); // setIndex(P,1,1,i);
+        Im1x = index_cache(0,1,i); // setIndex(P,0,1,i);
         Im1y = I-(P);
         Im1z = I-1;
         Im2z = I-2;
@@ -628,8 +614,8 @@ class CartesianYukawaKernel
           C  =  R2_1/(1+i+j);
           C1 = -(2.*(i+j)+1);
           C2 = (i+j);
-          I    = setIndex(P,1,i,j);
-          Im1x = setIndex(P,0,i,j);
+          I    = index_cache(1,i,j); // setIndex(P,1,i,j);
+          Im1x = index_cache(0,i,j); // setIndex(P,0,i,j);
           Im1y = I-(P+1-i);
           Im2y = Im1y-(P+2-i);
           Im1z = I-1;
@@ -640,10 +626,10 @@ class CartesianYukawaKernel
           ay[Im1y] = a[I]*i;
           az[Im1z] = a[I]*j;
 
-          I    = setIndex(P,i,1,j);
-          Im1x = setIndex(P,i-1,1,j);
+          I    = index_cache(i,1,j); // setIndex(P,i,1,j);
+          Im1x = index_cache(i-1,1,j); // setIndex(P,i-1,1,j);
           Im1y = I-(P+1-i);
-          Im2x = setIndex(P,i-2,1,j);
+          Im2x = index_cache(i-2,1,j); // setIndex(P,i-2,1,j);
           Im1z = I-1;
           Im2z = I-2;
           b[I] = Cb * (dx*a[Im1x] + dy*a[Im1y] + dz*a[Im1z] + a[Im2x] + a[Im2z]);
@@ -652,9 +638,9 @@ class CartesianYukawaKernel
           ay[Im1y] = a[I];
           az[Im1z] = a[I]*j;
 
-          I    = setIndex(P,i,j,1);
-          Im1x = setIndex(P,i-1,j,1);
-          Im2x = setIndex(P,i-2,j,1);
+          I    = index_cache(i,j,1); // setIndex(P,i,j,1);
+          Im1x = index_cache(i-1,j,1); // setIndex(P,i-1,j,1);
+          Im2x = index_cache(i-2,j,1); // setIndex(P,i-2,j,1);
           Im1y = I-(P+2-i-j);
           Im2y = Im1y-(P+3-i-j);
           Im1z = I-1;
@@ -680,9 +666,9 @@ class CartesianYukawaKernel
             C  = R2_1/(i+j+k);
             C1 = -(2.*(i+j+k)-1);
             C2 = i+j+k-1.;
-            I    = setIndex(P,i,j,k);
-            Im1x = setIndex(P,i-1,j,k);
-            Im2x = setIndex(P,i-2,j,k);
+            I    = index_cache(i,j,k); // setIndex(P,i,j,k);
+            Im1x = index_cache(i-1,j,k); // setIndex(P,i-1,j,k);
+            Im2x = index_cache(i-2,j,k); // setIndex(P,i-2,j,k);
             Im1y = I-(P+2-i-j);
             Im2y = Im1y-(P+3-i-j);
             Im1z = I-1;

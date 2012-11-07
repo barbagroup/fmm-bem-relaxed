@@ -12,9 +12,9 @@
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-#define SKELETON_KERNEL
+//#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-//#define SPH_KERNEL
+#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 

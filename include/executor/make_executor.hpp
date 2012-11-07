@@ -6,6 +6,7 @@
 
 #include "EvalUpward.hpp"
 #include "EvalInteraction.hpp"
+#include "EvalInteractionQueue.hpp"
 #include "EvalDownward.hpp"
 
 //! Type hiding factory for Executor based on FMMOptions
@@ -16,6 +17,7 @@ ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree,
   if (opts.evaluator == FMMOptions::FMM) {
     auto upward   = make_upward(tree, K, opts);
     auto inter    = make_fmm_inter(tree, K, opts);
+    // auto inter = make_fmm_inter_queue(tree, K, opts);
     auto downward = make_downward(tree, K, opts);
     auto eval = make_evaluator(upward, inter, downward);
     return make_minimal_executor(tree, K, eval);

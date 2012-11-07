@@ -53,6 +53,10 @@ class SphericalLaplaceKernel
   static constexpr unsigned dimension = 3;
   //! Point type
   typedef Vec<dimension,real> point_type;
+  //! Source type
+  typedef point_type source_type;
+  //! Target type
+  typedef point_type target_type;
   //! Charge type
   typedef real charge_type;
   //! The return type of a kernel evaluation
@@ -119,8 +123,8 @@ class SphericalLaplaceKernel
    * @result The Laplace potential and force 4-vector on t from s:
    * Potential: 1/|s-t|  Force: (s-t)/|s-t|^3
    */
-  kernel_value_type operator()(const point_type& t,
-                               const point_type& s) const {
+  kernel_value_type operator()(const target_type& t,
+                               const source_type& s) const {
     point_type dist = s - t;         //   Vector from target to source
     real R2 = normSq(dist);          //   R^2
     real invR2 = 1.0 / R2;           //   1 / R^2
@@ -152,7 +156,7 @@ class SphericalLaplaceKernel
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
    */
-  void P2M(const point_type& source, const charge_type& charge,
+  void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
     std::cout << "Using Scalar P2M\n";
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -180,8 +184,8 @@ class SphericalLaplaceKernel
    * @param[in,out] M The multipole expansion to accumulate into
    * @pre M is the result of init_multipole
    */
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+  template <typename SourceIter, typename ChargeIter>
+  void P2M(SourceIter p_begin, SourceIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) const {
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -307,9 +311,9 @@ class SphericalLaplaceKernel
    * @param[in] r_begin Iterator to the result accumulator
    * @pre M includes the influence of all points within its box
    */
-  template <typename PointIter, typename ResultIter>
+  template <typename TargetIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type& center,
-           PointIter t_begin, PointIter t_end,
+           TargetIter t_begin, TargetIter t_end,
            ResultIter r_begin) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
@@ -393,13 +397,13 @@ class SphericalLaplaceKernel
    * @param[in] r_begin Iterator to the result accumulator
    * @pre L includes the influence of all points outside its box
    */
-  template <typename PointIter, typename ResultIter>
+  template <typename TargetIter, typename ResultIter>
   void L2P(const local_type& L, const point_type& center,
-           PointIter t_begin, PointIter t_end,
+           TargetIter t_begin, TargetIter t_end,
            ResultIter r_begin) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
-    for (PointIter t = t_begin; t != t_end; ++t, ++r_begin) {
+    for (auto t = t_begin; t != t_end; ++t, ++r_begin) {
       point_type dist = *t - center;
       point_type spherical(0);
       point_type cartesian(0);

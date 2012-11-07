@@ -31,9 +31,9 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
     if (acceptMultipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM)
-	M2L::eval(K, bc, b1, b2);
+	      M2L::eval(K, bc, b1, b2);
       else if (TYPE == FMMOptions::TREECODE)
-	M2P::eval(K, bc, b1, b2);
+	      M2P::eval(K, bc, b1, b2);
     } else if(b1.is_leaf() && b2.is_leaf()) {
       P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
     } else {

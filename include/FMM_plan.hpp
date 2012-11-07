@@ -13,42 +13,32 @@
 //! global logging
 Logger Log;
 
-/** Simple wrapper class for FMM_plan */
-/*
-struct fmm_wrapper
-{
-  virtual ~fmm_wrapper() {}
-
-  template <typename charge_type>
-  virtual void execute(std::vector<charge_type>& charges, Bodies& jbodies) = 0;
-};
-*/
-
-
 template <class Kernel>
-class FMM_plan//  : public fmm_wrapper
+class FMM_plan
 {
  public:
   typedef typename Kernel::point_type point_type;
+  typedef typename Kernel::source_type source_type;
+  typedef typename Kernel::target_type target_type;
   // TODO: Better point support?
   // Want all derived classes to use the following fmmplan::point_type wrapper?
   //typedef typename Vec<Kernel::dimension, typename Kernel::point_type> point_type;
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 
-  typedef Octree<point_type> tree_type;
+  typedef Octree<source_type, point_type> tree_type;
   typedef Kernel kernel_type;
 
   //private:
   ExecutorBase<tree_type,kernel_type>* executor;
   Kernel& K;
-  Octree<point_type> otree;
+  Octree<source_type, point_type> otree;
 
-  template <typename PointIter>
-  BoundingBox<point_type> get_boundingbox(PointIter begin, PointIter end) {
+  template <typename SourceIter>
+  BoundingBox<point_type> get_boundingbox(SourceIter begin, SourceIter end) {
     BoundingBox<point_type> result;
     for ( ; begin != end; ++begin)
-      result |= *begin;
+    result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
     // TODO: improve
     auto dim = result.dimensions();
@@ -62,7 +52,7 @@ public:
 
   // CONSTRUCTOR
 
-  FMM_plan(Kernel& k, const std::vector<point_type>& points,
+  FMM_plan(Kernel& k, const std::vector<source_type>& points,
            FMMOptions& opts)
     : K(k), //evaluator(k),
       otree(get_boundingbox(points.begin(), points.end())) {
@@ -89,7 +79,7 @@ public:
   /** Execute this FMM plan
    */
   std::vector<result_type> execute(const std::vector<charge_type>& charges,
-                                   const std::vector<point_type>& t_points)
+                                   const std::vector<target_type>& t_points)
   {
     if (!executor) {
       printf("[E]: Executor not initialised -- returning..\n");
@@ -113,28 +103,3 @@ public:
     return ipresults;
   }
 };
-
-/*
-class fmm_plan
-{
-  fmm_wrapper* plan;
- public:
-  // typedef typename Kernel::charge_type charge_type;
-  fmm_plan() : plan(NULL) {}
-
-  template <typename Kernel>
-  fmm_plan(Kernel K, Bodies& b, FMM_options& opts) {
-    plan = new FMM_plan<Kernel>(K, b, opts);
-  }
-
-  ~fmm_plan() {
-    delete plan;
-  }
-
-  template <typename charge_type>
-  friend void fmm_execute(fmm_plan& p, std::vector<charge_type>& charges, Bodies& jbodies) {
-    if (p.plan)
-      p.plan->execute(charges, jbodies);
-  }
-};
-*/

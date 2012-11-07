@@ -30,6 +30,10 @@ class MinimalExecutor : public ExecutorBase<Tree,Kernel>
   typedef typename Kernel::local_type local_type;
   //! Kernel point type
   typedef typename Kernel::point_type point_type;
+  //! Kernel source type
+  typedef typename Kernel::source_type source_type;
+  //! Kernel target type
+  typedef typename Kernel::target_type target_type;
   //! Kernel charge type
   typedef typename Kernel::charge_type charge_type;
   //! Kernel result type
@@ -49,6 +53,12 @@ private:
       return b.point();
     }
   } body2point;
+
+  struct {
+    const source_type& operator()(const body_type& b) const {
+      return b.source();
+    }
+  } body2source;
 
   //! Charges corresponding to bodies in the Tree
   typedef typename std::vector<charge_type>::const_iterator charge_iterator;
@@ -113,6 +123,14 @@ public:
   inline auto point_end(const box_type& b)
       -> decltype(make_transform_iterator(b.body_end(), body2point)) {
     return make_transform_iterator(b.body_end(), body2point);
+  }
+  inline auto source_begin(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_begin(), body2source)) {
+    return make_transform_iterator(b.body_begin(), body2source);
+  }
+  inline auto source_end(const box_type& b)
+      -> decltype(make_transform_iterator(b.body_end(), body2source)) {
+    return make_transform_iterator(b.body_end(), body2source);
   }
   /*
     // This assumes the the body indices are consecutive within a box

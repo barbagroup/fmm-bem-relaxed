@@ -58,10 +58,10 @@ struct Direct
    *
    */
   template <typename Kernel,
-	    typename PointIter, typename ChargeIter, typename ResultIter>
+	    typename SourceIter, typename TargetIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(UseP2P<false>, Kernel& K,
-                            PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-                            PointIter t_begin, PointIter t_end, ResultIter r_begin)
+                            SourceIter s_begin, SourceIter s_end, ChargeIter c_begin,
+                            TargetIter t_begin, TargetIter t_end, ResultIter r_begin)
   {
     // TODO?
     // Optimize on if(std::iterator_traits<All Iters>::iterator_category == random_access_iterator)
@@ -72,9 +72,10 @@ struct Direct
     for ( ; t_begin!=t_end; ++t_begin, ++r_begin) {
       result_reference r = *r_begin;
 
-      PointIter  s = s_begin;
+      SourceIter s = s_begin;
       ChargeIter c = c_begin;
       for ( ; s != s_end; ++s, ++c)
+        // r += K(*t_begin, *s) * (*c);
         r += K(*t_begin, *s) * (*c);
     }
   }
@@ -194,9 +195,9 @@ struct Direct
    */
   template <typename Kernel>
   inline static void matvec(Kernel& K,
-                            const std::vector<typename Kernel::point_type>& s,
+                            const std::vector<typename Kernel::source_type>& s,
                             const std::vector<typename Kernel::charge_type>& c,
-                            const std::vector<typename Kernel::point_type>& t,
+                            const std::vector<typename Kernel::target_type>& t,
                             std::vector<typename Kernel::result_type>& r)
   {
     Direct::matvec(K,
@@ -208,7 +209,7 @@ struct Direct
    */
   template <typename Kernel>
   inline static void matvec(Kernel& K,
-                            const std::vector<typename Kernel::point_type>& p,
+                            const std::vector<typename Kernel::source_type>& p,
                             const std::vector<typename Kernel::charge_type>& c,
                             std::vector<typename Kernel::result_type>& r)
   {

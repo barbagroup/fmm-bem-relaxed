@@ -8,6 +8,10 @@ class UnitKernel
   static constexpr unsigned dimension = 3;
   //! Point type
   typedef Vec<dimension,double> point_type;
+  //! Source type
+  typedef point_type source_type;
+  //! Target type
+  typedef point_type target_type;
   //! Charge type
   typedef double charge_type;
   //! The return type of a kernel evaluation

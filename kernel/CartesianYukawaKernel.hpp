@@ -40,7 +40,6 @@ class CartesianYukawaKernel
   //! indices of multipole terms
   std::vector<unsigned> index;
   //! Cache of indices
-  IndexCache cache;
 
  private:
   static unsigned setIndex(int P, int i, int j, int k) {
@@ -60,8 +59,8 @@ class CartesianYukawaKernel
   struct IndexCache
   {
    private:
-    unsigned setIndex(int P, unsigned i, unsigned j, unsigned k) const {
-      unsigned II=0, ii, jj;
+    unsigned setIndex(unsigned P, unsigned i, unsigned j, unsigned k) const {
+      unsigned II=0;
       for (unsigned ii = 0; ii < i; ++ii) {
         for (unsigned jj = 1; jj < P+2-ii; ++jj) {
           II += jj;
@@ -77,6 +76,8 @@ class CartesianYukawaKernel
 
    public:
     IndexCache(unsigned P) {
+      (void) P; // quiet warning for now
+      /*
       indices = std::vector<std::vector<std::vector<unsigned>(P+1)>(P+1)>(P+1);
       for (unsigned i=0; i<P+1; i++) {
         for (unsigned j=0; j<P+1-i; j++) {
@@ -85,6 +86,7 @@ class CartesianYukawaKernel
           }
         }
       }
+      */
     }
 
     unsigned operator()(unsigned i, unsigned j, unsigned k) const {
@@ -93,6 +95,7 @@ class CartesianYukawaKernel
   };
 
  public:
+  IndexCache cache;
   //! Multipole expansion type
   typedef std::vector<real> multipole_type;
   //! Local expansion type
@@ -101,8 +104,11 @@ class CartesianYukawaKernel
   //! The dimension of the Kernel
   static constexpr unsigned dimension = 3;
   //! Point type
-  // typedef vec<dimension,real> point_type;
   typedef Vec<dimension,real> point_type;
+  //! Source type
+  typedef point_type source_type;
+  //! Target type
+  typedef point_type target_type;
   //! Charge type
   typedef real charge_type;
   //! The return type of a kernel evaluation

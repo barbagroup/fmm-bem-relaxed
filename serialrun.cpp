@@ -3,18 +3,18 @@
  */
 
 #include <FMM_plan.hpp>
-//#include <SphericalLaplaceKernel.hpp>
+#include <SphericalLaplaceKernelModified.hpp>
 #include <UnitKernel.hpp>
-#include <KernelSkeleton.hpp>
-// #include <CartesianLaplaceKernel.hpp>
-//#include <CartesianLaplaceKernel2.hpp>
-//#include <CartesianYukawaKernel.hpp>
+//#include <KernelSkeleton.hpp>
+#include <KernelSkeletonMixed.hpp>
+#include <CartesianLaplaceKernel.hpp>
+#include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
-#define UNIT_KERNEL
+//#define UNIT_KERNEL
 //#define SPH_KERNEL
-//#define CART_KERNEL
+#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
 // Random number in [0,1)
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
   kernel_type K(5);
 #endif
 #ifdef CART_KERNEL
-  typedef CartesianLaplaceKernel<5> kernel_type;
+  typedef CartesianLaplaceKernel<8> kernel_type;
   kernel_type K;
 #endif
 #ifdef YUKAWA_KERNEL
@@ -81,18 +81,20 @@ int main(int argc, char **argv)
   kernel_type K(6,0.5);
 #endif
 #ifdef UNIT_KERNEL
-  typedef KernelSkeleton kernel_type;
+  typedef UnitKernel kernel_type;
   kernel_type K;
 #endif
   typedef kernel_type::point_type point_type;
+  typedef kernel_type::source_type source_type;
+  typedef kernel_type::target_type target_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
 
 
   // Init points and charges
-  std::vector<point_type> points(numBodies);
+  std::vector<source_type> points(numBodies);
   for (int k = 0; k < numBodies; ++k)
-    points[k] = point_type(drand(), drand(), drand());
+    points[k] = source_type(drand(), drand(), drand());
   //std::vector<point_type> target_points = points;
 
   std::vector<charge_type> charges(numBodies);

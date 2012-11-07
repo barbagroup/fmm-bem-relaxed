@@ -44,19 +44,16 @@ class UnitKernel
   }
 
   /** Kernel P2M operation
-   * M = sum_i Op(s_i) * c_i where M is the multipole and s_i are the sources
+   * M += Op(s) * c where M is the multipole and s is the source
    *
-   * @param[in] p_begin,p_end Iterator pair to the points in this operation
-   * @param[in] c_begin Corresponding charge iterator for the points
+   * @param[in] source The point source
+   * @param[in] charge The source's corresponding charge
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
-   * @pre M is the result of init_multipole
    */
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+  void P2M(const point_type&, const charge_type& charge,
            const point_type&, multipole_type& M) const {
-    for ( ; p_begin != p_end; ++p_begin, ++c_begin)
-      M += *c_begin;
+    M += charge;
   }
 
   /** Kernel M2M operator
@@ -89,20 +86,17 @@ class UnitKernel
   }
 
   /** Kernel M2P operation
-   * r_i += Op(M)
+   * r += Op(M) where M is the multipole and r is the result
    *
    * @param[in] M The multpole expansion
    * @param[in] center The center of the box with the multipole expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
+   * @param[in] target The target point position
+   * @param[in,out] result The target's corresponding result to accumulate into
    * @pre M includes the influence of all points within its box
    */
-  template <typename PointIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type&,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
-    for ( ; t_begin != t_end; ++t_begin, ++r_begin)
-      *r_begin += M;
+           const point_type&, result_type& result) const {
+    result += M;
   }
 
   /** Kernel L2L operator
@@ -120,7 +114,7 @@ class UnitKernel
   }
 
   /** Kernel L2P operation
-   * r_i += Op(L)
+   * r += Op(L) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion
@@ -128,11 +122,8 @@ class UnitKernel
    * @param[in] r_begin Iterator to the result accumulator
    * @pre L includes the influence of all points outside its box
    */
-  template <typename PointIter, typename ResultIter>
   void L2P(const local_type& L, const point_type&,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
-    for ( ; t_begin!=t_end; ++t_begin, ++r_begin)
-      *r_begin += L;
+           const point_type&, result_type& result) const {
+    result += L;
   }
 };

@@ -79,6 +79,11 @@ class SmallVec {
     a[0] = b0; a[1] = b1; a[2] = b2; a[3] = b3;
   }
 
+  inline bool operator==(const SmallVec& b) const {
+    for_i if (a[i] != b[i]) return false;
+    return true;
+  }
+
   // MODIFIERS
 
   /** Return a negated version of @a p. */

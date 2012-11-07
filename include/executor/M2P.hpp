@@ -22,42 +22,45 @@ struct M2P
   /** M2P evaluation.
    * The Kernel provides a vector M2P accumulator.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::multipole_type& M,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin,
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin,
                           UseVectorM2P<true>) {
-    K.M2P(M, center, p_begin, p_end, r_begin);
+    K.M2P(M, center, t_begin, t_end, r_begin);
   }
 
   /** M2P evaluation.
    * The Kernel provides a scalar M2P accumulator. Use it for each target point.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::multipole_type& M,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin,
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin,
                           UseVectorM2P<false>) {
-    for ( ; p_begin != p_end; ++p_begin, ++r_begin)
-      K.M2P(M, center, *p_begin, *r_begin);
+    for ( ; t_begin != t_end; ++t_begin, ++r_begin)
+      K.M2P(M, center, *t_begin, *r_begin);
   }
 
   /** M2P evaluation dispath.
    * Detects if Kernel has a vectorized M2P and uses it if available.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::multipole_type& M,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin) {
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin) {
     typedef HasM2P<Kernel,
                    const typename Kernel::multipole_type&,
                    const typename Kernel::point_type&,
-                   PointIter, PointIter, ResultIter> HasVectorM2P;
+                   TargetIter, TargetIter, ResultIter> HasVectorM2P;
 
-    M2P::eval(K, M, center, p_begin, p_end, r_begin,
+    M2P::eval(K, M, center, t_begin, t_end, r_begin,
               UseVectorM2P<HasVectorM2P::value>());
   }
 
@@ -76,7 +79,7 @@ struct M2P
 
     M2P::eval(K,
               bc.multipole_expansion(source), bc.center(source),
-              bc.point_begin(target), bc.point_end(target),
+              bc.target_begin(target), bc.target_end(target),
               bc.result_begin(target));
   }
 };

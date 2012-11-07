@@ -23,10 +23,9 @@ struct P2P
 #endif
 
     Direct::matvec(K,
-		   //bc.point_begin(source), bc.point_end(source),
 		   bc.source_begin(source), bc.source_end(source),
 		   bc.charge_begin(source),
-		   bc.source_begin(target), bc.source_end(target),
+		   bc.target_begin(target), bc.target_end(target),
 		   bc.result_begin(target));
   }
 
@@ -44,9 +43,9 @@ struct P2P
 #endif
 
     Direct::matvec(K,
-		   bc.point_begin(source), bc.point_end(source),
+		   bc.source_begin(source), bc.source_end(source),
                    bc.charge_begin(source),
-		   bc.point_begin(target), bc.point_end(target),
+		   bc.target_begin(target), bc.target_end(target),
                    bc.charge_begin(target),
                    bc.result_begin(source), bc.result_begin(target));
   }

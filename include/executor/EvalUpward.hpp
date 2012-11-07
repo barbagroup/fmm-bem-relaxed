@@ -5,15 +5,16 @@
 #include "P2M.hpp"
 #include "M2M.hpp"
 
-template <typename Tree, typename Kernel>
-class EvalUpward : public Evaluator<EvalUpward<Tree,Kernel>>
+template <typename Kernel, typename Tree>
+class EvalUpward : public Evaluator<EvalUpward<Kernel,Tree>>
 {
-  const Tree& tree;
   const Kernel& K;
+  const Tree& tree;
 
 public:
-  EvalUpward(const Tree& t, const Kernel& k)
-  : tree(t), K(k) {
+  template <typename Options>
+  EvalUpward(const Kernel& k, const Tree& t, Options&)
+  : K(k), tree(t) {
   };
 
   template <typename BoxContext>

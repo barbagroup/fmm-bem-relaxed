@@ -9,20 +9,20 @@
 
 #include <functional>
 
-template <typename Tree, typename Kernel, FMMOptions::EvalType TYPE>
-class EvalInteraction : public Evaluator<EvalInteraction<Tree,Kernel,TYPE>>
+template <typename Kernel, typename Tree, FMMOptions::EvalType TYPE>
+class EvalInteraction : public Evaluator<EvalInteraction<Kernel,Tree,TYPE>>
 {
-  const Tree& tree;
   const Kernel& K;
+  const Tree& tree;
 
   std::function<bool(typename Tree::box_type,
 		     typename Tree::box_type)> acceptMultipole;
 
  public:
 
-  template <typename MAC>
-  EvalInteraction(const Tree& t, const Kernel& k, const MAC& mac)
-  : tree(t), K(k), acceptMultipole(mac) {
+  template <typename Options>
+  EvalInteraction(const Kernel& k, const Tree& t, Options& opts)
+  : K(k), tree(t), acceptMultipole(opts.MAC()) {
     // any precomputation here
   }
 

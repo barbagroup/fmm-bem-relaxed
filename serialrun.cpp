@@ -4,6 +4,7 @@
 
 #include <FMM_plan.hpp>
 //#include <SphericalLaplaceKernelModified.hpp>
+#include <SphericalLaplaceKernel.hpp>
 #include <UnitKernel.hpp>
 #include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
@@ -13,8 +14,8 @@
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
-//#define UNIT_KERNEL
-#define SPH_KERNEL
+#define UNIT_KERNEL
+//#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
@@ -47,8 +48,6 @@ int main(int argc, char **argv)
       opts.set_mac_theta((double)atof(argv[i]));
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
-    } else if (strcmp(argv[i],"-bottomup") == 0) {
-      opts.tree = FMMOptions::BOTTOMUP;
     } else if (strcmp(argv[i],"-eval") == 0) {
       i++;
       if (strcmp(argv[i],"FMM") == 0) {
@@ -111,7 +110,7 @@ int main(int argc, char **argv)
   FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
   if (printBox) {
     //print_box(plan.otree.root());
-    std::cout << plan.otree << "\n";
+    //std::cout << plan.otree << "\n";
   }
 
   // Execute the FMM

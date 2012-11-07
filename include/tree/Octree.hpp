@@ -1,15 +1,15 @@
 #pragma once
 
-#include <BoundingBox.hpp>
-
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
 
+#include "BoundingBox.hpp"
 #include "Util.hpp"
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;
+
 
 //! Class for tree structure
 template <typename Source, typename Point>
@@ -25,6 +25,20 @@ class Octree
   typedef Octree<source_type, point_type> tree_type;
 
  private:
+  template <typename SourceIter>
+  BoundingBox<point_type> get_boundingbox(SourceIter begin, SourceIter end) {
+    BoundingBox<point_type> result;
+    for ( ; begin != end; ++begin)
+      result |= static_cast<point_type>(*begin);
+    // Make sure the bounding box is square and slightly scaled
+    // TODO: improve
+    auto dim = result.dimensions();
+    auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
+    result |= result.min() + point_type(maxdim) * (1 + 1e-6);
+    //std::cout << "Bounding Box: " << result << "\n";
+    return result;
+  }
+
   // The Coder this tree is based on
   class MortonCoder {
    public:
@@ -244,6 +258,11 @@ class Octree
     point_type& point() {
       return tree_->point_[idx_];
     }
+    //! The original order this body was seen
+    unsigned number() const {
+      return tree_->permute_[idx_];
+    }
+    //! A body's index in the tree
     unsigned index() const {
       return idx_;
     }
@@ -467,7 +486,14 @@ class Octree
 
   //! Construct an octree encompassing a bounding box
   Octree(const BoundingBox<Point>& bb)
-      : coder_(bb) {
+    : coder_(bb) {
+  }
+
+  template <typename PointIter, typename Options>
+  Octree(PointIter first, PointIter last,
+	 Options& opts)
+    : coder_(get_boundingbox(first, last)) {
+    construct_tree(first, last, opts.max_per_box());
   }
 
   Octree() {};

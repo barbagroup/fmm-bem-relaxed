@@ -9,23 +9,26 @@
 #include "EvalInteractionQueue.hpp"
 #include "EvalDownward.hpp"
 
-//! Type hiding factory for Executor based on FMMOptions
-template <typename Tree, typename Kernel, typename Options>
-ExecutorBase<Tree,Kernel>* make_executor(const Tree& tree,
-                                         const Kernel& K,
-                                         const Options& opts) {
+#include <tree/Octree.hpp>
+
+template <typename Kernel, typename PointIter, typename Options>
+ExecutorBase<Kernel>* make_executor(const Kernel& K,
+				    PointIter first, PointIter last,
+				    Options& opts) {
+  typedef Octree<typename Kernel::source_type,
+		 typename Kernel::point_type> Tree;
+
   if (opts.evaluator == FMMOptions::FMM) {
-    auto upward   = make_upward(tree, K, opts);
-    auto inter    = make_fmm_inter(tree, K, opts);
-    // auto inter = make_fmm_inter_queue(tree, K, opts);
-    auto downward = make_downward(tree, K, opts);
-    auto eval = make_evaluator(upward, inter, downward);
-    return make_minimal_executor(tree, K, eval);
+    typedef typename make_evaluator<EvalUpward<Kernel,Tree>,
+    EvalInteraction<Kernel,Tree,FMMOptions::FMM>,
+    EvalDownward<Kernel,Tree>>::type Evaluator;
+
+    return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   } else if (opts.evaluator == FMMOptions::TREECODE) {
-    auto upward = make_upward(tree, K, opts);
-    auto inter  = make_tree_inter(tree, K, opts);
-    auto eval = make_evaluator(upward, inter);
-    return make_minimal_executor(tree, K, eval);
+    typedef typename make_evaluator<EvalUpward<Kernel,Tree>,
+    EvalInteraction<Kernel,Tree,FMMOptions::TREECODE>>::type Evaluator;
+
+    return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   }
-  return NULL;
+    return NULL;
 }

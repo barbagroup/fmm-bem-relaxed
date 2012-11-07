@@ -38,9 +38,12 @@ class UnitKernel
    *
    * @param[in] t,s The target and source points to evaluate the kernel
    */
-  kernel_value_type operator()(const point_type&,
-                               const point_type&) const {
-    return kernel_value_type(1);
+  kernel_value_type operator()(const point_type& t,
+                               const point_type& s) const {
+    if (t != s)
+      return kernel_value_type(1);
+    else
+      return kernel_value_type(0);
   }
 
   /** Kernel P2M operation

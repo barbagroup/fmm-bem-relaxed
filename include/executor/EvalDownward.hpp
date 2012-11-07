@@ -5,16 +5,17 @@
 #include "L2L.hpp"
 #include "L2P.hpp"
 
-template <typename Tree, typename Kernel>
-class EvalDownward : public Evaluator<EvalDownward<Tree,Kernel>>
+template <typename Kernel, typename Tree>
+class EvalDownward : public Evaluator<EvalDownward<Kernel,Tree>>
 {
-  const Tree& tree;
   const Kernel& K;
+  const Tree& tree;
 
 public:
-  EvalDownward(const Tree& t, const Kernel& k)
-  : tree(t), K(k) {
-  }
+  template <typename Options>
+  EvalDownward(const Kernel& k, const Tree& t, Options&)
+  : K(k), tree(t) {
+  };
 
   template <typename BoxContext>
   void execute(BoxContext& bc) const {

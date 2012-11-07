@@ -3,18 +3,19 @@
  */
 
 #include <FMM_plan.hpp>
-#include <SphericalLaplaceKernelModified.hpp>
+//#include <SphericalLaplaceKernelModified.hpp>
 #include <UnitKernel.hpp>
-//#include <KernelSkeleton.hpp>
-#include <KernelSkeletonMixed.hpp>
+#include <KernelSkeleton.hpp>
+//#include <KernelSkeletonMixed.hpp>
 #include <CartesianLaplaceKernel.hpp>
 #include <CartesianYukawaKernel.hpp>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
+#define SKELETON_KERNEL
 //#define UNIT_KERNEL
 //#define SPH_KERNEL
-#define CART_KERNEL
+//#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
 // Random number in [0,1)
@@ -68,6 +69,10 @@ int main(int argc, char **argv)
   }
 
   // Init the FMM Kernel
+#ifdef SKELETON_KERNEL
+  typedef KernelSkeleton kernel_type;
+  kernel_type K;
+#endif
 #ifdef SPH_KERNEL
   typedef SphericalLaplaceKernel kernel_type;
   kernel_type K(5);

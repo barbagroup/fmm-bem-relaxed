@@ -10,6 +10,7 @@ class FMMOptions
 {
 public:
   bool symmetric; // TODO: Call this Galerkin?  s == t
+  bool lazy_evaluation; // use lazy evaluation of multipole / local expansions / translations?
 
   //! Evaluation type
   enum EvalType {FMM, TREECODE};
@@ -34,6 +35,7 @@ public:
 
   FMMOptions()
     : symmetric(false),
+      lazy_evaluation(false),
       evaluator(FMM),
       MAC_(DefaultMAC(0.5)),
       NCRIT_(126) {

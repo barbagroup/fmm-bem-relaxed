@@ -9,11 +9,11 @@
 
 #include <functional>
 
-template <typename Tree, typename Kernel, FMMOptions::EvalType TYPE>
-class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Tree,Kernel,TYPE>>
+template <typename Kernel, typename Tree, FMMOptions::EvalType TYPE>
+class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Kernel,Tree,TYPE>>
 {
-  const Tree& tree;
   const Kernel& K;
+  const Tree& tree;
 
   //! type of box
   typedef typename Tree::box_type box_type;
@@ -29,9 +29,9 @@ class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Tree,Kernel,T
 
  public:
 
-  template <typename MAC>
-  EvalInteractionQueue(const Tree& t, const Kernel& k, const MAC& mac)
-  : tree(t), K(k), P2P_list(0), LR_list(0), acceptMultipole(mac) {
+  template <typename Options>
+  EvalInteractionQueue(const Kernel& k, const Tree& t, Options& opts)
+  : K(k), tree(t), P2P_list(0), LR_list(0), acceptMultipole(opts.MAC()) {
     // any precomputation here
   }
 
@@ -124,7 +124,7 @@ make_fmm_inter_queue(const Tree& tree,
 }
 
 template <typename Tree, typename Kernel, typename Options>
-EvalInteraction<Tree,Kernel,FMMOptions::TREECODE>*
+EvalInteractionQueue<Tree,Kernel,FMMOptions::TREECODE>*
 make_tree_inter_queue(const Tree& tree,
 		const Kernel& K,
 		const Options& opts) {

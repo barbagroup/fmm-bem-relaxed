@@ -14,9 +14,9 @@ struct L2P
   template <typename K, typename... Args>
   struct HasL2P {
     template <class A, void (A::*)(Args...) const> struct SFINAE {};
-    template <class A> static constexpr void sfinae(SFINAE<A, &A::L2P>*);
-    template <class A> static constexpr char sfinae(...);
-    static constexpr bool value = std::is_void<decltype(sfinae<K>(0))>::value;
+    template <class A> static std::true_type  sfinae(SFINAE<A, &A::L2P>*);
+    template <class A> static std::false_type sfinae(...);
+    static constexpr bool value = decltype(sfinae<K>(0))::value;
   };
 
   /** L2P evaluation.

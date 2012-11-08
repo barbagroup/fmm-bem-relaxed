@@ -34,8 +34,8 @@ struct Direct
   struct HasTranspose {
     typedef typename K::kernel_value_type kv_type;
     template <class A, kv_type (A::*)(const kv_type&) const> struct SFINAE {};
-    template <class A> static constexpr void sfinae(SFINAE<A, &A::transpose>*);
-    template <class A> static constexpr char sfinae(...);
+    template <class A> static std::true_type  sfinae(SFINAE<A, &A::transpose>*);
+    template <class A> static std::false_type sfinae(...);
     static constexpr bool value = decltype(sfinae<K>(0))::value;
   };
 

@@ -14,8 +14,8 @@
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
-#define UNIT_KERNEL
-//#define SPH_KERNEL
+//#define UNIT_KERNEL
+#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
@@ -57,6 +57,8 @@ int main(int argc, char **argv)
       } else {
         printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
       }
+    } else if (strcmp(argv[i],"-lazy_eval") == 0) {
+      opts.lazy_evaluation = true;
     } else if (strcmp(argv[i],"-ncrit") == 0) {
       i++;
       opts.set_max_per_box((unsigned)atoi(argv[i]));

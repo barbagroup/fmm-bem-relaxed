@@ -24,7 +24,6 @@ class FMM_plan
   typedef typename Kernel::charge_type charge_type;
   typedef typename Kernel::result_type result_type;
 
-  typedef Octree<source_type, point_type> tree_type;
   typedef Kernel kernel_type;
 
   //private:

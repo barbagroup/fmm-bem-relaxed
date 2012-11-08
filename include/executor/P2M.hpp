@@ -22,42 +22,45 @@ struct P2M
   /** P2M evaluation.
    * The Kernel provides a vector P2M accumulator.
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter>
+  template <typename Kernel, typename SourceIter, typename ChargeIter>
   inline static void eval(Kernel& K,
-                          PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+                          SourceIter s_begin, SourceIter s_end,
+			  ChargeIter c_begin,
                           const typename Kernel::point_type& center,
                           typename Kernel::multipole_type& M,
                           UseVectorP2M<true>) {
-    K.P2M(p_begin, p_end, c_begin, center, M);
+    K.P2M(s_begin, s_end, c_begin, center, M);
   }
 
   /** P2M evaluation.
    * The Kernel provides a scalar P2M accumulator. Use it for each source point.
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter>
+  template <typename Kernel, typename SourceIter, typename ChargeIter>
   inline static void eval(Kernel& K,
-                          PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+                          SourceIter s_begin, SourceIter s_end,
+			  ChargeIter c_begin,
                           const typename Kernel::point_type& center,
                           typename Kernel::multipole_type& M,
                           UseVectorP2M<false>) {
-    for ( ; p_begin != p_end; ++p_begin, ++c_begin)
-      K.P2M(*p_begin, *c_begin, center, M);
+    for ( ; s_begin != s_end; ++s_begin, ++c_begin)
+      K.P2M(*s_begin, *c_begin, center, M);
   }
 
   /** P2M evaluation dispath.
    * Detects if Kernel has a vectorized P2M and uses it if available.
    */
-  template <typename Kernel, typename PointIter, typename ChargeIter>
+  template <typename Kernel, typename SourceIter, typename ChargeIter>
   inline static void eval(Kernel& K,
-                          PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+                          SourceIter s_begin, SourceIter s_end,
+			  ChargeIter c_begin,
                           const typename Kernel::point_type& center,
                           typename Kernel::multipole_type& M) {
     typedef HasP2M<Kernel,
-                   PointIter, PointIter, ChargeIter,
+                   SourceIter, SourceIter, ChargeIter,
                    const typename Kernel::point_type&,
                    typename Kernel::multipole_type&> HasVectorP2M;
 
-    P2M::eval(K, p_begin, p_end, c_begin, center, M,
+    P2M::eval(K, s_begin, s_end, c_begin, center, M,
               UseVectorP2M<HasVectorP2M::value>());
   }
 
@@ -75,7 +78,7 @@ struct P2M
 #endif
 
     P2M::eval(K,
-              bc.point_begin(box), bc.point_end(box), bc.charge_begin(box),
+              bc.source_begin(box), bc.source_end(box), bc.charge_begin(box),
               bc.center(box), bc.multipole_expansion(box));
   }
 };

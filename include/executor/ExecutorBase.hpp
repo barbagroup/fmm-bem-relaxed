@@ -3,7 +3,7 @@
 /** @class ExecutorBase
  * @brief Abstract Executor class
  */
-template <typename Tree, typename Kernel>
+template <typename Kernel>
 struct ExecutorBase {
   ExecutorBase() {}
   virtual ~ExecutorBase() {};

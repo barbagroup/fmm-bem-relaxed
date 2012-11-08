@@ -22,42 +22,45 @@ struct L2P
   /** L2P evaluation.
    * The Kernel provides a vector L2P accumulator.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::local_type& L,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin,
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin,
                           UseVectorL2P<true>) {
-    K.L2P(L, center, p_begin, p_end, r_begin);
+    K.L2P(L, center, t_begin, t_end, r_begin);
   }
 
   /** L2P evaluation.
    * The Kernel provides a scalar L2P accumulator. Use it for each target point.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::local_type& L,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin,
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin,
                           UseVectorL2P<false>) {
-    for ( ; p_begin != p_end; ++p_begin, ++r_begin)
-      K.L2P(L, center, *p_begin, *r_begin);
+    for ( ; t_begin != t_end; ++t_begin, ++r_begin)
+      K.L2P(L, center, *t_begin, *r_begin);
   }
 
   /** L2P evaluation dispath.
    * Detects if Kernel has a vectorized L2P and uses it if available.
    */
-  template <typename Kernel, typename PointIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static void eval(Kernel& K,
                           const typename Kernel::local_type& L,
                           const typename Kernel::point_type& center,
-                          PointIter p_begin, PointIter p_end, ResultIter r_begin) {
+                          TargetIter t_begin, TargetIter t_end,
+			  ResultIter r_begin) {
     typedef HasL2P<Kernel,
                    const typename Kernel::local_type&,
                    const typename Kernel::point_type&,
-                   PointIter, PointIter, ResultIter> HasVectorL2P;
+                   TargetIter, TargetIter, ResultIter> HasVectorL2P;
 
-    L2P::eval(K, L, center, p_begin, p_end, r_begin,
+    L2P::eval(K, L, center, t_begin, t_end, r_begin,
               UseVectorL2P<HasVectorL2P::value>());
   }
 
@@ -76,7 +79,7 @@ struct L2P
 
     L2P::eval(K,
               bc.local_expansion(box), bc.center(box),
-              bc.point_begin(box), bc.point_end(box),
+              bc.target_begin(box), bc.target_end(box),
               bc.result_begin(box));
   }
 };

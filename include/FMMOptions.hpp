@@ -9,14 +9,13 @@
 class FMMOptions
 {
 public:
-  enum TreeType {TOPDOWN, BOTTOMUP};
-  enum EvalType {FMM, TREECODE};
+  bool symmetric; // TODO: Call this Galerkin?  s == t
 
-  bool symmetric;
-  TreeType tree;
+  //! Evaluation type
+  enum EvalType {FMM, TREECODE};
   EvalType evaluator;
-  double THETA;
-  unsigned NCRIT;
+
+
 
   struct DefaultMAC {
     double theta_;
@@ -30,22 +29,30 @@ public:
   };
 
   // TODO: Generalize type
-  DefaultMAC MAC;
+  DefaultMAC MAC_;
+  unsigned NCRIT_;
 
   FMMOptions()
     : symmetric(false),
-      tree(TOPDOWN),
       evaluator(FMM),
-      NCRIT(126),
-      MAC(DefaultMAC(0.5)) {
+      MAC_(DefaultMAC(0.5)),
+      NCRIT_(126) {
   };
 
   void set_mac_theta(double theta) {
-    MAC = DefaultMAC(theta);
+    MAC_ = DefaultMAC(theta);
+  }
+
+  DefaultMAC MAC() {
+    return MAC_;
   }
 
   void set_max_per_box(unsigned ncrit) {
-    NCRIT = ncrit;
+    NCRIT_ = ncrit;
+  }
+
+  unsigned max_per_box() const {
+    return NCRIT_;
   }
 };
 

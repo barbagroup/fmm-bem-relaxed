@@ -7,6 +7,7 @@
 #include "EvalUpward.hpp"
 #include "EvalInteraction.hpp"
 #include "EvalInteractionQueue.hpp"
+#include "EvalInteractionLazy.hpp"
 #include "EvalDownward.hpp"
 
 #include <tree/Octree.hpp>
@@ -26,7 +27,7 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
     return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   } else if (opts.evaluator == FMMOptions::TREECODE) {
     typedef typename make_evaluator<EvalUpward<Kernel,Tree>,
-    EvalInteraction<Kernel,Tree,FMMOptions::TREECODE>>::type Evaluator;
+    EvalInteractionLazy<Kernel,Tree,FMMOptions::TREECODE>>::type Evaluator;
 
     return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   }

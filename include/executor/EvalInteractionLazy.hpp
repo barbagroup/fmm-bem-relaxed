@@ -13,6 +13,7 @@
 
 #include <functional>
 #include <set>
+#include <unordered_set>
 
 template <typename Kernel, typename Tree, FMMOptions::EvalType TYPE>
 class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYPE>>
@@ -28,15 +29,14 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
   mutable std::vector<box_pair> P2P_list;
   //! List for Long-range (M2P / M2L) interactions
   mutable std::vector<box_pair> LR_list;
-  //! List for Needed local expansions
-  mutable std::vector<box_type> L_list;
   //! Set of unsigned integers
-  typedef std::set<unsigned> Set;
+  typedef std::unordered_set<int> Set;
+  //! Set for Needed local expansions
+  mutable std::set<box_type> L_list;
   //! Set of initialised multipole expansions
   mutable Set initialised_M;
   //! Set of initialised local expansions
   mutable Set initialised_L;
-  mutable Set evaluated_L;
 
   std::function<bool(typename Tree::box_type,
 		     typename Tree::box_type)> acceptMultipole;
@@ -45,7 +45,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
 
   template <typename Options>
   EvalInteractionLazy(const Kernel& k, const Tree& t, Options& opts)
-  : K(k), tree(t), P2P_list(0), LR_list(0), L_list(0), initialised_M(), initialised_L(), evaluated_L(), acceptMultipole(opts.MAC()) {
+  : K(k), tree(t), P2P_list(0), LR_list(0), L_list(), initialised_M(), initialised_L(), acceptMultipole(opts.MAC()) {
     // any precomputation here
   }
 
@@ -83,10 +83,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
   {
     if (b.is_leaf()) {
       // call L2P
-      if (!evaluated_L.count(b.index())) {
-        L2P::eval(K,bc,b);
-      }
-      evaluated_L.insert(b.index());
+      L2P::eval(K,bc,b);
     } else {
       // loop over children and propagate 
       for (auto cit=b.child_begin(); cit!=b.child_end(); ++cit) {
@@ -153,7 +150,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM) {
         LR_list.push_back(std::make_pair(b1,b2));
-        L_list.push_back(b2);
+        L_list.insert(b2); // push_back(b2);
       }
       else if (TYPE == FMMOptions::TREECODE) {
         LR_list.push_back(std::make_pair(b1,b2));
@@ -195,9 +192,11 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
       }
     }
 
-    // now evaluate lists
+    // Evaluate queued long-range interactions
     eval_LR_list(bc);
+    // Evaluate queued P2P interactions
     eval_P2P_list(bc);
+    // Evaluate queued L2L / L2P interactions
     eval_L_list(bc);
   }
 };

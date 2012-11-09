@@ -4,63 +4,53 @@
  *
  */
 
+#include "KernelTraits.hpp"
+#include <type_traits>
 #include <iterator>
 #include <vector>
 
-
-struct Direct
+class Direct
 {
- private:
-  /** Type for Kernel::P2P forwarding identification */
-  template <bool> struct UseP2P {};
-  template <bool> struct UseTranspose {};
+  /** If no other Direct dispatcher matches */
+  template <typename... Args>
+  inline static void eval(Args...) {
+    std::cerr << "Kernel does not have a correct op() or P2P!\n";
+    exit(1);
+  }
 
   /** Non-symmetric P2P dispatch
    */
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter,
 	    typename TargetIter, typename ResultIter>
-  inline static void matvec(UseP2P<true>, Kernel& K,
-                            SourceIter s_begin, SourceIter s_end,
-			    ChargeIter c_begin,
-                            TargetIter t_begin, TargetIter t_end,
-			    ResultIter r_begin)
+  inline static
+  typename std::enable_if<KernelTraits<Kernel>::has_vector_P2P_asymm>::type
+  eval(const Kernel& K,
+	 SourceIter s_begin, SourceIter s_end,
+	 ChargeIter c_begin,
+	 TargetIter t_begin, TargetIter t_end,
+	 ResultIter r_begin)
   {
     K.P2P(s_begin, s_end, c_begin,
 	  t_begin, t_end, r_begin);
   }
 
-  /** Symmetric P2P dispatch
-   */
-  template <bool A, typename Kernel,
-	    typename SourceIter, typename ChargeIter, typename ResultIter>
-  inline static void matvec(UseP2P<true>, UseTranspose<A>,
-			    Kernel& K,
-                            SourceIter p1_begin, SourceIter p1_end,
-			    ChargeIter c1_begin,
-                            SourceIter p2_begin, SourceIter p2_end,
-			    ChargeIter c2_begin,
-                            ResultIter r1_begin, ResultIter r2_begin)
-  {
-    K.P2P(p1_begin, p1_end, c1_begin,
-	  p2_begin, p2_end, c2_begin,
-	  r1_begin, r2_begin);
-  }
-
-  /** Non-symmetric P2P
+  /** Non-symmetric P2P using the evaluation operator
    * r_i += sum_j K(t_i, s_j) * c_j
    *
    * @param[in] ...
-   *
    */
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter,
 	    typename TargetIter, typename ResultIter>
-  inline static void matvec(UseP2P<false>, Kernel& K,
-                            SourceIter s_begin, SourceIter s_end,
-			    ChargeIter c_begin,
-                            TargetIter t_begin, TargetIter t_end,
-			    ResultIter r_begin)
+  inline static
+  typename std::enable_if<KernelTraits<Kernel>::has_eval_op &&
+			  !KernelTraits<Kernel>::has_vector_P2P_asymm>::type
+  eval(const Kernel& K,
+       SourceIter s_begin, SourceIter s_end,
+       ChargeIter c_begin,
+       TargetIter t_begin, TargetIter t_end,
+       ResultIter r_begin)
   {
     // TODO?
     // Optimize on if(std::iterator_traits<All Iters>::iterator_category == random_access_iterator)
@@ -78,6 +68,26 @@ struct Direct
     }
   }
 
+  /** Symmetric P2P dispatch
+   */
+  template <typename Kernel,
+	    typename SourceIter, typename ChargeIter, typename ResultIter,
+	    bool A>
+  inline static
+  typename std::enable_if<KernelTraits<Kernel>::has_vector_P2P_symm>::type
+  eval(const Kernel& K,
+	 SourceIter p1_begin, SourceIter p1_end,
+	 ChargeIter c1_begin,
+	 SourceIter p2_begin, SourceIter p2_end,
+	 ChargeIter c2_begin,
+	 ResultIter r1_begin, ResultIter r2_begin)
+  {
+    K.P2P(p1_begin, p1_end, c1_begin,
+	  p2_begin, p2_end, c2_begin,
+	  r1_begin, r2_begin);
+  }
+
+
   /** Symmetric P2P with only kernel evaluations
    * r2_i += sum_j K(p2_i, p1_j) * c1_j
    * r1_j += sum_i K(p1_j, p2_i) * c2_i
@@ -86,13 +96,15 @@ struct Direct
    */
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter, typename ResultIter>
-  inline static void matvec(UseP2P<false>, UseTranspose<false>,
-                            Kernel& K,
-                            SourceIter p1_begin, SourceIter p1_end,
-			    ChargeIter c1_begin,
-                            SourceIter p2_begin, SourceIter p2_end,
-			    ChargeIter c2_begin,
-                            ResultIter r1_begin, ResultIter r2_begin)
+  inline static
+  typename std::enable_if<KernelTraits<Kernel>::has_eval_op &&
+			  !KernelTraits<Kernel>::has_vector_P2P_symm>::type
+  eval(const Kernel& K,
+       SourceIter p1_begin, SourceIter p1_end,
+       ChargeIter c1_begin,
+       SourceIter p2_begin, SourceIter p2_end,
+       ChargeIter c2_begin,
+       ResultIter r1_begin, ResultIter r2_begin)
   {
     typedef typename std::iterator_traits<ResultIter>::reference result_reference;
 
@@ -121,13 +133,16 @@ struct Direct
    */
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter, typename ResultIter>
-  inline static void matvec(UseP2P<false>, UseTranspose<true>,
-                            Kernel& K,
-                            SourceIter p1_begin, SourceIter p1_end,
-			    ChargeIter c1_begin,
-                            SourceIter p2_begin, SourceIter p2_end,
-			    ChargeIter c2_begin,
-                            ResultIter r1_begin, ResultIter r2_begin)
+  inline static
+  typename std::enable_if<KernelTraits<Kernel>::has_eval_op &&
+			  KernelTraits<Kernel>::has_transpose &&
+			  !KernelTraits<Kernel>::has_vector_P2P_symm>::type
+  eval(const Kernel& K,
+	 SourceIter p1_begin, SourceIter p1_end,
+	 ChargeIter c1_begin,
+	 SourceIter p2_begin, SourceIter p2_end,
+	 ChargeIter c2_begin,
+	 ResultIter r1_begin, ResultIter r2_begin)
   {
     typedef typename std::iterator_traits<ResultIter>::reference result_reference;
     typedef typename Kernel::kernel_value_type kernel_value_type;
@@ -157,41 +172,38 @@ struct Direct
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter,
 	    typename TargetIter, typename ResultIter>
-  inline static void matvec(Kernel& K,
+  inline static void matvec(const Kernel& K,
                             SourceIter s_begin, SourceIter s_end,
 			    ChargeIter c_begin,
                             TargetIter t_begin, TargetIter t_end,
 			    ResultIter r_begin)
   {
-    matvec(UseP2P<KernelTraits<Kernel>::has_vector_P2P_asymm>(),
-           K,
-           s_begin, s_end, c_begin,
-           t_begin, t_end, r_begin);
+    Direct::eval(K,
+		 s_begin, s_end, c_begin,
+		 t_begin, t_end, r_begin);
   }
 
   /** Symmetric P2P dispatch
    */
   template <typename Kernel,
 	    typename SourceIter, typename ChargeIter, typename ResultIter>
-  inline static void matvec(Kernel& K,
+  inline static void matvec(const Kernel& K,
                             SourceIter p1_begin, SourceIter p1_end,
 			    ChargeIter c1_begin,
                             SourceIter p2_begin, SourceIter p2_end,
 			    ChargeIter c2_begin,
                             ResultIter r1_begin, ResultIter r2_begin)
   {
-    matvec(UseP2P<KernelTraits<Kernel>::has_vector_P2P_symm>(),
-	   UseTranspose<KernelTraits<Kernel>::has_transpose>(),
-           K,
-           p1_begin, p1_end, c1_begin,
-           p2_begin, p2_end, c2_begin,
-           r1_begin, r2_begin);
+    Direct::eval(K,
+		 p1_begin, p1_end, c1_begin,
+		 p2_begin, p2_end, c2_begin,
+		 r1_begin, r2_begin);
   }
 
   /** Convenience function for std::vector
    */
   template <typename Kernel>
-  inline static void matvec(Kernel& K,
+  inline static void matvec(const Kernel& K,
                             const std::vector<typename Kernel::source_type>& s,
                             const std::vector<typename Kernel::charge_type>& c,
                             const std::vector<typename Kernel::target_type>& t,
@@ -205,7 +217,7 @@ struct Direct
   /** Convenience function for std::vector when s == t == p
    */
   template <typename Kernel>
-  inline static void matvec(Kernel& K,
+  inline static void matvec(const Kernel& K,
                             const std::vector<typename Kernel::source_type>& p,
                             const std::vector<typename Kernel::charge_type>& c,
                             std::vector<typename Kernel::result_type>& r)

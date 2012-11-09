@@ -12,7 +12,7 @@ struct P2P
   /** One sided P2P
    */
   template <typename Kernel, typename BoxContext, typename Box>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
 			  BoxContext& bc,
 			  const Box& source,
 			  const Box& target,
@@ -32,7 +32,7 @@ struct P2P
   /** Two sided P2P
    */
   template <typename Kernel, typename BoxContext, typename Box>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
 			  BoxContext& bc,
 			  const Box& source,
 			  const Box& target,

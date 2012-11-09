@@ -95,18 +95,23 @@ class FMM_plan
   FMMOptions opts_;
 
 private:
+
   void check_kernel() {
+    static_assert(ExpansionTraits<kernel_type>::is_valid_fmm ||
+		  ExpansionTraits<kernel_type>::is_valid_treecode,
+		  "Kernel does not implement all FMM or Treecode methods");
+
     if (opts_.evaluator == FMMOptions::FMM &&
 	!ExpansionTraits<kernel_type>::is_valid_fmm) {
       std::cerr << "Cannot use Kernel for FMM!\n";
-      // TODO: more information
+      // TODO: show more information
       exit(1);
     }
 
     if (opts_.evaluator == FMMOptions::TREECODE &&
 	!ExpansionTraits<kernel_type>::is_valid_treecode) {
       std::cerr << "Cannot use Kernel for treecode!\n";
-      // TODO: more information
+      // TODO: show more information
       exit(1);
     }
   }

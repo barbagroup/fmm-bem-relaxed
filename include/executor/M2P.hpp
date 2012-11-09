@@ -6,23 +6,12 @@
 
 #include "KernelTraits.hpp"
 
-
-struct M2P
+class M2P
 {
-  template <bool> struct UseVectorM2P {};
-  template <bool> struct UseM2P {};
-
-  /** The Kernel does not provide an M2P
-   */
-  template <typename Kernel, typename TargetIter, typename ResultIter>
-  inline static void eval(Kernel&,
-                          const typename Kernel::multipole_type&,
-                          const typename Kernel::point_type&,
-                          TargetIter, TargetIter,
-			  ResultIter,
-			  UseM2P<false>,
-                          UseVectorM2P<false>) {
-    std::cerr << "Error! Kernel has no M2P method to call.\n";
+  /** If no other M2P dispatcher matches */
+  template <typename... Args>
+  inline static void eval(Args...) {
+    std::cerr << "Kernel does not have a correct M2P!\n";
     exit(1);
   }
 
@@ -31,13 +20,13 @@ struct M2P
    */
   template <typename Kernel, typename TargetIter, typename ResultIter,
 	    bool A>
-  inline static void eval(Kernel& K,
-                          const typename Kernel::multipole_type& M,
-                          const typename Kernel::point_type& center,
-                          TargetIter t_begin, TargetIter t_end,
-			  ResultIter r_begin,
-			  UseM2P<A>,
-                          UseVectorM2P<true>) {
+  inline static
+  typename std::enable_if<ExpansionTraits<Kernel>::has_vector_M2P>::type
+  eval(const Kernel& K,
+       const typename Kernel::multipole_type& M,
+       const typename Kernel::point_type& center,
+       TargetIter t_begin, TargetIter t_end,
+       ResultIter r_begin) {
     K.M2P(M, center, t_begin, t_end, r_begin);
   }
 
@@ -45,13 +34,14 @@ struct M2P
    * The Kernel provides a scalar M2P accumulator. Use it for each target point.
    */
   template <typename Kernel, typename TargetIter, typename ResultIter>
-  inline static void eval(Kernel& K,
-                          const typename Kernel::multipole_type& M,
-                          const typename Kernel::point_type& center,
-                          TargetIter t_begin, TargetIter t_end,
-			  ResultIter r_begin,
-			  UseM2P<true>,
-                          UseVectorM2P<false>) {
+  inline static
+  typename std::enable_if<ExpansionTraits<Kernel>::has_M2P &&
+			  !ExpansionTraits<Kernel>::has_vector_M2P>::type
+  eval(const Kernel& K,
+       const typename Kernel::multipole_type& M,
+       const typename Kernel::point_type& center,
+       TargetIter t_begin, TargetIter t_end,
+       ResultIter r_begin) {
     for ( ; t_begin != t_end; ++t_begin, ++r_begin)
       K.M2P(M, center, *t_begin, *r_begin);
   }
@@ -72,8 +62,6 @@ struct M2P
     M2P::eval(K,
               bc.multipole_expansion(source), bc.center(source),
               bc.target_begin(target), bc.target_end(target),
-              bc.result_begin(target),
-	      UseM2P<ExpansionTraits<Kernel>::has_M2P>(),
-              UseVectorM2P<ExpansionTraits<Kernel>::has_vector_M2P>());
+              bc.result_begin(target));
   }
 };

@@ -74,7 +74,7 @@ yukawa: single_yukawa.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) single_body multi_level scaling
+	-$(RM) single_body multi_level scaling multi_yukawa single_yukawa *.dat
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

@@ -325,14 +325,14 @@ class Octree
       if (is_leaf())
         return body_iterator(data().child_begin_, tree_);
       else
-	return child_begin()->body_begin();
+	      return child_begin()->body_begin();
     }
     /** The end iterator to the Points contained in this box */
     body_iterator body_end() const {
       if (is_leaf())
         return body_iterator(data().child_end_, tree_);
       else
-	return (--child_end())->body_end();
+	      return (--child_end())->body_end();
     }
 
     /** The begin iterator to the child Boxes contained in this box */
@@ -346,6 +346,13 @@ class Octree
       return box_iterator(data().child_end_, tree_);
     }
 
+    /** Equality operators for std::set */
+    bool operator==(const Box& b) const {
+      return this->index() == b.index();
+    }
+    bool operator<(const Box& b) const {
+      return this->index() < b.index();
+    }
     /** Write a Box to an output stream */
     inline friend std::ostream& operator<<(std::ostream& s,
 					   const box_type& b) {

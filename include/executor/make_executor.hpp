@@ -10,7 +10,7 @@
 #include "EvalInteractionLazy.hpp"
 #include "EvalDownward.hpp"
 
-#include <tree/Octree.hpp>
+#include "Octree.hpp"
 
 template <typename Kernel, typename PointIter, typename Options>
 ExecutorBase<Kernel>* make_executor(const Kernel& K,
@@ -38,6 +38,6 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
 
     return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   } else {
-    return NULL;
+    return nullptr;
   }
 }

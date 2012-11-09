@@ -311,6 +311,7 @@ class SphericalLaplaceKernel
    * @param[in] r_begin Iterator to the result accumulator
    * @pre M includes the influence of all points within its box
    */
+  /*
   template <typename TargetIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type& center,
            TargetIter t_begin, TargetIter t_end,
@@ -344,6 +345,7 @@ class SphericalLaplaceKernel
       (*r_begin)[3] += cartesian[2];
     }
   }
+  */
 
   /** Kernel L2L operator
    * L_t += Op(L_s) where L_t is the target and L_s is the source

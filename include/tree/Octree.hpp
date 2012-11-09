@@ -1,11 +1,11 @@
 #pragma once
 
+#include "BoundingBox.hpp"
+#include "Util.hpp"
+
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
-
-#include "BoundingBox.hpp"
-#include "Util.hpp"
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;
@@ -241,7 +241,7 @@ class Octree
 
   struct Body {
     /** Construct an invalid Body */
-    Body() : idx_(0), tree_(NULL) {
+    Body() : idx_(0), tree_(nullptr) {
     }
 
     const point_type& point() const {
@@ -275,7 +275,7 @@ class Octree
   // A tree-aligned box
   struct Box {
     /** Construct an invalid Box */
-    Box() : idx_(0), tree_(NULL) {
+    Box() : idx_(0), tree_(nullptr) {
     }
 
     unsigned index() const {
@@ -376,7 +376,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid box_iterator */
-    box_iterator() : idx_(0), tree_(NULL) {
+    box_iterator() : idx_(0), tree_(nullptr) {
     }
 
     box_iterator& operator--() {
@@ -436,7 +436,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid iterator */
-    body_iterator() : idx_(0), tree_(NULL) {
+    body_iterator() : idx_(0), tree_(nullptr) {
     }
 
     body_iterator& operator++() {

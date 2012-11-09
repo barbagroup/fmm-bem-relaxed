@@ -4,30 +4,39 @@
  *
  */
 
+#include "KernelTraits.hpp"
+
+
 struct M2P
 {
   template <bool> struct UseVectorM2P {};
+  template <bool> struct UseM2P {};
 
-  /** Use *Substitution Failure Is Not An Error* and variadic templates
-   * to determine if a Kernel has a M2P method with a certain signature
+  /** The Kernel does not provide an M2P
    */
-  template <typename K, typename... Args>
-  struct HasM2P {
-    template <class A, void (A::*)(Args...) const> struct SFINAE {};
-    template <class A> static std::true_type  sfinae(SFINAE<A, &A::M2P>*);
-    template <class A> static std::false_type sfinae(...);
-    static constexpr bool value = decltype(sfinae<K>(0))::value;
-  };
+  template <typename Kernel, typename TargetIter, typename ResultIter>
+  inline static void eval(Kernel&,
+                          const typename Kernel::multipole_type&,
+                          const typename Kernel::point_type&,
+                          TargetIter, TargetIter,
+			  ResultIter,
+			  UseM2P<false>,
+                          UseVectorM2P<false>) {
+    std::cerr << "Error! Kernel has no M2P method to call.\n";
+    exit(1);
+  }
 
   /** M2P evaluation.
    * The Kernel provides a vector M2P accumulator.
    */
-  template <typename Kernel, typename TargetIter, typename ResultIter>
+  template <typename Kernel, typename TargetIter, typename ResultIter,
+	    bool A>
   inline static void eval(Kernel& K,
                           const typename Kernel::multipole_type& M,
                           const typename Kernel::point_type& center,
                           TargetIter t_begin, TargetIter t_end,
 			  ResultIter r_begin,
+			  UseM2P<A>,
                           UseVectorM2P<true>) {
     K.M2P(M, center, t_begin, t_end, r_begin);
   }
@@ -41,27 +50,10 @@ struct M2P
                           const typename Kernel::point_type& center,
                           TargetIter t_begin, TargetIter t_end,
 			  ResultIter r_begin,
+			  UseM2P<true>,
                           UseVectorM2P<false>) {
     for ( ; t_begin != t_end; ++t_begin, ++r_begin)
       K.M2P(M, center, *t_begin, *r_begin);
-  }
-
-  /** M2P evaluation dispath.
-   * Detects if Kernel has a vectorized M2P and uses it if available.
-   */
-  template <typename Kernel, typename TargetIter, typename ResultIter>
-  inline static void eval(Kernel& K,
-                          const typename Kernel::multipole_type& M,
-                          const typename Kernel::point_type& center,
-                          TargetIter t_begin, TargetIter t_end,
-			  ResultIter r_begin) {
-    typedef HasM2P<Kernel,
-                   const typename Kernel::multipole_type&,
-                   const typename Kernel::point_type&,
-                   TargetIter, TargetIter, ResultIter> HasVectorM2P;
-
-    M2P::eval(K, M, center, t_begin, t_end, r_begin,
-              UseVectorM2P<HasVectorM2P::value>());
   }
 
  public:
@@ -80,6 +72,8 @@ struct M2P
     M2P::eval(K,
               bc.multipole_expansion(source), bc.center(source),
               bc.target_begin(target), bc.target_end(target),
-              bc.result_begin(target));
+              bc.result_begin(target),
+	      UseM2P<ExpansionTraits<Kernel>::has_M2P>(),
+              UseVectorM2P<ExpansionTraits<Kernel>::has_vector_M2P>());
   }
 };

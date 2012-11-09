@@ -158,7 +158,6 @@ class SphericalLaplaceKernel
    */
   void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
-    std::cout << "Using Scalar P2M\n";
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = source - center;
     real rho, alpha, beta;
@@ -184,6 +183,7 @@ class SphericalLaplaceKernel
    * @param[in,out] M The multipole expansion to accumulate into
    * @pre M is the result of init_multipole
    */
+  /*
   template <typename SourceIter, typename ChargeIter>
   void P2M(SourceIter p_begin, SourceIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) const {
@@ -207,6 +207,7 @@ class SphericalLaplaceKernel
     M.RMAX = Rmax;
     M.RCRIT = std::min(M.RCRIT, M.RMAX);
   }
+  */
 
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source

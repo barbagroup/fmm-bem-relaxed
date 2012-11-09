@@ -2,6 +2,8 @@
  * @brief Testing and debugging script
  */
 
+//#define DEBUG
+
 #include <FMM_plan.hpp>
 //#include <SphericalLaplaceKernelModified.hpp>
 #include <SphericalLaplaceKernel.hpp>

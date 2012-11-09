@@ -10,14 +10,13 @@
 #include "EvalInteractionLazy.hpp"
 #include "EvalDownward.hpp"
 
-#include <tree/Octree.hpp>
+#include "Octree.hpp"
 
 template <typename Kernel, typename PointIter, typename Options>
 ExecutorBase<Kernel>* make_executor(const Kernel& K,
 				    PointIter first, PointIter last,
 				    Options& opts) {
-  typedef Octree<typename Kernel::source_type,
-		 typename Kernel::point_type> Tree;
+  typedef Octree<typename Kernel::point_type> Tree;
 
   if (opts.evaluator == FMMOptions::TREECODE && opts.lazy_evaluation) {
     typedef typename make_evaluator<EvalInteractionLazy<Kernel,Tree,FMMOptions::TREECODE>>::type Evaluator;
@@ -39,6 +38,6 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
 
     return make_minimal_executor<Tree,Evaluator>(K, first, last, opts);
   } else {
-    return NULL;
+    return nullptr;
   }
 }

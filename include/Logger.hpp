@@ -66,7 +66,7 @@ private:
 //! Timer function
   double get_time() const {
     struct timeval tv;                                          // Time value
-    gettimeofday(&tv, NULL);                                    // Get time of day in seconds and microseconds
+    gettimeofday(&tv, nullptr);                                    // Get time of day in seconds and microseconds
     return double(tv.tv_sec+tv.tv_usec*1e-6);                   // Combine seconds and microseconds and return
   }
 
@@ -79,7 +79,7 @@ public:
              beginTimer(), timer(), traces(), mutex(),          // Initializing class variables (empty)
              stringLength(20),                                  // Max length of event name
              printNow(false) {                                  // Don't print timings by default
-    pthread_mutex_init(&mutex,NULL);                            // Initialize pthread communicator
+    pthread_mutex_init(&mutex,nullptr);                            // Initialize pthread communicator
   }
 //! Destructor
   ~Logger() {

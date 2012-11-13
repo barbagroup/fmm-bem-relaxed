@@ -16,8 +16,7 @@ template <typename Kernel, typename PointIter, typename Options>
 ExecutorBase<Kernel>* make_executor(const Kernel& K,
 				    PointIter first, PointIter last,
 				    Options& opts) {
-  typedef Octree<typename Kernel::source_type,
-		 typename Kernel::point_type> Tree;
+  typedef Octree<typename Kernel::point_type> Tree;
 
   /*
   if (opts.evaluator == FMMOptions::TREECODE && opts.lazy_evaluation) {

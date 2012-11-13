@@ -12,17 +12,16 @@ using namespace std::rel_ops;
 
 
 //! Class for tree structure
-template <typename Source, typename Point>
+template <typename Point>
 class Octree
 {
  public:
   // Type declarations
-  typedef Source source_type;
   typedef Point point_type;
   static_assert(point_type::dimension == 3, "Only 3D at the moment");
 
   //! The type of this tree
-  typedef Octree<source_type, point_type> tree_type;
+  typedef Octree<point_type> tree_type;
 
  private:
   template <typename SourceIter>
@@ -154,7 +153,6 @@ class Octree
   MortonCoder coder_;
 
   // Morton coded objects this Tree holds.
-  std::vector<source_type> source_;
   std::vector<point_type> point_;
   std::vector<code_type> mc_;
   std::vector<unsigned> permute_;
@@ -246,12 +244,6 @@ class Octree
     Body() : idx_(0), tree_(NULL) {
     }
 
-    const source_type& source() const {
-      return tree_->source_[idx_];
-    }
-    source_type& source() {
-      return tree_->source_[idx_];
-    }
     const point_type& point() const {
       return tree_->point_[idx_];
     }
@@ -625,14 +617,16 @@ class Octree
   template <typename SourceIter>
   void construct_tree(SourceIter p_begin, SourceIter p_end, unsigned NCRIT = 126) {
     // create a new vector with all points instead of sources
-    std::vector<point_type> source_points(p_end-p_begin);
-    std::transform(p_begin, p_end, source_points.begin(), [](source_type si) { return static_cast<point_type>(si); });
+    typedef typename std::iterator_traits<SourceIter>::value_type source_type;
+    std::vector<point_type> points(p_end-p_begin);
+    std::transform(p_begin, p_end, points.begin(),
+                   [](source_type si) { return static_cast<point_type>(si); });
 
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
     unsigned idx = 0;
-    for (auto pi = source_points.begin(); pi != source_points.end(); ++pi, ++idx) {
+    for (auto pi = points.begin(); pi != points.end(); ++pi, ++idx) {
       assert(coder_.bounding_box().contains(*pi));
       codes.push_back(std::make_pair(coder_.code(*pi), idx));
     }
@@ -690,15 +684,11 @@ class Octree
 
     level_offset_.push_back(box_data_.size());
 
-    // Copy the points to a vector
-    std::vector<point_type> points_tmp(source_points.begin(), source_points.end());
-    std::vector<source_type> sources_tmp(p_begin, p_end);
     // Extract the code, permutation vector, and sorted point
     for (auto it = codes.begin(); it != codes.end(); ++it) {
       mc_.push_back(it->first);
       permute_.push_back(it->second);
-      point_.push_back(points_tmp[permute_.back()]);
-      source_.push_back(sources_tmp[permute_.back()]);
+      point_.push_back(points[permute_.back()]);
     }
   }
 #endif

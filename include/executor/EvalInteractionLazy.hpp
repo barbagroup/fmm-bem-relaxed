@@ -51,7 +51,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
 
   /** Recursively resolve all needed multipole expansions */
   template <typename BoxContext, typename BOX>
-  void resolve_multipole(BoxContext& bc, BOX b) const 
+  void resolve_multipole(BoxContext& bc, BOX b) const
   {
     // Early exit if already initialised
     if (initialised_M.count(b.index())) return;
@@ -85,7 +85,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
       // call L2P
       L2P::eval(K,bc,b);
     } else {
-      // loop over children and propagate 
+      // loop over children and propagate
       for (auto cit=b.child_begin(); cit!=b.child_end(); ++cit) {
         if (!initialised_L.count(cit->index())) {
           // initialised the expansion if necessary
@@ -127,7 +127,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
 
   template <typename BoxContext>
   void eval_L_list(BoxContext& bc) const
-  { 
+  {
     for (auto it=L_list.begin(); it!=L_list.end(); ++it) {
       // propagate this local expansion down the tree
       propagate_local(bc,*it);
@@ -135,7 +135,7 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
   }
 
   template <typename BoxContext>
-  void eval_P2P_list(BoxContext& bc) const 
+  void eval_P2P_list(BoxContext& bc) const
   {
     for (auto it=P2P_list.begin(); it!=P2P_list.end(); ++it) {
       // evaluate this pair using P2P
@@ -200,19 +200,3 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Kernel,Tree,TYP
     eval_L_list(bc);
   }
 };
-
-template <typename Tree, typename Kernel, typename Options>
-EvalInteractionLazy<Tree,Kernel,FMMOptions::FMM>*
-make_fmm_inter_lazy(const Tree& tree,
-	       const Kernel& K,
-	       const Options& opts) {
-  return new EvalInteractionLazy<Tree,Kernel,FMMOptions::FMM>(tree,K,opts.MAC);
-}
-
-template <typename Tree, typename Kernel, typename Options>
-EvalInteractionLazy<Tree,Kernel,FMMOptions::TREECODE>*
-make_tree_inter_lazy(const Tree& tree,
-		const Kernel& K,
-		const Options& opts) {
-  return new EvalInteractionLazy<Tree,Kernel,FMMOptions::TREECODE>(tree,K,opts.MAC);
-}

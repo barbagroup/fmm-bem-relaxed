@@ -24,67 +24,80 @@
 template <typename Kernel, typename Tree, typename Eval>
 class MinimalExecutor : public ExecutorBase<Kernel>
 {
+ public:
+  //! Kernel type
+  typedef Kernel kernel_type;
+  //! Tree type
+  typedef Tree tree_type;
+  //! Evaluator type
+  typedef Eval eval_type;
   //! Tree box type
-  typedef typename Tree::box_type box_type;
+  typedef typename tree_type::box_type box_type;
   //! Tree body type
-  typedef typename Tree::body_type body_type;
+  typedef typename tree_type::body_type body_type;
   //! Kernel charge type
-  typedef typename Kernel::multipole_type multipole_type;
+  typedef typename kernel_type::multipole_type multipole_type;
   //! Kernel result type
-  typedef typename Kernel::local_type local_type;
+  typedef typename kernel_type::local_type local_type;
   //! Kernel point type
-  typedef typename Kernel::point_type point_type;
+  typedef typename kernel_type::point_type point_type;
   //! Kernel source type
-  typedef typename Kernel::source_type source_type;
+  typedef typename kernel_type::source_type source_type;
   //! Kernel target type
-  typedef typename Kernel::target_type target_type;
+  typedef typename kernel_type::target_type target_type;
   //! Kernel charge type
-  typedef typename Kernel::charge_type charge_type;
+  typedef typename kernel_type::charge_type charge_type;
   //! Kernel result type
-  typedef typename Kernel::result_type result_type;
+  typedef typename kernel_type::result_type result_type;
 
 private:
   //! The tree of sources
   Tree source_tree_;
-  //! Evaluator algorithm to apply
-  Eval eval_;
   //! Multipole expansions corresponding to Box indices in Tree
   std::vector<multipole_type> M_;
   //! Local expansions corresponding to Box indices in the Tree
   std::vector<local_type> L_;
   //! The sources associated with bodies in the source_tree
   std::vector<source_type> s_;
-  //! The charges associated with bodies in the source_tree
-  std::vector<charge_type> c_;
-  //! The targets associated with bodies in the target_tree
-  std::vector<target_type> t_;
-  //! The results associated with bodies in the target_tree
-  std::vector<result_type> r_;
 
+  // ASSUMING S == T in this executor
+  //! The tree of targets
+  //Tree target_tree_;
+  //! The charges associated with bodies in the source_tree
+  //std::vector<charge_type> c_;
+  //! The targets associated with bodies in the target_tree
+  //std::vector<target_type> t_;
+  //! The results associated with bodies in the target_tree
+  //std::vector<result_type> r_;
+
+  //! Evaluator algorithm to apply
+  Eval eval_;
+  //! Reference to the Kernel
+  const kernel_type& K_;
 
   template <typename T>
   struct body_map {
     typedef typename std::remove_const<T>::type vT;
-    typedef typename std::vector<vT>::iterator iterator;
-    typedef typename std::vector<vT>::const_iterator const_iterator;
+    typedef typename std::vector<vT>::iterator iter;
+    typedef typename std::vector<vT>::const_iterator const_iter;
     static constexpr bool is_const = std::is_const<T>::value;
-    typename std::conditional<is_const, const_iterator, iterator>::type begin_;
+    typename std::conditional<is_const, const_iter, iter>::type begin_;
     T& operator()(const body_type& b) const {
-      return begin_[b.number()];
+      return begin_[b.number()];  // number vs index to workaround permutation
     }
   };
 
   typedef body_map<const source_type> body2source_t;
   typedef body_map<const charge_type> body2charge_t;
   typedef body_map<const target_type> body2target_t;
-  typedef body_map<result_type>       body2result_t;
+  typedef body_map<      result_type> body2result_t;
 
   body2source_t body2source;
   body2charge_t body2charge;
   body2target_t body2target;
   body2result_t body2result;
 
-  typedef typename Tree::body_iterator                  body_iterator;
+  typedef typename tree_type::body_iterator               body_iterator;
   typedef transform_iterator<body_iterator,body2source_t> source_iterator;
   typedef transform_iterator<body_iterator,body2charge_t> charge_iterator;
   typedef transform_iterator<body_iterator,body2target_t> target_iterator;
@@ -93,42 +106,37 @@ private:
 public:
   //! Constructor
   template <typename SourceIter, typename Options>
-  MinimalExecutor(const Kernel& K,
+  MinimalExecutor(const kernel_type& K,
 		  SourceIter first, SourceIter last,
 		  Options& opts)
     : source_tree_(first, last, opts),
-      eval_(K, source_tree_, opts),
       M_(source_tree_.boxes()),
       L_(source_tree_.boxes()),
       s_(first, last),
-      t_(first, last),  // TEMP HACK
-      r_(t_.size()) {
-    // TODO: Init L_ on the target_tree
+      K_(K) {
+    eval_.create(K, source_tree_, source_tree_, opts);
   }
 
-#if 0
-  void set_sources(const std::vector<charge_type>& sources) {
-  }
-
-  void set_charges(const std::vector<charge_type>& charges) {
-
-  }
-
-  void set_targets(const std::vector<charge_type>& targets) {
-  }
-
-  void get_results() {
-  }
-#endif
-
-  void execute(const std::vector<typename Kernel::charge_type>& charges,
-	       std::vector<typename Kernel::result_type>& results) {
+  void execute(const std::vector<charge_type>& charges,
+	       std::vector<result_type>& results) {
     // TEMP Hack
     body2source.begin_ = s_.begin();
     body2charge.begin_ = charges.begin();
-    body2target.begin_ = t_.begin();
+    body2target.begin_ = s_.begin();
     body2result.begin_ = results.begin();
     eval_.execute(*this);
+  }
+
+  const kernel_type& kernel() const {
+    return K_;
+  }
+
+  tree_type& source_tree() {
+    return source_tree_;
+  }
+
+  tree_type& target_tree() {
+    return source_tree_;
   }
 
   // Accessors to make this Executor into a BoxContext
@@ -162,10 +170,10 @@ public:
     return make_transform_iterator(b.body_end(), body2charge);
   }
   inline target_iterator target_begin(const box_type& b) {
-    return make_transform_iterator(b.body_begin(), body2source);
+    return make_transform_iterator(b.body_begin(), body2target);
   }
   inline target_iterator target_end(const box_type& b) {
-    return make_transform_iterator(b.body_end(), body2source);
+    return make_transform_iterator(b.body_end(), body2target);
   }
   inline result_iterator result_begin(const box_type& b) {
     return make_transform_iterator(b.body_begin(), body2result);

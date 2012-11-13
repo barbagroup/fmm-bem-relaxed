@@ -9,13 +9,12 @@
 class FMMOptions
 {
 public:
-  bool symmetric; // TODO: Call this Galerkin?  s == t
+  bool sources_equal_targets_; // TODO: Call this Symmetric or Galerkin? s == t
   bool lazy_evaluation; // use lazy evaluation of multipole / local expansions / translations?
 
   //! Evaluation type
   enum EvalType {FMM, TREECODE};
   EvalType evaluator;
-
 
 
   struct DefaultMAC {
@@ -34,7 +33,7 @@ public:
   unsigned NCRIT_;
 
   FMMOptions()
-    : symmetric(false),
+    : sources_equal_targets_(true),
       lazy_evaluation(false),
       evaluator(FMM),
       MAC_(DefaultMAC(0.5)),
@@ -55,6 +54,14 @@ public:
 
   unsigned max_per_box() const {
     return NCRIT_;
+  }
+
+  void set_sources_equal_targets(bool val) {
+    sources_equal_targets_ = val;
+  }
+
+  bool sources_equal_targets() const {
+    return sources_equal_targets_;
   }
 };
 

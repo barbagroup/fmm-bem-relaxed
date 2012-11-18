@@ -6,6 +6,46 @@
 
 #include <vector>
 
+#include <sys/time.h>
+
+/** Clock class, useful when timing code.
+ */
+class Clock {
+ public:
+  /** Construct a Clock and start timing. */
+  Clock() {
+    start();
+  }
+  /** Start the clock. */
+  inline void start() {
+    time_ = now();
+  }
+  /** Return the seconds elapsed since the last start. */
+  inline double elapsed() const {
+    timeval tv = now();
+    timersub(&tv, &time_, &tv);
+    return seconds(tv);
+  }
+  /** Return the seconds difference between the Clocks */
+  inline double operator-(const Clock& clock) const {
+    timeval tv;
+    timersub(&time_, &clock.time_, &tv);
+    return seconds(tv);
+  }
+ private:
+  timeval time_;
+  inline static timeval now() {
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv;
+  }
+  inline static double seconds(const timeval& tv) {
+    return tv.tv_sec + 1e-6 * tv.tv_usec;
+  }
+};
+
+
+
 /** Bucket sort using pigeonhole sorting
  *
  * @param[in] begin,end Iterator pair to the sequence to be bucketed

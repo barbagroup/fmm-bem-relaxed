@@ -90,8 +90,10 @@ struct Direct
 	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(UseP2P<false>, UseTranspose<false>,
                             Kernel& K,
-                            PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
-                            PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
+                            PointIter p1_begin, PointIter p1_end,
+                            ChargeIter c1_begin,
+                            PointIter p2_begin, PointIter p2_end,
+                            ChargeIter c2_begin,
                             ResultIter r1_begin, ResultIter r2_begin)
   {
     typedef typename std::iterator_traits<ResultIter>::reference result_reference;

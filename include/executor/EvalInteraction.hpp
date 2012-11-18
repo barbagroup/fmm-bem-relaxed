@@ -8,6 +8,7 @@
 #include "P2P.hpp"
 
 #include <functional>
+#include <deque>
 
 template <typename Tree, FMMOptions::EvalType TYPE>
 class EvalInteraction : public Evaluator<EvalInteraction<Tree, TYPE>>

@@ -11,6 +11,8 @@
 #include <CartesianLaplaceKernel.hpp>
 #include <CartesianYukawaKernel.hpp>
 
+#include <string.h>
+
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL

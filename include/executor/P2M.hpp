@@ -4,31 +4,30 @@
  *
  */
 
-struct P2M
-{
-  template <bool> struct UseVectorP2M {};
+#include "KernelTraits.hpp"
 
-  /** Use *Substitution Failure Is Not An Error* and variadic templates
-   * to determine if a Kernel has a P2M method with a certain signature
-   */
-  template <typename K, typename... Args>
-  struct HasP2M {
-    template <class A, void (A::*)(Args...) const> struct SFINAE {};
-    template <class A> static std::true_type  sfinae(SFINAE<A, &A::P2M>*);
-    template <class A> static std::false_type sfinae(...);
-    static constexpr bool value = decltype(sfinae<K>(0))::value;
-  };
+#include <type_traits>
+
+class P2M
+{
+  /** If no other P2M dispatcher matches */
+  template <typename... Args>
+  inline static void eval(Args...) {
+    std::cerr << "Kernel does not have a correct P2M!\n";
+    exit(1);
+  }
 
   /** P2M evaluation.
    * The Kernel provides a vector P2M accumulator.
    */
   template <typename Kernel, typename SourceIter, typename ChargeIter>
-  inline static void eval(Kernel& K,
-                          SourceIter s_begin, SourceIter s_end,
-			  ChargeIter c_begin,
-                          const typename Kernel::point_type& center,
-                          typename Kernel::multipole_type& M,
-                          UseVectorP2M<true>) {
+  inline static
+  typename std::enable_if<ExpansionTraits<Kernel>::has_vector_P2M>::type
+  eval(const Kernel& K,
+       SourceIter s_begin, SourceIter s_end,
+       ChargeIter c_begin,
+       const typename Kernel::point_type& center,
+       typename Kernel::multipole_type& M) {
     K.P2M(s_begin, s_end, c_begin, center, M);
   }
 
@@ -36,32 +35,16 @@ struct P2M
    * The Kernel provides a scalar P2M accumulator. Use it for each source point.
    */
   template <typename Kernel, typename SourceIter, typename ChargeIter>
-  inline static void eval(Kernel& K,
-                          SourceIter s_begin, SourceIter s_end,
-			  ChargeIter c_begin,
-                          const typename Kernel::point_type& center,
-                          typename Kernel::multipole_type& M,
-                          UseVectorP2M<false>) {
+  inline static
+  typename std::enable_if<ExpansionTraits<Kernel>::has_P2M &&
+			  !ExpansionTraits<Kernel>::has_vector_P2M>::type
+  eval(const Kernel& K,
+       SourceIter s_begin, SourceIter s_end,
+       ChargeIter c_begin,
+       const typename Kernel::point_type& center,
+       typename Kernel::multipole_type& M) {
     for ( ; s_begin != s_end; ++s_begin, ++c_begin)
       K.P2M(*s_begin, *c_begin, center, M);
-  }
-
-  /** P2M evaluation dispath.
-   * Detects if Kernel has a vectorized P2M and uses it if available.
-   */
-  template <typename Kernel, typename SourceIter, typename ChargeIter>
-  inline static void eval(Kernel& K,
-                          SourceIter s_begin, SourceIter s_end,
-			  ChargeIter c_begin,
-                          const typename Kernel::point_type& center,
-                          typename Kernel::multipole_type& M) {
-    typedef HasP2M<Kernel,
-                   SourceIter, SourceIter, ChargeIter,
-                   const typename Kernel::point_type&,
-                   typename Kernel::multipole_type&> HasVectorP2M;
-
-    P2M::eval(K, s_begin, s_end, c_begin, center, M,
-              UseVectorP2M<HasVectorP2M::value>());
   }
 
  public:
@@ -69,7 +52,7 @@ struct P2M
   /** Unwrap the data from the BoxContext and dispatch to P2M evaluator
    */
   template <typename Kernel, typename BoxContext, typename Box>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
 			  BoxContext& bc,
 			  const Box& box)
   {

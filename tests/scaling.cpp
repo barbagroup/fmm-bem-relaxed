@@ -4,7 +4,7 @@
 double get_time()
 {
   struct timeval tv;
-  gettimeofday(&tv,NULL);
+  gettimeofday(&tv,nullptr);
   return (double)(tv.tv_sec+tv.tv_usec*1e-6);
 }
 

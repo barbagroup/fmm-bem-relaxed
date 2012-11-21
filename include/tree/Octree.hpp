@@ -1,11 +1,11 @@
 #pragma once
 
+#include "BoundingBox.hpp"
+#include "Util.hpp"
+
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
-
-#include "BoundingBox.hpp"
-#include "Util.hpp"
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 using namespace std::rel_ops;
@@ -241,7 +241,7 @@ class Octree
 
   struct Body {
     /** Construct an invalid Body */
-    Body() : idx_(0), tree_(NULL) {
+    Body() : idx_(0), tree_(nullptr) {
     }
 
     const point_type& point() const {
@@ -275,7 +275,7 @@ class Octree
   // A tree-aligned box
   struct Box {
     /** Construct an invalid Box */
-    Box() : idx_(0), tree_(NULL) {
+    Box() : idx_(0), tree_(nullptr) {
     }
 
     unsigned index() const {
@@ -383,7 +383,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid box_iterator */
-    box_iterator() : idx_(0), tree_(NULL) {
+    box_iterator() : idx_(0), tree_(nullptr) {
     }
 
     box_iterator& operator--() {
@@ -443,7 +443,7 @@ class Octree
     /** Iterator difference */
     typedef std::ptrdiff_t difference_type;
     /** Construct an invalid iterator */
-    body_iterator() : idx_(0), tree_(NULL) {
+    body_iterator() : idx_(0), tree_(nullptr) {
     }
 
     body_iterator& operator++() {
@@ -528,26 +528,31 @@ class Octree
   }
 
 #if 0
+  //! Uses a single, global sort
   template <typename PointIter>
   void construct_tree(PointIter p_begin, PointIter p_end, unsigned NCRIT = 126) {
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
+    std::vector<point_type> points;
+
     unsigned idx = 0;
     for (PointIter pi = p_begin; pi != p_end; ++pi, ++idx) {
-      assert(coder_.bounding_box().contains(*pi));
-      codes.push_back(std::make_pair(coder_.code(*pi), idx));
+      point_type p = static_cast<point_type>(*pi);
+
+      assert(coder_.bounding_box().contains(p));
+      points.push_back(p);
+      codes.push_back(std::make_pair(coder_.code(p), idx));
     }
 
     // TODO: Use radix sort for efficiency or incrementally sort...
     std::sort(codes.begin(), codes.end());
 
-    std::vector<point_type> points_tmp(p_begin, p_end);
     // Extract the code, permutation vector, and sorted point
     for (auto it = codes.begin(); it != codes.end(); ++it) {
       mc_.push_back(it->first);
       permute_.push_back(it->second);
-      point_.push_back(points_tmp[permute_.back()]);
+      point_.push_back(points[permute_.back()]);
     }
 
     // Push the root box which contains all points
@@ -614,21 +619,21 @@ class Octree
 #endif
 
 #if 1
+  //! Uses incremental bucket sorting
   template <typename SourceIter>
-  void construct_tree(SourceIter p_begin, SourceIter p_end, unsigned NCRIT = 126) {
-    // create a new vector with all points instead of sources
-    typedef typename std::iterator_traits<SourceIter>::value_type source_type;
-    std::vector<point_type> points(p_end-p_begin);
-    std::transform(p_begin, p_end, points.begin(),
-                   [](source_type si) { return static_cast<point_type>(si); });
-
+  void construct_tree(SourceIter p_begin, SourceIter p_end,
+		      unsigned NCRIT = 126) {
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
+    std::vector<point_type> points;
     unsigned idx = 0;
-    for (auto pi = points.begin(); pi != points.end(); ++pi, ++idx) {
-      assert(coder_.bounding_box().contains(*pi));
-      codes.push_back(std::make_pair(coder_.code(*pi), idx));
+    for (SourceIter pi = p_begin; pi != p_end; ++pi, ++idx) {
+      point_type p = static_cast<point_type>(*pi);
+
+      assert(coder_.bounding_box().contains(p));
+      points.push_back(p);
+      codes.push_back(std::make_pair(coder_.code(p), idx));
     }
 
     // Push the root box which contains all points
@@ -728,6 +733,29 @@ class Octree
     return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
   }
 
+  /** Write an Octree to an output stream */
+  inline friend std::ostream& operator<<(std::ostream& s,
+					 const tree_type& t) {
+    struct {
+      inline std::ostream& print(std::ostream& ss,
+				 const box_type& b) {
+	ss << std::string(2*b.level(), ' ') << b;
+	if (!b.is_leaf()) {
+	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
+	    ss << "\n";
+	    print(ss,*ci);
+	  }
+	}
+	return ss;
+      }
+    } level_traverse;
+
+    return level_traverse.print(s, t.root());
+  }
+
+
+  // TODO: Remove
+#if 0
   /** Permute a vector to the same order of the input points.
    *
    * @param[in] v The vector associated with the original input points
@@ -755,26 +783,7 @@ class Octree
       temp[permute_[i]] = v[i];
     return temp;
   }
-
-  /** Write an Octree to an output stream */
-  inline friend std::ostream& operator<<(std::ostream& s,
-					 const tree_type& t) {
-    struct {
-      inline std::ostream& print(std::ostream& ss,
-				 const box_type& b) {
-	ss << std::string(2*b.level(), ' ') << b;
-	if (!b.is_leaf()) {
-	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
-	    ss << "\n";
-	    print(ss,*ci);
-	  }
-	}
-	return ss;
-      }
-    } level_traverse;
-
-    return level_traverse.print(s, t.root());
-  }
+#endif
 };
 
 

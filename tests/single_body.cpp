@@ -29,7 +29,7 @@ int main(int argc, char **argv)
   std::vector<point_type> points(1);
   points[0] = point_type(0,0,0);
 
-  // init charge 
+  // init charge
   std::vector<charge_type> charges(1);
   charges[0] = 1.;
 

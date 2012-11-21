@@ -158,7 +158,6 @@ class SphericalLaplaceKernel
    */
   void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
-    std::cout << "Using Scalar P2M\n";
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = source - center;
     real rho, alpha, beta;

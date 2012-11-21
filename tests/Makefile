@@ -35,7 +35,7 @@ CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I../include -I../kernel
+INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options

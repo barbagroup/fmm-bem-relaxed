@@ -1,12 +1,14 @@
 #pragma once
 
 // FMM includes
-#include <FMMOptions.hpp>
-#include <Vec.hpp>
+#include "FMMOptions.hpp"
+#include "Vec.hpp"
+#include "KernelTraits.hpp"
 
-#include <Logger.hpp>
 
-#include <executor/make_executor.hpp>
+#include "Logger.hpp"
+
+#include "make_executor.hpp"
 
 //! global logging
 Logger Log;
@@ -15,31 +17,24 @@ template <class Kernel>
 class FMM_plan
 {
  public:
-  typedef typename Kernel::point_type point_type;
-  typedef typename Kernel::source_type source_type;
-  typedef typename Kernel::target_type target_type;
-  // TODO: Better point support?
-  // Want all derived classes to use the following fmmplan::point_type wrapper?
-  //typedef typename Vec<Kernel::dimension, typename Kernel::point_type> point_type;
-  typedef typename Kernel::charge_type charge_type;
-  typedef typename Kernel::result_type result_type;
-
-  //typedef Octree<point_type> tree_type;
   typedef Kernel kernel_type;
 
-  //private:
-  ExecutorBase<kernel_type>* executor_;
-  Kernel K;
-  FMMOptions opts_;
-
-public:
+  typedef typename kernel_type::source_type source_type;
+  typedef typename kernel_type::target_type target_type;
+  // TODO: Better point support?
+  // Want all derived classes to use the following fmmplan::point_type wrapper?
+  //typedef typename Vec<kernel_type::dimension, typename kernel_type::point_type> point_type;
+  typedef typename kernel_type::charge_type charge_type;
+  typedef typename kernel_type::result_type result_type;
 
   // CONSTRUCTOR
 
-  FMM_plan(const Kernel& k,
+  FMM_plan(const kernel_type& k,
 	   const std::vector<source_type>& source,
            FMMOptions& opts)
     : K(k), opts_(opts) {
+    check_kernel();
+
     executor_ = make_executor(K,
 			      source.begin(), source.end(),
 			      opts_);
@@ -50,6 +45,8 @@ public:
 	   const std::vector<target_type>& target,
            FMMOptions& opts)
     : K(k), opts_(opts) {
+    check_kernel();
+
     executor_ = make_executor(K,
 			      source.begin(), source.end(),
 			      target.begin(), target.end(),
@@ -63,12 +60,6 @@ public:
   }
 
   // EXECUTE
-
-  /** Set the executor strategy of this plan at runtime
-   */
-  //void set_options(FMMOptions& options) {
-  //  executor = make_executor(otree, K, options);
-  //}
 
   /** Execute this FMM plan
    */
@@ -86,5 +77,26 @@ public:
 
     // TODO: don't return this, provide accessor
     return results;
+  }
+
+  //private:
+  ExecutorBase<kernel_type>* executor_;
+  kernel_type K;
+  FMMOptions opts_;
+
+private:
+
+  void check_kernel() {
+    if (opts_.evaluator == FMMOptions::FMM &&
+	!ExpansionTraits<kernel_type>::is_valid_fmm) {
+      std::cerr << ExpansionTraits<kernel_type>();
+      std::cerr << "[W] Cannot use Kernel for FMM!\n";
+    }
+
+    if (opts_.evaluator == FMMOptions::TREECODE &&
+	!ExpansionTraits<kernel_type>::is_valid_treecode) {
+      std::cerr << ExpansionTraits<kernel_type>();
+      std::cerr << "[W] Cannot use Kernel for treecode!\n";
+    }
   }
 };

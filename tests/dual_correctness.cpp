@@ -42,19 +42,22 @@ int main(int argc, char **argv)
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
 
-  // Init points and charges
-  std::vector<source_type> points(numBodies);
+  // Init sources
+  std::vector<source_type> sources(numBodies);
   for (int k = 0; k < numBodies; ++k)
-    points[k] = source_type(drand(), drand(), drand());
-  std::vector<target_type> targets = points;
-
+    sources[k] = source_type(drand(), drand(), drand());
+  // Init targets
+  std::vector<target_type> targets(numBodies);
+  for (int k = 0; k < numBodies; ++k)
+    targets[k] = target_type(drand(), drand(), drand());
+  // Init charges
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)
     charges[k] = drand();
 
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, targets, opts);
+  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, sources, targets, opts);
 
   // Execute the FMM
   //fmm_execute(plan, charges, target_points);
@@ -65,7 +68,7 @@ int main(int argc, char **argv)
     std::vector<result_type> exact(numBodies);
 
     // Compute the result with a direct matrix-vector multiplication
-    Direct::matvec(K, points, charges, exact);
+    Direct::matvec(K, sources, charges, targets, exact);
 
     int wrong_results = 0;
     for (unsigned k = 0; k < result.size(); ++k) {

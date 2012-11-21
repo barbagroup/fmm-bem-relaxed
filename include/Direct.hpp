@@ -155,14 +155,17 @@ struct Direct
   /** Non-symmetric P2P dispatch
    */
   template <typename Kernel,
-	    typename PointIter, typename ChargeIter, typename ResultIter>
+	    typename SourceIter, typename ChargeIter,
+	    typename TargetIter, typename ResultIter>
   inline static void matvec(Kernel& K,
-                            PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-                            PointIter t_begin, PointIter t_end, ResultIter r_begin)
+                            SourceIter s_begin, SourceIter s_end,
+			    ChargeIter c_begin,
+                            TargetIter t_begin, TargetIter t_end,
+			    ResultIter r_begin)
   {
     typedef HasP2P<Kernel,
-                   PointIter, PointIter, ChargeIter,
-                   PointIter, PointIter, ResultIter> KernelP2P;
+                   SourceIter, SourceIter, ChargeIter,
+                   TargetIter, TargetIter, ResultIter> KernelP2P;
 
     matvec(UseP2P<KernelP2P::value>(),
            K,
@@ -175,8 +178,10 @@ struct Direct
   template <typename Kernel,
 	    typename PointIter, typename ChargeIter, typename ResultIter>
   inline static void matvec(Kernel& K,
-                            PointIter p1_begin, PointIter p1_end, ChargeIter c1_begin,
-                            PointIter p2_begin, PointIter p2_end, ChargeIter c2_begin,
+                            PointIter p1_begin, PointIter p1_end,
+			    ChargeIter c1_begin,
+                            PointIter p2_begin, PointIter p2_end,
+			    ChargeIter c2_begin,
                             ResultIter r1_begin, ResultIter r2_begin)
   {
     typedef HasP2P<Kernel,
@@ -199,7 +204,7 @@ struct Direct
   inline static void matvec(Kernel& K,
                             const std::vector<typename Kernel::source_type>& s,
                             const std::vector<typename Kernel::charge_type>& c,
-                            const std::vector<typename Kernel::target_type>& t,
+			    const std::vector<typename Kernel::target_type>& t,
                             std::vector<typename Kernel::result_type>& r)
   {
     Direct::matvec(K,

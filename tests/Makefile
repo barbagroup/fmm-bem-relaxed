@@ -48,9 +48,12 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: single_body multi_level scaling correctness
+all: single_body multi_level scaling correctness dual_correctness
 
 correctness: correctness.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+dual_correctness: dual_correctness.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 single_body: single_body.o
@@ -77,7 +80,7 @@ yukawa: single_yukawa.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) single_body multi_level scaling correctness
+	-$(RM) single_body multi_level scaling correctness dual_correctness
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

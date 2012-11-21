@@ -45,7 +45,7 @@ int main()
 
     // initialise plan & solve
     tic = get_time();
-    auto result = plan.execute(charges,points);
+    auto result = plan.execute(charges);
     toc = get_time();
 
     printf("%d\t%.3e\n", numBodies, toc-tic);

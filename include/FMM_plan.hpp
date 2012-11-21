@@ -40,7 +40,20 @@ public:
 	   const std::vector<source_type>& source,
            FMMOptions& opts)
     : K(k), opts_(opts) {
-    executor_ = make_executor(K, source.begin(), source.end(), opts_);
+    executor_ = make_executor(K,
+			      source.begin(), source.end(),
+			      opts_);
+  }
+
+  FMM_plan(const Kernel& k,
+	   const std::vector<source_type>& source,
+	   const std::vector<target_type>& target,
+           FMMOptions& opts)
+    : K(k), opts_(opts) {
+    executor_ = make_executor(K,
+			      source.begin(), source.end(),
+			      target.begin(), target.end(),
+			      opts_);
   }
 
   // DESTRUCTOR
@@ -56,25 +69,6 @@ public:
   //void set_options(FMMOptions& options) {
   //  executor = make_executor(otree, K, options);
   //}
-
-  /** Execute this FMM plan
-   */
-  std::vector<result_type> execute(const std::vector<charge_type>& charges,
-                                   const std::vector<target_type>& t_points)
-  {
-    if (!executor_) {
-      printf("[E]: Executor not initialised -- returning..\n");
-      return std::vector<result_type>(0);
-    }
-
-    (void) t_points; // Quiet compiler TODO: Dual tree
-
-    std::vector<result_type> results(charges.size());
-    executor_->execute(charges, results);
-
-    // TODO: don't return this, provide accessor
-    return results;
-  }
 
   /** Execute this FMM plan
    */

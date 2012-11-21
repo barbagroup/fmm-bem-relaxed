@@ -16,8 +16,8 @@
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
-//#define UNIT_KERNEL
-#define SPH_KERNEL
+#define UNIT_KERNEL
+//#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 
   // Execute the FMM
   //fmm_execute(plan, charges, target_points);
-  std::vector<result_type> result = plan.execute(charges, points);
+  std::vector<result_type> result = plan.execute(charges);
 
   // Check the result
   // TODO: More elegant

@@ -1,9 +1,9 @@
 #pragma once
-/** @file CartesianYukawaKernel.hpp
+/** @file YukawaCartesian.hpp
  * @brief Implements the Yukawa kernel with cartesian expansions
- * The Yukawa kernel is defined by
- * K(t,s) = exp(-Kappa * |t-s|) / |t-s|       // Potential
- * K(t,s) = -(Kappa * |t-s| + 1) exp(-Kappa * |t-s|) / |t-s|
+ *
+ * K(t,s) = exp(-Kappa*|t-s|) / |t-s|                           // Potential
+ * K(t,s) = -(Kappa*|t-s|+1) exp(-Kappa*|t-s|) (t-s) / |t-s|^3  // Force
  */
 
 
@@ -12,7 +12,7 @@
 #include <cassert>
 #include <Vec.hpp>
 
-class CartesianYukawaKernel
+class YukawaCartesian
 {
  private:
   typedef double real;
@@ -59,7 +59,7 @@ class CartesianYukawaKernel
     }
 
     // use 1D vector & index into it
-    std::vector<unsigned> indices; 
+    std::vector<unsigned> indices;
     unsigned P_;
 
    public:
@@ -103,9 +103,9 @@ class CartesianYukawaKernel
   typedef Vec<4,real> result_type;
 
   //! default constructor - use delegating constructor
-  CartesianYukawaKernel() : CartesianYukawaKernel(2,1.) {};
+  YukawaCartesian() : YukawaCartesian(2,1.) {};
   //! Constructor
-  CartesianYukawaKernel(int p, double kappa)
+  YukawaCartesian(int p, double kappa)
       : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), index_cache(P) {
     I = std::vector<unsigned>(MTERMS,0);
     J = std::vector<unsigned>(MTERMS,0);

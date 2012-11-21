@@ -1,4 +1,4 @@
-#include <CartesianYukawaKernel.hpp>
+#include <YukawaCartesian.hpp>
 #include <UnitKernel.hpp>
 
 #include <Direct.hpp>
@@ -7,7 +7,7 @@
 int main(int argc, char **argv)
 {
   // typedefs
-  typedef CartesianYukawaKernel kernel_type;
+  typedef YukawaCartesian kernel_type;
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;

@@ -5,21 +5,21 @@
 //#define DEBUG
 
 #include <FMM_plan.hpp>
-//#include <SphericalLaplaceKernelModified.hpp>
-#include <SphericalLaplaceKernel.hpp>
+//#include <LaplaceSphericalModified.hpp>
+#include <LaplaceSpherical.hpp>
 #include <UnitKernel.hpp>
 #include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
-#include <CartesianLaplaceKernel.hpp>
-#include <CartesianYukawaKernel.hpp>
+#include <LaplaceCartesian.hpp>
+#include <YukawaCartesian.hpp>
 
 #include <string.h>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
-#define UNIT_KERNEL
-//#define SPH_KERNEL
+//#define UNIT_KERNEL
+#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
@@ -37,39 +37,16 @@ int main(int argc, char **argv)
 {
   int numBodies = 1000;
   bool checkErrors = true;
-  bool printBox = true;
-  FMMOptions opts;
-  opts.set_mac_theta(0.5);    // Multipole acceptance criteria
-  opts.set_max_per_box(10);
 
-  // parse command line args
+  FMMOptions opts = get_options(argc, argv);
+
+  // parse custom command line args
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i],"-N") == 0) {
       i++;
       numBodies = atoi(argv[i]);
-    } else if (strcmp(argv[i],"-theta") == 0) {
-      i++;
-      opts.set_mac_theta((double)atof(argv[i]));
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
-    } else if (strcmp(argv[i],"-eval") == 0) {
-      i++;
-      if (strcmp(argv[i],"FMM") == 0) {
-        opts.evaluator = FMMOptions::FMM;
-      } else if (strcmp(argv[i],"TREE") == 0) {
-        opts.evaluator = FMMOptions::TREECODE;
-      } else {
-        printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
-      }
-    } else if (strcmp(argv[i],"-lazy_eval") == 0) {
-      opts.lazy_evaluation = true;
-    } else if (strcmp(argv[i],"-ncrit") == 0) {
-      i++;
-      opts.set_max_per_box((unsigned)atoi(argv[i]));
-    } else if (strcmp(argv[i],"-printbox") == 0) {
-      printBox = true;
-    } else {
-      printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
     }
   }
 
@@ -79,15 +56,15 @@ int main(int argc, char **argv)
   kernel_type K;
 #endif
 #ifdef SPH_KERNEL
-  typedef SphericalLaplaceKernel kernel_type;
+  typedef LaplaceSpherical kernel_type;
   kernel_type K(5);
 #endif
 #ifdef CART_KERNEL
-  typedef CartesianLaplaceKernel<8> kernel_type;
+  typedef LaplaceCartesian<5> kernel_type;
   kernel_type K;
 #endif
 #ifdef YUKAWA_KERNEL
-  typedef CartesianYukawaKernel kernel_type;
+  typedef YukawaCartesian kernel_type;
   kernel_type K(6,0.5);
 #endif
 #ifdef UNIT_KERNEL
@@ -114,10 +91,6 @@ int main(int argc, char **argv)
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
   FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
-  if (printBox) {
-    //print_box(plan.otree.root());
-    //std::cout << plan.otree << "\n";
-  }
 
   // Execute the FMM
   //fmm_execute(plan, charges, target_points);

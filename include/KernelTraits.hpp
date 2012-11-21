@@ -44,9 +44,10 @@ struct KernelTraits {
 
     bool operator==(const dummy_iterator&) const { return true; }
     dummy_iterator& operator++() { return *this; }
-    value_type operator*() { return value_type(); }
-    value_type operator*() const { return value_type(); }
+    value_type& operator*() { return value; }
+    const value_type& operator*() const { return value; }
     pointer operator->() { return nullptr; }
+    value_type value;
   };
 
   typedef dummy_iterator<source_type> source_iterator;

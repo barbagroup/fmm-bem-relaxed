@@ -1,5 +1,5 @@
 #include <FMM_plan.hpp>
-#include <SphericalLaplaceKernel.hpp>
+#include <LaplaceSpherical.hpp>
 
 double get_time()
 {
@@ -15,7 +15,7 @@ inline double drand()
 
 int main()
 {
-  typedef SphericalLaplaceKernel kernel_type;
+  typedef LaplaceSpherical kernel_type;
   kernel_type K(5);
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;

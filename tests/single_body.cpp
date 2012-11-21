@@ -1,18 +1,17 @@
-#include <SphericalLaplaceKernel.hpp>
+#include <LaplaceSpherical.hpp>
 #include <Direct.hpp>
 #include <cstring>
 
 int main(int argc, char **argv)
 {
-  typedef SphericalLaplaceKernel kernel_type;
+  typedef LaplaceSpherical kernel_type;
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
   typedef kernel_type::multipole_type multipole_type;
   typedef kernel_type::local_type local_type;
 
-  int P=5;
-
+  int P = 5;
   for (int i=1; i<argc; i++)
   {
     if (strcmp(argv[i],"-P")==0) {
@@ -23,6 +22,8 @@ int main(int argc, char **argv)
       printf("[W]: unknown command line argument: \"%s\"\n",argv[i]);
     }
   }
+
+  // init kernel
   kernel_type K(P);
 
   // init source

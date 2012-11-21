@@ -38,9 +38,11 @@ class KernelSkeleton
   static constexpr unsigned dimension = 3;
   //! Point type -- Can use include/Vec.hpp or anything with op[]
   typedef Vec<dimension,double> point_type;
-  //! Source type -- must be castable to point_type
+  //! Source type
+  //! Must be castable to point_type: static_cast<point_type>(source_type)
   typedef point_type source_type;
-  //! Target type -- must be castable to point_type
+  //! Target type
+  //! Must be castable to point_type: static_cast<point_type>(target_type)
   typedef point_type target_type;
   //! Charge type
   typedef real charge_type;
@@ -178,7 +180,7 @@ class KernelSkeleton
   }
 
 
-
+#if 0
   /*******************************************************************/
   /************************* Optional ********************************/
   /*******************************************************************/
@@ -187,7 +189,6 @@ class KernelSkeleton
    * to the Direct.hpp methods which use K.operator()(target_type,source_type)
    * for Kernel evaluations.
    */
-#if 0
 
   /** Optional Kernel value source and target transposition
    * K(t,s) -> K(s,t)

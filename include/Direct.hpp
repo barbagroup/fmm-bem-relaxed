@@ -71,8 +71,7 @@ class Direct
   /** Symmetric P2P dispatch
    */
   template <typename Kernel,
-	    typename SourceIter, typename ChargeIter, typename ResultIter,
-	    bool A>
+	    typename SourceIter, typename ChargeIter, typename ResultIter>
   inline static
   typename std::enable_if<KernelTraits<Kernel>::has_vector_P2P_symm>::type
   eval(const Kernel& K,

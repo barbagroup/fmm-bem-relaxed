@@ -18,8 +18,7 @@ class M2P
   /** M2P evaluation.
    * The Kernel provides a vector M2P accumulator.
    */
-  template <typename Kernel, typename TargetIter, typename ResultIter,
-	    bool A>
+  template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static
   typename std::enable_if<ExpansionTraits<Kernel>::has_vector_M2P>::type
   eval(const Kernel& K,

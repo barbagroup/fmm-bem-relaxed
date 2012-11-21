@@ -40,10 +40,7 @@ class UnitKernel
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) const {
-    if (t != s)
-      return kernel_value_type(1);
-    else
-      return kernel_value_type(0);
+    return t == s ? kernel_value_type(0) : kernel_value_type(1);
   }
 
   /** Kernel P2M operation

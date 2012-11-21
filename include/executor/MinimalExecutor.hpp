@@ -18,7 +18,6 @@
  *   body_iterator body_end() const     // Iterator pair to the box's bodies
  * Tree::body_type
  *   int index() const                  // Each body has a unique index
- *   Kernel::point_type point() const   // A body has a point_type location
  * This class assumes nothing else about the tree.
  */
 template <typename Kernel, typename Tree, typename Eval>
@@ -115,6 +114,8 @@ public:
       s_(first, last),
       K_(K) {
     eval_.create(K, source_tree_, source_tree_, opts);
+    if (opts.print_tree())
+      std::cout << source_tree_ << std::endl;
   }
 
   void execute(const std::vector<charge_type>& charges,

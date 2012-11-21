@@ -32,12 +32,16 @@ public:
   DefaultMAC MAC_;
   unsigned NCRIT_;
 
+  // DEBUGGING FLAGS
+  bool printTree;
+
   FMMOptions()
     : sources_equal_targets_(true),
       lazy_evaluation(false),
       evaluator(FMM),
       MAC_(DefaultMAC(0.5)),
-      NCRIT_(126) {
+      NCRIT_(126),
+      printTree(false) {
   };
 
   void set_mac_theta(double theta) {
@@ -63,5 +67,45 @@ public:
   bool sources_equal_targets() const {
     return sources_equal_targets_;
   }
+
+  void print_tree(bool v) { printTree = v; }
+  bool print_tree() const { return printTree; }
 };
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/** Get the FMMOptions from command line arguments
+ */
+FMMOptions get_options(int argc, char** argv) {
+  FMMOptions opts;
+  opts.set_mac_theta(0.5);    // Default multipole acceptance criteria
+  opts.set_max_per_box(64);   // Default NCRIT
+
+  // parse command line args
+  for (int i = 1; i < argc; ++i) {
+    if (strcmp(argv[i],"-theta") == 0) {
+      i++;
+      opts.set_mac_theta((double)atof(argv[i]));
+    } else if (strcmp(argv[i],"-eval") == 0) {
+      i++;
+      if (strcmp(argv[i],"FMM") == 0) {
+        opts.evaluator = FMMOptions::FMM;
+      } else if (strcmp(argv[i],"TREE") == 0) {
+        opts.evaluator = FMMOptions::TREECODE;
+      } else {
+        printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
+      }
+    } else if (strcmp(argv[i],"-lazy_eval") == 0) {
+      opts.lazy_evaluation = true;
+    } else if (strcmp(argv[i],"-ncrit") == 0) {
+      i++;
+      opts.set_max_per_box((unsigned)atoi(argv[i]));
+    } else if (strcmp(argv[i],"-printtree") == 0) {
+      opts.print_tree(true);
+    }
+  }
+
+  return opts;
+}

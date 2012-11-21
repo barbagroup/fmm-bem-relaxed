@@ -18,13 +18,13 @@ using namespace std::rel_ops;
 
 template <typename Kernel>
 struct KernelTraits {
-  typedef Kernel type;
+  typedef Kernel kernel_type;
 
-  typedef typename Kernel::source_type       source_type;
-  typedef typename Kernel::target_type       target_type;
-  typedef typename Kernel::charge_type       charge_type;
-  typedef typename Kernel::kernel_value_type kernel_value_type;
-  typedef typename Kernel::result_type       result_type;
+  typedef typename kernel_type::source_type       source_type;
+  typedef typename kernel_type::target_type       target_type;
+  typedef typename kernel_type::charge_type       charge_type;
+  typedef typename kernel_type::kernel_value_type kernel_value_type;
+  typedef typename kernel_type::result_type       result_type;
 
   // A dummy iterator adaptor to check for vectorized methods
   template <typename T>

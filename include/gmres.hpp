@@ -136,7 +136,7 @@ void PlaneRotation(Matrix& H, T& cs, T& sn, T& s, int i)
 }
 
 template <typename FMM, typename SolverOptions>
-void fmm_gmres(const FMM& fmm,
+void fmm_gmres(FMM& fmm,
                std::vector<typename FMM::charge_type>& x,
                std::vector<typename FMM::result_type>& b,
                const SolverOptions& opts)

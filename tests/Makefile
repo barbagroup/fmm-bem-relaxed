@@ -35,7 +35,7 @@ CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I../include -I../kernel
+INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
@@ -48,7 +48,13 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: single_body multi_level scaling
+all: single_body multi_level scaling correctness dual_correctness
+
+correctness: correctness.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+dual_correctness: dual_correctness.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 single_body: single_body.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
@@ -74,7 +80,7 @@ yukawa: single_yukawa.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) single_body multi_level scaling multi_yukawa single_yukawa *.dat
+	-$(RM) single_body multi_level scaling correctness dual_correctness
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

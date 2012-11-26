@@ -37,9 +37,6 @@ CFLAGS +=
 #   include directories like -Ipath/to/files
 INCLUDES = -I. -I./include -I./include/tree -I./include/executor -I./kernel
 
-# Additional includes, for instance, for BEM
-INCLUDES += 
-
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
 LIBS +=

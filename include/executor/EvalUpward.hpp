@@ -5,20 +5,13 @@
 #include "P2M.hpp"
 #include "M2M.hpp"
 
-template <typename Kernel, typename Tree>
-class EvalUpward : public Evaluator<EvalUpward<Kernel,Tree>>
+struct EvalUpward : public Evaluator<EvalUpward>
 {
-  const Kernel& K;
-  const Tree& tree;
-
-public:
-  template <typename Options>
-  EvalUpward(const Kernel& k, const Tree& t, Options&)
-  : K(k), tree(t) {
-  };
-
   template <typename BoxContext>
   void execute(BoxContext& bc) const {
+    auto tree = bc.source_tree();
+    auto K = bc.kernel();
+
     // For the lowest level up to the highest level
     for (unsigned l = tree.levels()-1; l != 0; --l) {
       // For all boxes at this level
@@ -45,11 +38,3 @@ public:
     }
   }
 };
-
-template <typename Tree, typename Kernel, typename Options>
-EvalUpward<Tree,Kernel>* make_upward(const Tree& tree,
-				     const Kernel& kernel,
-				     const Options&) {
-  return new EvalUpward<Tree,Kernel>(tree, kernel);
-}
-

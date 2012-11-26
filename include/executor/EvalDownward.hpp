@@ -5,20 +5,13 @@
 #include "L2L.hpp"
 #include "L2P.hpp"
 
-template <typename Kernel, typename Tree>
-class EvalDownward : public Evaluator<EvalDownward<Kernel,Tree>>
+struct EvalDownward : public Evaluator<EvalDownward>
 {
-  const Kernel& K;
-  const Tree& tree;
-
-public:
-  template <typename Options>
-  EvalDownward(const Kernel& k, const Tree& t, Options&)
-  : K(k), tree(t) {
-  };
-
   template <typename BoxContext>
   void execute(BoxContext& bc) const {
+    auto tree = bc.target_tree();
+    auto K = bc.kernel();
+
     // For the highest level down to the lowest level
     for (unsigned l = 1; l < tree.levels(); ++l) {
       // For all boxes at this level
@@ -40,10 +33,3 @@ public:
     }
   }
 };
-
-template <typename Tree, typename Kernel, typename Options>
-EvalDownward<Tree,Kernel>* make_downward(const Tree& tree,
-					 const Kernel& kernel,
-					 const Options&) {
-  return new EvalDownward<Tree,Kernel>(tree, kernel);
-}

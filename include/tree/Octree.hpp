@@ -527,7 +527,8 @@ class Octree
     return level_offset_.size() - 1;
   }
 
-#if 1
+#if 0
+  //! Uses a single, global sort
   template <typename PointIter>
   void construct_tree(PointIter p_begin, PointIter p_end, unsigned NCRIT = 126) {
     // Create a code-idx pair vector
@@ -617,15 +618,17 @@ class Octree
   }
 #endif
 
-#if 0
-  template <typename PointIter>
-  void construct_tree(PointIter p_begin, PointIter p_end, unsigned NCRIT = 126) {
+#if 1
+  //! Uses incremental bucket sorting
+  template <typename SourceIter>
+  void construct_tree(SourceIter p_begin, SourceIter p_end,
+		      unsigned NCRIT = 126) {
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
     std::vector<point_type> points;
     unsigned idx = 0;
-    for (PointIter pi = p_begin; pi != p_end; ++pi, ++idx) {
+    for (SourceIter pi = p_begin; pi != p_end; ++pi, ++idx) {
       point_type p = static_cast<point_type>(*pi);
 
       assert(coder_.bounding_box().contains(p));

@@ -1,5 +1,9 @@
 #pragma once
-
+/** @file UnitKernel.hpp
+ * @brief Implements the unit kernel defined by
+ * K(t,s) = 1  if s != t
+ * K(t,s) = 0  if s == t
+ */
 
 class UnitKernel
 {

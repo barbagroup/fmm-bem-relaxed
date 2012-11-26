@@ -2,6 +2,10 @@
 
 template <typename DerivedType>
 struct Evaluator {
+  template <typename Kernel, typename STree, typename TTree, typename Options>
+  void create(const Kernel&, STree&, TTree&, Options&) {
+    // Default Evaluator create does nothing
+  }
 };
 
 template <typename E1, typename E2>
@@ -9,11 +13,10 @@ class EvalPair : public Evaluator<EvalPair<E1,E2>> {
   E1 e1_;
   E2 e2_;
 public:
-  typedef EvalPair<E1,E2> type;
-
-  template <typename Kernel, typename Tree, typename Options>
-  EvalPair(Kernel& K, Tree& tree, Options& opts)
-  : e1_(K, tree, opts), e2_(K, tree, opts) {
+  template <typename Kernel, typename STree, typename TTree, typename Options>
+  void create(const Kernel& K, STree& stree, TTree& ttree, Options& opts) {
+    e1_.create(K, stree, ttree, opts);
+    e2_.create(K, stree, ttree, opts);
   }
   template <typename BoxContext>
   inline void execute(BoxContext& bc) const {

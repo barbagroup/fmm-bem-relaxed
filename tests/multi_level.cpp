@@ -1,4 +1,4 @@
-#include <SphericalLaplaceKernel.hpp>
+#include <LaplaceSpherical.hpp>
 #include <UnitKernel.hpp>
 
 #include <Direct.hpp>
@@ -7,7 +7,7 @@
 int main(int argc, char **argv)
 {
   // typedefs
-  typedef SphericalLaplaceKernel kernel_type;
+  typedef LaplaceSpherical kernel_type;
   //typedef UnitKernel kernel_type;
   typedef kernel_type::point_type point_type;
   typedef kernel_type::charge_type charge_type;

@@ -1,6 +1,9 @@
 #pragma once
-/** @file SphericalLaplaceKernel.hpp
- * @brief
+/** @file LaplaceCartesian.hpp
+ * @brief Implements the Laplace kernel with spherical expansions.
+ *
+ * K(t,s) = 1 / |s-t|        // Laplace potential
+ * K(t,s) = (s-t) / |s-t|^3  // Laplace force
  */
 
 
@@ -8,7 +11,7 @@
 #include <vector>
 #include <Vec.hpp>
 
-class SphericalLaplaceKernel
+class LaplaceSpherical
 {
  private:
   typedef double real;
@@ -70,9 +73,9 @@ class SphericalLaplaceKernel
   typedef std::vector<complex> local_type;
 
   //! default constructor - use delegating constructor
-  SphericalLaplaceKernel() : SphericalLaplaceKernel(5) {};
+  LaplaceSpherical() : LaplaceSpherical(5) {};
   //! Constructor
-  SphericalLaplaceKernel(int p)
+  LaplaceSpherical(int p)
       : P(p), prefactor(4*P*P), Anm(4*P*P), Cnm(P*P*P*P) {
     for( int n=0; n!=2*P; ++n ) {                               // Loop over n in Anm
       for( int m=-n; m<=n; ++m ) {                              //  Loop over m in Anm

@@ -1,4 +1,11 @@
 #pragma once
+/** @file LaplaceCartesian.hpp
+ * @brief Implements the Laplace kernel with cartesian expansions.
+ *
+ * K(t,s) = 1 / |s-t|        // Laplace potential
+ * K(t,s) = (s-t) / |s-t|^3  // Laplace force
+ */
+
 
 typedef double real;
 
@@ -728,7 +735,7 @@ inline void sumM2P(Result& B, const Lset& C, const Mset& M) {
 
 
 template <unsigned P>
-class CartesianLaplaceKernel
+class LaplaceCartesian
 {
   //!< Number of Cartesian mutlipole terms
   static constexpr int MTERM = P*(P+1)*(P+2)/6;

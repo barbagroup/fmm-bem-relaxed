@@ -5,13 +5,10 @@
  */
 
 #include "KernelTraits.hpp"
-
 #include <type_traits>
 
 class P2M
 {
-  template <bool> struct UseVectorP2M {};
-
   /** If no other P2M dispatcher matches */
   template <typename... Args>
   inline static void eval(Args...) {

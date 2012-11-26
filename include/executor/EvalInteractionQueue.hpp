@@ -9,12 +9,9 @@
 
 #include <functional>
 
-template <typename Kernel, typename Tree, FMMOptions::EvalType TYPE>
-class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Kernel,Tree,TYPE>>
+template <typename Tree, FMMOptions::EvalType TYPE>
+class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Tree,TYPE>>
 {
-  const Kernel& K;
-  const Tree& tree;
-
   //! type of box
   typedef typename Tree::box_type box_type;
   //! Pair of boxees
@@ -29,54 +26,9 @@ class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Kernel,Tree,T
 
  public:
 
-  template <typename Options>
-  EvalInteractionQueue(const Kernel& k, const Tree& t, Options& opts)
-  : K(k), tree(t), P2P_list(0), LR_list(0), acceptMultipole(opts.MAC()) {
-    // any precomputation here
-  }
-
-  template <typename BoxContext>
-  void eval_LR_list(BoxContext& bc) const
-  {
-    for (auto it=LR_list.begin(); it!=LR_list.end(); ++it) {
-      // evaluate this pair using M2L / M2P
-      if (TYPE == FMMOptions::FMM) {
-        M2L::eval(K,bc,it->first,it->second);
-      }
-      else if (TYPE == FMMOptions::TREECODE) {
-        M2P::eval(K,bc,it->first,it->second);
-      }
-    }
-  }
-
-  template <typename BoxContext>
-  void eval_P2P_list(BoxContext& bc) const 
-  {
-    for (auto it=P2P_list.begin(); it!=P2P_list.end(); ++it) {
-      // evaluate this pair using P2P
-      P2P::eval(K,bc,it->first,it->second,P2P::ONE_SIDED());
-    }
-  }
-
-  template <typename BoxContext, typename BOX, typename Q>
-  void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
-    (void) bc; // quiet warning for now
-    if (acceptMultipole(b1, b2)) {
-      // These boxes satisfy the multipole acceptance criteria
-      if (TYPE == FMMOptions::FMM) {
-	      // M2L::eval(K, bc, b1, b2);
-        LR_list.push_back(std::make_pair(b1,b2));
-      }
-      else if (TYPE == FMMOptions::TREECODE) {
-	      // M2P::eval(K, bc, b1, b2);
-        LR_list.push_back(std::make_pair(b1,b2));
-      }
-    } else if(b1.is_leaf() && b2.is_leaf()) {
-      // P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
-      P2P_list.push_back(std::make_pair(b2,b1));
-    } else {
-      pairQ.push_back(std::make_pair(b1,b2));
-    }
+  template <typename Kernel, typename STree, typename TTree, typename Options>
+  void create(const Kernel&, STree&, TTree&, Options& opts) {
+    acceptMultipole = opts.MAC();
   }
 
   template <typename BoxContext>
@@ -85,11 +37,15 @@ class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Kernel,Tree,T
     typedef typename std::pair<Box, Box> box_pair;
     std::deque<box_pair> pairQ;
 
-    if(tree.root().is_leaf())
-      return P2P::eval(K, bc, tree.root(), tree.root(), P2P::ONE_SIDED());
+    auto stree = bc.source_tree();
+    auto ttree = bc.target_tree();
+
+    if(stree.root().is_leaf() || ttree.root().is_leaf())
+      return P2P::eval(bc.kernel(), bc,
+                       stree.root(), ttree.root(), P2P::ONE_SIDED());
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
-    pairQ.push_back(box_pair(tree.root(), tree.root()));
+    pairQ.push_back(box_pair(stree.root(), ttree.root()));
 
     while (!pairQ.empty()) {
       auto b1 = pairQ.front().first;
@@ -113,20 +69,66 @@ class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Kernel,Tree,T
     eval_LR_list(bc);
     eval_P2P_list(bc);
   }
+
+private:
+
+  template <typename BoxContext>
+  void eval_LR_list(BoxContext& bc) const
+  {
+    for (auto it=LR_list.begin(); it!=LR_list.end(); ++it) {
+      // evaluate this pair using M2L / M2P
+      if (TYPE == FMMOptions::FMM) {
+        M2L::eval(bc.kernel(), bc, it->first, it->second);
+      }
+      else if (TYPE == FMMOptions::TREECODE) {
+        M2P::eval(bc.kernel(), bc, it->first, it->second);
+      }
+    }
+  }
+
+  template <typename BoxContext>
+  void eval_P2P_list(BoxContext& bc) const
+  {
+    for (auto it=P2P_list.begin(); it!=P2P_list.end(); ++it) {
+      // evaluate this pair using P2P
+      P2P::eval(bc.kernel(), bc, it->first, it->second, P2P::ONE_SIDED());
+    }
+  }
+
+  template <typename BoxContext, typename BOX, typename Q>
+  void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
+    (void) bc; // quiet warning for now
+    if (acceptMultipole(b1, b2)) {
+      // These boxes satisfy the multipole acceptance criteria
+      if (TYPE == FMMOptions::FMM) {
+	      // M2L::eval(K, bc, b1, b2);
+        LR_list.push_back(std::make_pair(b1,b2));
+      }
+      else if (TYPE == FMMOptions::TREECODE) {
+	      // M2P::eval(K, bc, b1, b2);
+        LR_list.push_back(std::make_pair(b1,b2));
+      }
+    } else if(b1.is_leaf() && b2.is_leaf()) {
+      // P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
+      P2P_list.push_back(std::make_pair(b2,b1));
+    } else {
+      pairQ.push_back(std::make_pair(b1,b2));
+    }
+  }
 };
 
 template <typename Tree, typename Kernel, typename Options>
-EvalInteractionQueue<Tree,Kernel,FMMOptions::FMM>*
-make_fmm_inter_queue(const Tree& tree,
-	       const Kernel& K,
-	       const Options& opts) {
-  return new EvalInteractionQueue<Tree,Kernel,FMMOptions::FMM>(tree,K,opts.MAC);
+EvalInteractionQueue<Tree,FMMOptions::FMM>*
+make_fmm_inter_queue(const Tree&,
+                     const Kernel&,
+                     const Options&) {
+  return new EvalInteractionQueue<Tree,FMMOptions::FMM>();
 }
 
 template <typename Tree, typename Kernel, typename Options>
-EvalInteractionQueue<Tree,Kernel,FMMOptions::TREECODE>*
-make_tree_inter_queue(const Tree& tree,
-		const Kernel& K,
-		const Options& opts) {
-  return new EvalInteractionQueue<Tree,Kernel,FMMOptions::TREECODE>(tree,K,opts.MAC);
+EvalInteractionQueue<Tree,FMMOptions::TREECODE>*
+make_tree_inter_queue(const Tree&,
+                      const Kernel&,
+                      const Options&) {
+  return new EvalInteractionQueue<Tree,FMMOptions::TREECODE>();
 }

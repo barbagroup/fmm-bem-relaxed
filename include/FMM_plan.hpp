@@ -35,7 +35,22 @@ class FMM_plan
     : K(k), opts_(opts) {
     check_kernel();
 
-    executor_ = make_executor(K, source.begin(), source.end(), opts_);
+    executor_ = make_executor(K,
+			      source.begin(), source.end(),
+			      opts_);
+  }
+
+  FMM_plan(const kernel_type& k,
+	   const std::vector<source_type>& source,
+	   const std::vector<target_type>& target,
+           FMMOptions& opts)
+    : K(k), opts_(opts) {
+    check_kernel();
+
+    executor_ = make_executor(K,
+			      source.begin(), source.end(),
+			      target.begin(), target.end(),
+			      opts_);
   }
 
   // DESTRUCTOR
@@ -45,31 +60,6 @@ class FMM_plan
   }
 
   // EXECUTE
-
-  /** Set the executor strategy of this plan at runtime
-   */
-  //void set_options(FMMOptions& options) {
-  //  executor = make_executor(otree, K, options);
-  //}
-
-  /** Execute this FMM plan
-   */
-  std::vector<result_type> execute(const std::vector<charge_type>& charges,
-                                   const std::vector<target_type>& t_points)
-  {
-    if (!executor_) {
-      printf("[E]: Executor not initialised -- returning..\n");
-      return std::vector<result_type>(0);
-    }
-
-    (void) t_points; // Quiet compiler TODO: Dual tree
-
-    std::vector<result_type> results(charges.size());
-    executor_->execute(charges, results);
-
-    // TODO: don't return this, provide accessor
-    return results;
-  }
 
   /** Execute this FMM plan
    */
@@ -87,6 +77,27 @@ class FMM_plan
 
     // TODO: don't return this, provide accessor
     return results;
+  }
+
+  //private:
+  ExecutorBase<kernel_type>* executor_;
+  kernel_type K;
+  FMMOptions opts_;
+
+private:
+
+  void check_kernel() {
+    if (opts_.evaluator == FMMOptions::FMM &&
+	!ExpansionTraits<kernel_type>::is_valid_fmm) {
+      std::cerr << ExpansionTraits<kernel_type>();
+      std::cerr << "[W] Cannot use Kernel for FMM!\n";
+    }
+
+    if (opts_.evaluator == FMMOptions::TREECODE &&
+	!ExpansionTraits<kernel_type>::is_valid_treecode) {
+      std::cerr << ExpansionTraits<kernel_type>();
+      std::cerr << "[W] Cannot use Kernel for treecode!\n";
+    }
   }
 
   //private:

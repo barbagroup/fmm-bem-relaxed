@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <iostream>
 
 // Automatically derive !=, <=, >, and >= from a class's == and <
 #include <utility>
@@ -18,13 +19,15 @@ using namespace std::rel_ops;
 
 template <typename Kernel>
 struct KernelTraits {
-  typedef Kernel type;
+  typedef KernelTraits<Kernel> this_type;
 
-  typedef typename Kernel::source_type       source_type;
-  typedef typename Kernel::target_type       target_type;
-  typedef typename Kernel::charge_type       charge_type;
-  typedef typename Kernel::kernel_value_type kernel_value_type;
-  typedef typename Kernel::result_type       result_type;
+  typedef Kernel kernel_type;
+
+  typedef typename kernel_type::source_type       source_type;
+  typedef typename kernel_type::target_type       target_type;
+  typedef typename kernel_type::charge_type       charge_type;
+  typedef typename kernel_type::kernel_value_type kernel_value_type;
+  typedef typename kernel_type::result_type       result_type;
 
   // A dummy iterator adaptor to check for vectorized methods
   template <typename T>
@@ -41,9 +44,10 @@ struct KernelTraits {
 
     bool operator==(const dummy_iterator&) const { return true; }
     dummy_iterator& operator++() { return *this; }
-    value_type operator*() { return value_type(); }
-    value_type operator*() const { return value_type(); }
+    value_type& operator*() { return value; }
+    const value_type& operator*() const { return value; }
     pointer operator->() { return nullptr; }
+    value_type value;
   };
 
   typedef dummy_iterator<source_type> source_iterator;
@@ -72,6 +76,14 @@ struct KernelTraits {
 	 target_iterator, target_iterator, result_iterator>::value;
 
   static constexpr bool is_valid_kernel = has_eval_op || has_vector_P2P_asymm;
+
+  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+    s << "has_eval_op: " << traits.has_eval_op << std::endl;
+    s << "has_transpose: " << traits.has_transpose << std::endl;
+    s << "has_vector_P2P_symm: " << traits.has_vector_P2P_symm << std::endl;
+    s << "has_vector_P2P_asymm: " << traits.has_vector_P2P_asymm << std::endl;
+    return s;
+  }
 };
 
 
@@ -80,7 +92,9 @@ struct KernelTraits {
 template <typename Kernel>
 struct ExpansionTraits : public KernelTraits<Kernel>
 {
+  typedef ExpansionTraits<Kernel> this_type;
   typedef KernelTraits<Kernel> super_type;
+
   typedef typename super_type::source_type       source_type;
   typedef typename super_type::target_type       target_type;
   typedef typename super_type::charge_type       charge_type;
@@ -139,7 +153,7 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   static constexpr bool has_M2P =
   HasM2P<void,
 	 const multipole_type&, const point_type&,
-	 const target_type&, result_type>::value;
+	 const target_type&, result_type&>::value;
   static constexpr bool has_vector_M2P =
   HasM2P<void,
 	 const multipole_type&, const point_type&,
@@ -162,7 +176,7 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   static constexpr bool has_L2P =
   HasL2P<void,
 	 const local_type&, const point_type&,
-	 const target_type&, result_type>::value;
+	 const target_type&, result_type&>::value;
   static constexpr bool has_vector_L2P =
   HasL2P<void,
 	 const local_type&, const point_type&,
@@ -181,6 +195,20 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   (has_M2L) &&
   (has_L2L) &&
   (has_L2P || has_vector_L2P);
+
+  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+    s << static_cast<super_type>(traits);
+    s << "has_P2M: " << traits.has_P2M << std::endl;
+    s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;
+    s << "has_M2M: " << traits.has_M2M << std::endl;
+    s << "has_M2P: " << traits.has_M2P << std::endl;
+    s << "has_vector_M2P: " << traits.has_vector_M2P << std::endl;
+    s << "has_M2L: " << traits.has_M2L << std::endl;
+    s << "has_L2L: " << traits.has_L2L << std::endl;
+    s << "has_L2P: " << traits.has_L2P << std::endl;
+    s << "has_vector_L2P: " << traits.has_vector_L2P << std::endl;
+    return s;
+  }
 };
 
 #undef SFINAE_TEMPLATE

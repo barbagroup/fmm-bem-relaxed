@@ -50,6 +50,9 @@ LIBS +=
 # 'make' - default rule
 all: serialrun
 
+bem: serialBEM.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 serialrun: serialrun.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 

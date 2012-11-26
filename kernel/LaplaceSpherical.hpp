@@ -186,6 +186,7 @@ class LaplaceSpherical
    * @param[in,out] M The multipole expansion to accumulate into
    * @pre M is the result of init_multipole
    */
+  /*
   template <typename SourceIter, typename ChargeIter>
   void P2M(SourceIter p_begin, SourceIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) const {
@@ -209,6 +210,7 @@ class LaplaceSpherical
     M.RMAX = Rmax;
     M.RCRIT = std::min(M.RCRIT, M.RMAX);
   }
+  */
 
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source

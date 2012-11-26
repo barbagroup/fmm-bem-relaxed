@@ -35,7 +35,7 @@ public:
 			  const Box& target)
   {
 #ifdef DEBUG
-    printf("L2L: %d to %d\n", source.index(), target.index());
+    printf("M2M: %d to %d\n", source.index(), target.index());
 #endif
 
     L2L::eval(K,

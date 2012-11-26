@@ -141,6 +141,8 @@ private:
     }
   }
 
+  /** Evaluate long-range interactions
+   *  Generate all necessary multipoles */
   template <typename BoxContext>
   void eval_LR_list(BoxContext& bc) const
   {

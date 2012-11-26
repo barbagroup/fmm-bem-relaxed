@@ -5,7 +5,6 @@
  */
 
 #include "KernelTraits.hpp"
-
 #include <type_traits>
 
 class P2M

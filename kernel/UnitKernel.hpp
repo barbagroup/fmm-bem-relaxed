@@ -1,8 +1,8 @@
 #pragma once
 /** @file UnitKernel.hpp
  * @brief Implements the unit kernel defined by
- * K(t,s) = 1  if s != t
- * K(t,s) = 0  if s == t
+ * K(t,s) = 1  if t != s
+ * K(t,s) = 0  if t == s
  */
 
 class UnitKernel
@@ -66,7 +66,7 @@ class UnitKernel
    * @param[in] source The multipole source at the child level
    * @param[in,out] target The multipole target to accumulate into
    * @param[in] translation The vector from source to target
-   * @pre Msource includes the influence of all points within its box
+   * @pre source includes the influence of all points within its box
    */
   void M2M(const multipole_type& source,
            multipole_type& target,
@@ -81,7 +81,7 @@ class UnitKernel
    * @param[in,out] target The local expansion target
    * @param[in] translation The vector from source to target
    * @pre translation obeys the multipole-acceptance criteria
-   * @pre Msource includes the influence of all points within its box
+   * @pre source includes the influence of all points within its box
    */
   void M2L(const multipole_type& source,
                  local_type& target,
@@ -109,7 +109,7 @@ class UnitKernel
    * @param[in] source The local source at the parent level
    * @param[in,out] target The local target to accumulate into
    * @param[in] translation The vector from source to target
-   * @pre Lsource includes the influence of all points outside its box
+   * @pre source includes the influence of all points outside its box
    */
   void L2L(const local_type& source,
            local_type& target,

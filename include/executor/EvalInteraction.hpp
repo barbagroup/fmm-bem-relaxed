@@ -13,20 +13,18 @@
 template <typename Tree, FMMOptions::EvalType TYPE>
 class EvalInteraction : public Evaluator<EvalInteraction<Tree, TYPE>>
 {
-  std::function<bool(typename Tree::box_type,
-		     typename Tree::box_type)> acceptMultipole;
-
  public:
+
   template <typename Kernel, typename STree, typename TTree, typename Options>
-  void create(const Kernel&, STree&, TTree&, Options& opts) {
-    acceptMultipole = opts.MAC();
+  void create(const Kernel&, STree&, TTree&, Options&) {
+    //acceptMultipole = opts.MAC();
   }
 
   template <typename Kernel, typename BoxContext, typename BOX, typename Q>
   void interact(const Kernel& K, BoxContext& bc,
                 const BOX& b1, const BOX& b2,
                 Q& pairQ) const {
-    if (acceptMultipole(b1, b2)) {
+    if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM)
         M2L::eval(K, bc, b1, b2);

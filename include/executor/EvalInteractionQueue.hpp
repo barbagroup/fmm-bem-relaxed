@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Evaluator.hpp"
-#include "Direct.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "M2L.hpp"
 #include "M2P.hpp"
@@ -9,6 +8,7 @@
 
 #include <functional>
 
+#if 0
 template <typename Tree, FMMOptions::EvalType TYPE>
 class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Tree,TYPE>>
 {
@@ -128,3 +128,4 @@ make_tree_inter_queue(const Tree&,
                       const Options&) {
   return new EvalInteractionQueue<Tree,FMMOptions::TREECODE>();
 }
+#endif

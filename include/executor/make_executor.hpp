@@ -18,6 +18,26 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
 				    Options& opts) {
   typedef Octree<typename Kernel::point_type> Tree;
 
+  auto executor = make_minimal_executor<Tree>(K, first, last, opts);
+
+  auto upward = make_upward(*executor, opts);
+  executor->insert_eval(upward);
+  auto inter = make_interact(*executor, opts);
+  executor->insert_eval(inter);
+  auto downward = make_downward(*executor, opts);
+  executor->insert_eval(downward);
+
+  return executor;
+}
+
+
+/*
+template <typename Kernel, typename SourceIter, typename Options>
+ExecutorBase<Kernel>* make_executor(const Kernel& K,
+				    SourceIter first, SourceIter last,
+				    Options& opts) {
+  typedef Octree<typename Kernel::point_type> Tree;
+
   if (opts.evaluator == FMMOptions::TREECODE && opts.lazy_evaluation) {
     typedef typename evaluator_type<
         EvalInteractionLazy<Tree,FMMOptions::TREECODE>
@@ -102,3 +122,4 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
     return NULL;
   }
 }
+*/

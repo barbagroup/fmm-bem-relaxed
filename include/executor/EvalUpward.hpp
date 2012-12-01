@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Evaluator.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "INITM.hpp"
 #include "INITL.hpp"
@@ -8,10 +8,10 @@
 #include "P2M.hpp"
 #include "M2M.hpp"
 
-struct EvalUpward : public Evaluator<EvalUpward>
+template <typename Context>
+struct EvalUpward : public EvaluatorBase<Context>
 {
-  template <typename BoxContext>
-  void execute(BoxContext& bc) const {
+  void execute(Context& bc) const {
     auto tree = bc.source_tree();
     auto K = bc.kernel();
 
@@ -41,3 +41,8 @@ struct EvalUpward : public Evaluator<EvalUpward>
     }
   }
 };
+
+template <typename Context, typename Options>
+EvaluatorBase<Context>* make_upward(const Context&, Options&) {
+  return new EvalUpward<Context>();
+}

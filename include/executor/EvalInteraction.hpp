@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Evaluator.hpp"
-#include "Direct.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "M2L.hpp"
 #include "M2P.hpp"
@@ -10,40 +9,16 @@
 #include <functional>
 #include <deque>
 
-template <typename Tree, FMMOptions::EvalType TYPE>
-class EvalInteraction : public Evaluator<EvalInteraction<Tree, TYPE>>
+template <typename Context, FMMOptions::EvalType TYPE>
+class EvalInteraction : public EvaluatorBase<Context>
 {
  public:
-
-  template <typename Kernel, typename STree, typename TTree, typename Options>
-  void create(const Kernel&, STree&, TTree&, Options&) {
-    //acceptMultipole = opts.MAC();
-  }
-
-  template <typename Kernel, typename BoxContext, typename BOX, typename Q>
-  void interact(const Kernel& K, BoxContext& bc,
-                const BOX& b1, const BOX& b2,
-                Q& pairQ) const {
-    if (bc.accept_multipole(b1, b2)) {
-      // These boxes satisfy the multipole acceptance criteria
-      if (TYPE == FMMOptions::FMM)
-        M2L::eval(K, bc, b1, b2);
-      else if (TYPE == FMMOptions::TREECODE)
-        M2P::eval(K, bc, b1, b2);
-    } else if(b1.is_leaf() && b2.is_leaf()) {
-      P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
-    } else {
-      pairQ.push_back(std::make_pair(b1,b2));
-    }
-  }
-
-  template <typename BoxContext>
-  void execute(BoxContext& bc) const {
+  void execute(Context& bc) const {
     auto stree = bc.source_tree();
     auto ttree = bc.target_tree();
     auto K = bc.kernel();
 
-    typedef typename Tree::box_type Box;
+    typedef typename Context::box_type Box;
     typedef typename std::pair<Box, Box> box_pair;
     std::deque<box_pair> pairQ;
 
@@ -71,4 +46,32 @@ class EvalInteraction : public Evaluator<EvalInteraction<Tree, TYPE>>
       }
     }
   }
+
+  template <typename Kernel, typename BoxContext, typename BOX, typename Q>
+  void interact(const Kernel& K, BoxContext& bc,
+                const BOX& b1, const BOX& b2,
+                Q& pairQ) const {
+    if (bc.accept_multipole(b1, b2)) {
+      // These boxes satisfy the multipole acceptance criteria
+      if (TYPE == FMMOptions::FMM)
+        M2L::eval(K, bc, b1, b2);
+      else if (TYPE == FMMOptions::TREECODE)
+        M2P::eval(K, bc, b1, b2);
+    } else if(b1.is_leaf() && b2.is_leaf()) {
+      P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
+    } else {
+      pairQ.push_back(std::make_pair(b1,b2));
+    }
+  }
 };
+
+
+template <typename Context, typename Options>
+EvaluatorBase<Context>* make_interact(const Context&, Options& opts) {
+  if (opts.evaluator == FMMOptions::FMM) {
+    return new EvalInteraction<Context,FMMOptions::FMM>();
+  } else if (opts.evaluator == FMMOptions::TREECODE) {
+    return new EvalInteraction<Context, FMMOptions::TREECODE>();
+  }
+  return nullptr;
+}

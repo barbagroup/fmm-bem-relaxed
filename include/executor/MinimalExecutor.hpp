@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ExecutorBase.hpp"
-#include "Evaluator.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "TransformIterator.hpp"
 
@@ -24,16 +24,20 @@
  *   int number() const                 // Original index of this body TODO TEMP
  * This class assumes nothing else about the tree.
  */
-template <typename Kernel, typename Tree, typename Eval>
-class MinimalExecutor : public ExecutorBase<Kernel>
+template <typename Kernel, typename Tree>
+class Executor : public ExecutorBase<Kernel>
 {
  public:
+  //! This type
+  typedef Executor<Kernel,Tree> this_type;
   //! Kernel type
   typedef Kernel kernel_type;
   //! Tree type
   typedef Tree tree_type;
-  //! Evaluator type
-  typedef Eval eval_type;
+  //! Source tree type
+  typedef tree_type source_tree_type;
+  //! Target tree type
+  typedef tree_type target_tree_type;
   //! Tree box type
   typedef typename tree_type::box_type box_type;
   //! Tree body type
@@ -55,7 +59,7 @@ class MinimalExecutor : public ExecutorBase<Kernel>
 
 protected:
   //! The tree of sources
-  Tree source_tree_;
+  tree_type source_tree_;
   //! Multipole expansions corresponding to Box indices in Tree
   std::vector<multipole_type> M_;
   //! Local expansions corresponding to Box indices in the Tree
@@ -63,8 +67,8 @@ protected:
   //! The sources associated with bodies in the source_tree
   std::vector<source_type> s_;
 
-  //! Evaluator algorithm to apply
-  Eval eval_;
+  //! Evaluator algorithms to apply
+  std::vector<EvaluatorBase<this_type>*> evals_;
   //! Reference to the Kernel
   const kernel_type& K_;
 
@@ -100,22 +104,20 @@ protected:
 public:
   //! Constructor
   template <typename SourceIter, typename Options>
-  MinimalExecutor(const kernel_type& K,
-		  SourceIter first, SourceIter last,
-		  Options& opts)
+  Executor(const kernel_type& K,
+	   SourceIter first, SourceIter last,
+	   Options& opts)
     : source_tree_(first, last, opts),
       M_(source_tree_.boxes()),
       L_(source_tree_.boxes()),
       s_(first, last),
       K_(K),
       acceptMultipole(opts.MAC()) {
-    if (opts.print_tree())
-      std::cout << source_tree_ << std::endl;
   }
 
-  template <typename Options>
-  void create_eval(Options& opts) {
-    eval_.create(K_, source_tree_, source_tree_, opts);
+  void insert_eval(EvaluatorBase<this_type>* eval) {
+    if (eval)
+      evals_.push_back(eval);
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
@@ -125,7 +127,8 @@ public:
     body2charge.begin_ = charges.begin();
     body2target.begin_ = s_.begin();
     body2result.begin_ = results.begin();
-    eval_.execute(*this);
+    for (auto eval : evals_)
+      eval->execute(*this);
   }
 
   bool accept_multipole(const box_type& source, const box_type& target) const {
@@ -188,82 +191,12 @@ public:
   }
 };
 
-
-template <typename Kernel, typename Tree, typename Eval>
-class MinimalDualExecutor : public MinimalExecutor<Kernel, Tree, Eval>
-{
-  typedef MinimalExecutor<Kernel, Tree, Eval> super_type;
-
-  typedef typename super_type::kernel_type kernel_type;
-  typedef typename super_type::target_type target_type;
-  typedef typename super_type::charge_type charge_type;
-  typedef typename super_type::result_type result_type;
-
-  //! The tree of targets
-  Tree target_tree_;
-
-  //! The targets associated with bodies in the target_tree
-  std::vector<target_type> t_;
-
-public:
-  //! Constructor
-  template <typename SourceIter, typename TargetIter, typename Options>
-  MinimalDualExecutor(const kernel_type& K,
-		      SourceIter sfirst, SourceIter slast,
-		      TargetIter tfirst, TargetIter tlast,
-		      Options& opts)
-    : super_type(K, sfirst, slast, opts),
-      target_tree_(tfirst, tlast, opts),
-      t_(tfirst, tlast) {
-    if (opts.print_tree())
-      std::cout << target_tree_ << std::endl;
-  }
-
-  template <typename Options>
-  void create_eval(Options& opts) {
-    this->eval_.create(this->K_, this->source_tree_, target_tree_, opts);
-  }
-
-  virtual void execute(const std::vector<charge_type>& charges,
-		       std::vector<result_type>& results) {
-    // TEMP Hack
-    this->body2source.begin_ = this->s_.begin();
-    this->body2charge.begin_ = charges.begin();
-    this->body2target.begin_ = this->t_.begin();
-    this->body2result.begin_ = results.begin();
-    this->eval_.execute(*this);
-  }
-};
-
-
-//! Type hiding constructor for MinimalExecutor
-template <typename Tree, typename Eval,
-	  typename Kernel, typename SourceIter, typename Options>
-ExecutorBase<Kernel>* make_minimal_executor(const Kernel& K,
-					    SourceIter first, SourceIter last,
-					    Options& opts) {
-  typedef MinimalExecutor<Kernel, Tree, Eval> Executor;
-  Executor* exec = new Executor(K, first, last, opts);
-  exec->create_eval(opts);
-  return exec;
+template <typename Tree, typename Kernel, typename SourceIter, typename Options>
+Executor<Kernel,Tree>* make_minimal_executor(const Kernel& K,
+					     SourceIter first, SourceIter last,
+					     Options& opts) {
+  return new Executor<Kernel,Tree>(K, first, last, opts);
 }
-
-template <typename Tree, typename Eval,
-	  typename Kernel, typename SourceIter, typename TargetIter,
-	  typename Options>
-ExecutorBase<Kernel>* make_minimal_executor(const Kernel& K,
-					    SourceIter sfirst, SourceIter slast,
-					    TargetIter tfirst, TargetIter tlast,
-					    Options& opts) {
-  typedef MinimalDualExecutor<Kernel, Tree, Eval> Executor;
-  Executor* exec = new Executor(K,
-				sfirst, slast,
-				tfirst, tlast,
-				opts);
-  exec->create_eval(opts);
-  return exec;
-}
-
 
 // TODO
   /*

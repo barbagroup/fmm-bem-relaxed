@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Evaluator.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "L2L.hpp"
 #include "L2P.hpp"
 
-struct EvalDownward : public Evaluator<EvalDownward>
+template <typename Context>
+struct EvalDownward : public EvaluatorBase<Context>
 {
-  template <typename BoxContext>
-  void execute(BoxContext& bc) const {
+  void execute(Context& bc) const {
     auto tree = bc.target_tree();
     auto K = bc.kernel();
 
@@ -33,3 +33,12 @@ struct EvalDownward : public Evaluator<EvalDownward>
     }
   }
 };
+
+
+template <typename Context, typename Options>
+EvaluatorBase<Context>* make_downward(const Context&, Options& opts) {
+  if (opts.evaluator == FMMOptions::FMM) {
+    return new EvalDownward<Context>();
+  }
+  return nullptr;
+}

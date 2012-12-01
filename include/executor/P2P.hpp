@@ -4,6 +4,8 @@
  *
  */
 
+#include "Direct.hpp"
+
 struct P2P
 {
   struct ONE_SIDED {};

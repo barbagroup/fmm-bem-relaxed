@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Evaluator.hpp"
-#include "Direct.hpp"
+#include "EvaluatorBase.hpp"
 
 #include "P2M.hpp"
 #include "M2M.hpp"
@@ -15,6 +14,7 @@
 #include <set>
 #include <unordered_set>
 
+#if 0
 template <typename Tree, FMMOptions::EvalType TYPE>
 class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Tree,TYPE>>
 {
@@ -198,3 +198,4 @@ private:
     }
   }
 };
+#endif

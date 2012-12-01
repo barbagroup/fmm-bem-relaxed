@@ -2,7 +2,7 @@
 /** @file KernelSkeletonMixed
  * @brief An example Kernel implementation that explains the required and
  * optionals methods and types to be included in a Kernel class.
- * This version uses custom (and different source and target types
+ * This version uses custom (and different) source and target types
  */
 
 

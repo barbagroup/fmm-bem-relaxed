@@ -68,6 +68,9 @@ protected:
   //! Reference to the Kernel
   const kernel_type& K_;
 
+  //! Multipole acceptance
+  std::function<bool(const box_type&,const box_type&)> acceptMultipole;
+
   template <typename T>
   struct body_map {
     typedef typename std::remove_const<T>::type vT;
@@ -104,7 +107,8 @@ public:
       M_(source_tree_.boxes()),
       L_(source_tree_.boxes()),
       s_(first, last),
-      K_(K) {
+      K_(K),
+      acceptMultipole(opts.MAC()) {
     if (opts.print_tree())
       std::cout << source_tree_ << std::endl;
   }
@@ -122,6 +126,10 @@ public:
     body2target.begin_ = s_.begin();
     body2result.begin_ = results.begin();
     eval_.execute(*this);
+  }
+
+  bool accept_multipole(const box_type& source, const box_type& target) const {
+    return acceptMultipole(source, target);
   }
 
   const kernel_type& kernel() const {

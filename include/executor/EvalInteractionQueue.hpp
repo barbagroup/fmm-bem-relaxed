@@ -21,14 +21,11 @@ class EvalInteractionQueue : public Evaluator<EvalInteractionQueue<Tree,TYPE>>
   //! List for Long-range (M2P / M2L) interactions
   mutable std::vector<box_pair> LR_list;
 
-  std::function<bool(typename Tree::box_type,
-		     typename Tree::box_type)> acceptMultipole;
-
  public:
 
   template <typename Kernel, typename STree, typename TTree, typename Options>
-  void create(const Kernel&, STree&, TTree&, Options& opts) {
-    acceptMultipole = opts.MAC();
+  void create(const Kernel&, STree&, TTree&, Options&) {
+    //acceptMultipole = opts.MAC();
   }
 
   template <typename BoxContext>
@@ -97,8 +94,7 @@ private:
 
   template <typename BoxContext, typename BOX, typename Q>
   void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
-    (void) bc; // quiet warning for now
-    if (acceptMultipole(b1, b2)) {
+    if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM) {
 	      // M2L::eval(K, bc, b1, b2);

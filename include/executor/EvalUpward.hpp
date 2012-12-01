@@ -2,6 +2,9 @@
 
 #include "Evaluator.hpp"
 
+#include "INITM.hpp"
+#include "INITL.hpp"
+
 #include "P2M.hpp"
 #include "M2M.hpp"
 
@@ -22,8 +25,8 @@ struct EvalUpward : public Evaluator<EvalUpward>
         // Initialize box data
         double box_size = box.side_length();
 	// TODO: initialize on-demand
-        K.init_multipole(bc.multipole_expansion(box), box_size);
-        K.init_local(bc.local_expansion(box), box_size);
+	INITM::eval(K, bc, box, box_size);
+	INITL::eval(K, bc, box, box_size);
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls

@@ -35,14 +35,11 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Tree,TYPE>>
   //! Set of initialised local expansions
   mutable Set initialised_L;
 
-  std::function<bool(typename Tree::box_type,
-		     typename Tree::box_type)> acceptMultipole;
-
  public:
 
   template <typename Kernel, typename STree, typename TTree, typename Options>
-  void create(const Kernel&, STree&, TTree&, Options& opts) {
-    acceptMultipole = opts.MAC();
+  void create(const Kernel&, STree&, TTree&, Options&) {
+    //acceptMultipole = opts.MAC();
   }
 
   template <typename BoxContext>
@@ -187,8 +184,7 @@ private:
 
   template <typename BoxContext, typename BOX, typename Q>
   void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
-    (void) bc; // quiet warning for now
-    if (acceptMultipole(b1, b2)) {
+    if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (TYPE == FMMOptions::FMM) {
         LR_list.push_back(std::make_pair(b1,b2));

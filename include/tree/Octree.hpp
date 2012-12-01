@@ -527,6 +527,15 @@ class Octree
     return level_offset_.size() - 1;
   }
 
+  inline bool contains(const box_type& box) const {
+    std::cout << box.tree_ << "\t" << this << std::endl;
+    return box.tree_ == const_cast<tree_type*>(this);
+  }
+
+  inline bool contains(const body_type& body) const {
+    return body.tree_ == const_cast<tree_type*>(this);
+  }
+
 #if 0
   //! Uses a single, global sort
   template <typename PointIter>
@@ -784,6 +793,10 @@ class Octree
     return temp;
   }
 #endif
+
+private:
+Octree(const Octree& other_tree) {};
+void operator=(const Octree& other_tree) {};
 };
 
 

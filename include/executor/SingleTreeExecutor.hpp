@@ -25,11 +25,11 @@
  * This class assumes nothing else about the tree.
  */
 template <typename Kernel, typename Tree>
-class Executor : public ExecutorBase<Kernel>
+class SingleTreeExecutor : public ExecutorBase<Kernel>
 {
  public:
   //! This type
-  typedef Executor<Kernel,Tree> this_type;
+  typedef SingleTreeExecutor<Kernel,Tree> this_type;
   //! Kernel type
   typedef Kernel kernel_type;
   //! Tree type
@@ -63,7 +63,7 @@ protected:
   //! Multipole expansions corresponding to Box indices in Tree
   std::vector<multipole_type> M_;
   //! Local expansions corresponding to Box indices in the Tree
-  std::vector<local_type> L_;
+  std::vector<local_type> L_;   // TODO: Not needed in Treecodes!
   //! The sources associated with bodies in the source_tree
   std::vector<source_type> s_;
 
@@ -73,7 +73,7 @@ protected:
   const kernel_type& K_;
 
   //! Multipole acceptance
-  std::function<bool(const box_type&,const box_type&)> acceptMultipole;
+  std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
   template <typename T>
   struct body_map {
@@ -104,12 +104,12 @@ protected:
 public:
   //! Constructor
   template <typename SourceIter, typename Options>
-  Executor(const kernel_type& K,
-	   SourceIter first, SourceIter last,
-	   Options& opts)
+  SingleTreeExecutor(const kernel_type& K,
+		     SourceIter first, SourceIter last,
+		     Options& opts)
     : source_tree_(first, last, opts),
       M_(source_tree_.boxes()),
-      L_(source_tree_.boxes()),
+      L_(source_tree_.boxes()),   // TODO: Not needed for treecodes
       s_(first, last),
       K_(K),
       acceptMultipole(opts.MAC()) {
@@ -142,7 +142,6 @@ public:
   tree_type& source_tree() {
     return source_tree_;
   }
-
   tree_type& target_tree() {
     return source_tree_;
   }
@@ -155,9 +154,11 @@ public:
     return M_[b.index()];
   }
   inline local_type& local_expansion(const box_type& b) {
+    std::cout << b.index() << std::endl;
     return L_[b.index()];
   }
-  inline const multipole_type& local_expansion(const box_type& b) const {
+  inline const local_type& local_expansion(const box_type& b) const {
+    std::cout << b.index() << std::endl;
     return L_[b.index()];
   }
 
@@ -165,22 +166,23 @@ public:
     return b.center();
   }
 
-  inline source_iterator source_begin(const box_type& b) {
+  inline source_iterator source_begin(const box_type& b) const {
+    assert(source_tree_.contains(b));
     return make_transform_iterator(b.body_begin(), body2source);
   }
-  inline source_iterator source_end(const box_type& b) {
+  inline source_iterator source_end(const box_type& b) const {
     return make_transform_iterator(b.body_end(), body2source);
   }
-  inline charge_iterator charge_begin(const box_type& b) {
+  inline charge_iterator charge_begin(const box_type& b) const {
     return make_transform_iterator(b.body_begin(), body2charge);
   }
-  inline charge_iterator charge_end(const box_type& b) {
+  inline charge_iterator charge_end(const box_type& b) const {
     return make_transform_iterator(b.body_end(), body2charge);
   }
-  inline target_iterator target_begin(const box_type& b) {
+  inline target_iterator target_begin(const box_type& b) const {
     return make_transform_iterator(b.body_begin(), body2target);
   }
-  inline target_iterator target_end(const box_type& b) {
+  inline target_iterator target_end(const box_type& b) const {
     return make_transform_iterator(b.body_end(), body2target);
   }
   inline result_iterator result_begin(const box_type& b) {
@@ -191,11 +193,12 @@ public:
   }
 };
 
+
 template <typename Tree, typename Kernel, typename SourceIter, typename Options>
-Executor<Kernel,Tree>* make_minimal_executor(const Kernel& K,
-					     SourceIter first, SourceIter last,
-					     Options& opts) {
-  return new Executor<Kernel,Tree>(K, first, last, opts);
+SingleTreeExecutor<Kernel,Tree>* make_executor(const Kernel& K,
+					       SourceIter first, SourceIter last,
+					       Options& opts) {
+  return new SingleTreeExecutor<Kernel,Tree>(K, first, last, opts);
 }
 
 // TODO

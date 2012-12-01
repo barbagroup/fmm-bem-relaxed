@@ -9,8 +9,8 @@ template <typename Context>
 struct EvalDownward : public EvaluatorBase<Context>
 {
   void execute(Context& bc) const {
-    auto tree = bc.target_tree();
-    auto K = bc.kernel();
+    auto& tree = bc.target_tree();
+    auto& K = bc.kernel();
 
     // For the highest level down to the lowest level
     for (unsigned l = 1; l < tree.levels(); ++l) {

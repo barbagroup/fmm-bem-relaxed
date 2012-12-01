@@ -14,9 +14,9 @@ class EvalInteraction : public EvaluatorBase<Context>
 {
  public:
   void execute(Context& bc) const {
-    auto stree = bc.source_tree();
-    auto ttree = bc.target_tree();
-    auto K = bc.kernel();
+    auto& stree = bc.source_tree();
+    auto& ttree = bc.target_tree();
+    auto& K = bc.kernel();
 
     typedef typename Context::box_type Box;
     typedef typename std::pair<Box, Box> box_pair;

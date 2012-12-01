@@ -12,8 +12,8 @@ template <typename Context>
 struct EvalUpward : public EvaluatorBase<Context>
 {
   void execute(Context& bc) const {
-    auto tree = bc.source_tree();
-    auto K = bc.kernel();
+    auto& tree = bc.source_tree();
+    auto& K = bc.kernel();
 
     // For the lowest level up to the highest level
     for (unsigned l = tree.levels()-1; l != 0; --l) {
@@ -26,7 +26,7 @@ struct EvalUpward : public EvaluatorBase<Context>
         double box_size = box.side_length();
 	// TODO: initialize on-demand
 	INITM::eval(K, bc, box, box_size);
-	INITL::eval(K, bc, box, box_size);
+	INITL::eval(K, bc, box, box_size);  // TODO: Don't do for treecodes!
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls

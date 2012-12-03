@@ -6,13 +6,15 @@
 #include "include/TransformIterator.hpp"
 
 struct MyOp {
+  MyOp(int v) : v_(v) {}
   int operator()(const int& a) const {
-    return a*a;
+    return a*a + v_;
   }
+  int v_;
+private:
+  MyOp(const MyOp&) {}
+  MyOp& operator=(const MyOp&);
 };
-
-template <typename IT>
-transform_iterator<IT,OP>
 
 
 int main(int argc, char** argv)
@@ -28,8 +30,11 @@ int main(int argc, char** argv)
 
   std::cout << "\n";
 
-  auto begin = make_transform_iterator(vec.begin(), MyOp());
-  auto end = make_transform_iterator(vec.end(), MyOp());
+  MyOp myop(1);
+  //auto begin = make_transform_iterator(vec.begin(), myop);  // Copy, no compile
+  //auto end = make_transform_iterator(vec.end(), myop);      // Copy, no compile
+  auto begin = make_transform_iterator<MyOp&>(vec.begin(), myop);
+  auto end = make_transform_iterator<MyOp&>(vec.end(), myop);
 
   for ( ; begin != end; ++begin)
     std::cout << *begin << "\n";

@@ -33,7 +33,7 @@ public:
 			  double box_size)
   {
 #ifdef DEBUG
-    printf("initL: %d to %d\n", b.index());
+    printf("initL: %d\n", b.index());
 #endif
 
     INITL::eval(K, bc.local_expansion(b), box_size);

@@ -33,7 +33,7 @@ public:
 			  double box_size)
   {
 #ifdef DEBUG
-    printf("initM: %d to %d\n", b.index());
+    printf("initM: %d\n", b.index());
 #endif
 
     INITM::eval(K, bc.multipole_expansion(b), box_size);

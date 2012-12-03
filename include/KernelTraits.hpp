@@ -19,7 +19,7 @@ using namespace std::rel_ops;
 
 template <typename Kernel>
 struct KernelTraits {
-  typedef KernelTraits<Kernel> this_type;
+  typedef KernelTraits<Kernel> self_type;
 
   typedef Kernel kernel_type;
 
@@ -77,7 +77,7 @@ struct KernelTraits {
 
   static constexpr bool is_valid_kernel = has_eval_op || has_vector_P2P_asymm;
 
-  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+  friend std::ostream& operator<<(std::ostream& s, const self_type& traits) {
     s << "has_eval_op: " << traits.has_eval_op << std::endl;
     s << "has_transpose: " << traits.has_transpose << std::endl;
     s << "has_vector_P2P_symm: " << traits.has_vector_P2P_symm << std::endl;
@@ -92,7 +92,7 @@ struct KernelTraits {
 template <typename Kernel>
 struct ExpansionTraits : public KernelTraits<Kernel>
 {
-  typedef ExpansionTraits<Kernel> this_type;
+  typedef ExpansionTraits<Kernel> self_type;
   typedef KernelTraits<Kernel> super_type;
 
   typedef typename super_type::source_type       source_type;
@@ -196,7 +196,7 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   (has_L2L) &&
   (has_L2P || has_vector_L2P);
 
-  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+  friend std::ostream& operator<<(std::ostream& s, const self_type& traits) {
     s << static_cast<super_type>(traits);
     s << "has_P2M: " << traits.has_P2M << std::endl;
     s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;

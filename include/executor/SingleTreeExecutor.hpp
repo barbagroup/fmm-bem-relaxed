@@ -29,7 +29,7 @@ class SingleTreeExecutor : public ExecutorBase<Kernel>
 {
  public:
   //! This type
-  typedef SingleTreeExecutor<Kernel,Tree> this_type;
+  typedef SingleTreeExecutor<Kernel,Tree> self_type;
   //! Kernel type
   typedef Kernel kernel_type;
   //! Tree type
@@ -68,7 +68,7 @@ protected:
   std::vector<source_type> s_;
 
   //! Evaluator algorithms to apply
-  std::vector<EvaluatorBase<this_type>*> evals_;
+  std::vector<EvaluatorBase<self_type>*> evals_;
   //! Reference to the Kernel
   const kernel_type& K_;
 
@@ -115,7 +115,7 @@ public:
       acceptMultipole(opts.MAC()) {
   }
 
-  void insert_eval(EvaluatorBase<this_type>* eval) {
+  void insert_eval(EvaluatorBase<self_type>* eval) {
     if (eval)
       evals_.push_back(eval);
   }

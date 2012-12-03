@@ -67,7 +67,7 @@ private:
 };
 
 
-template <typename IT, class F>
+template <class F, typename IT>
 transform_iterator<IT,F> make_transform_iterator(IT it, F f) {
   return transform_iterator<IT,F>(it, f);
 }

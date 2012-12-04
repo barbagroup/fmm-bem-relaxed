@@ -58,6 +58,9 @@ class SingleTreeExecutor : public ExecutorBase<Kernel>
   typedef typename kernel_type::result_type result_type;
 
 protected:
+  //! Reference to the Kernel
+  const kernel_type& K_;
+
   //! The tree of sources
   tree_type source_tree_;
 
@@ -65,6 +68,8 @@ protected:
 
   //! Multipole expansions corresponding to Box indices in Tree
   box_map<tree_type, std::vector<multipole_type>> M_;
+  //! Local expansions corresponding to Box indices in Tree
+  box_map<tree_type, std::vector<local_type>> L_;
   //! The sources associated with bodies in the source_tree
   body_map<tree_type, std::vector<source_type>> s_;
   //! The charges associated with bodies in the source_tree
@@ -74,13 +79,9 @@ protected:
   //! The results associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<result_type>::iterator> r_;
 
-  //! Local expansions corresponding to Box indices in the Tree
-  std::vector<local_type> L_;   // TODO: Not needed in Treecodes!
-
   //! Evaluator algorithms to apply
   std::vector<EvaluatorBase<self_type>*> evals_;
-  //! Reference to the Kernel
-  const kernel_type& K_;
+
 
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
@@ -91,12 +92,13 @@ public:
   SingleTreeExecutor(const kernel_type& K,
 		     SourceIter first, SourceIter last,
 		     Options& opts)
-    : source_tree_(first, last, opts),
+    : K_(K),
+      source_tree_(first, last, opts),
       M_(std::vector<multipole_type>(source_tree_.boxes())),
+      L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
+				 0 : source_tree_.boxes())),
       s_(std::vector<source_type>(first, last)),
       t_(s_.data().begin()),
-      L_(source_tree_.boxes()),   // TODO: Not needed for treecodes!
-      K_(K),
       acceptMultipole(opts.MAC()) {
   }
 
@@ -135,11 +137,11 @@ public:
   inline const multipole_type& multipole_expansion(const box_type& box) const {
     return M_(box);
   }
-  inline local_type& local_expansion(const box_type& b) {
-    return L_[b.index()];
+  inline local_type& local_expansion(const box_type& box) {
+    return L_(box);
   }
-  inline const local_type& local_expansion(const box_type& b) const {
-    return L_[b.index()];
+  inline const local_type& local_expansion(const box_type& box) const {
+    return L_(box);
   }
 
   inline point_type center(const box_type& b) const {

@@ -13,6 +13,18 @@
 
 #include "Octree.hpp"
 
+template <typename Executor, typename Options>
+void make_evaluators(Executor& executor, Options& opts)
+{
+  auto upward = make_upward(executor, opts);
+  executor.insert_eval(upward);
+  auto inter = make_interact(executor, opts);
+  executor.insert_eval(inter);
+  auto downward = make_downward(executor, opts);
+  executor.insert_eval(downward);
+}
+
+
 template <typename Kernel,
 	  typename SourceIter,
 	  typename Options>
@@ -22,13 +34,7 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
   typedef Octree<typename Kernel::point_type> Tree;
 
   auto executor = make_executor<Tree>(K, first, last, opts);
-
-  auto upward = make_upward(*executor, opts);
-  executor->insert_eval(upward);
-  auto inter = make_interact(*executor, opts);
-  executor->insert_eval(inter);
-  auto downward = make_downward(*executor, opts);
-  executor->insert_eval(downward);
+  make_evaluators(*executor, opts);
 
   return executor;
 }
@@ -45,13 +51,7 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
   auto executor = make_executor<Tree>(K,
 				      sfirst, slast,
 				      tfirst, tlast, opts);
-
-  auto upward = make_upward(*executor, opts);
-  executor->insert_eval(upward);
-  auto inter = make_interact(*executor, opts);
-  executor->insert_eval(inter);
-  auto downward = make_downward(*executor, opts);
-  executor->insert_eval(downward);
+  make_evaluators(*executor, opts);
 
   return executor;
 }

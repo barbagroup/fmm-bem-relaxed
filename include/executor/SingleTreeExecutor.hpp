@@ -70,7 +70,7 @@ protected:
   //! The charges associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<charge_type>::const_iterator> c_;
   //! The targets associated with bodies in the source_tree
-  body_map<tree_type, typename std::vector<target_type>::iterator> t_;
+  body_map<tree_type, typename std::vector<target_type>::const_iterator> t_;
   //! The results associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<result_type>::iterator> r_;
 
@@ -162,11 +162,11 @@ public:
   inline charge_iterator charge_end(const box_type& b) const {
     return c_.end(b);
   }
-  typedef typename decltype(t_)::body_value_iterator target_iterator;
-  inline target_iterator target_begin(const box_type& b) {
+  typedef typename decltype(t_)::body_value_const_iterator target_iterator;
+  inline target_iterator target_begin(const box_type& b) const {
     return t_.begin(b);
   }
-  inline target_iterator target_end(const box_type& b) {
+  inline target_iterator target_end(const box_type& b) const {
     return t_.end(b);
   }
   typedef typename decltype(r_)::body_value_iterator result_iterator;

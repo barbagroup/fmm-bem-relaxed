@@ -25,11 +25,11 @@
  * This class assumes nothing else about the tree.
  */
 template <typename Kernel, typename Tree>
-class SingleTreeExecutor : public ExecutorBase<Kernel>
+class ExecutorDualTree : public ExecutorBase<Kernel>
 {
  public:
   //! This type
-  typedef SingleTreeExecutor<Kernel,Tree> self_type;
+  typedef ExecutorDualTree<Kernel,Tree> self_type;
   //! Kernel type
   typedef Kernel kernel_type;
   //! Tree type
@@ -63,6 +63,8 @@ protected:
 
   //! The tree of sources
   tree_type source_tree_;
+  //! The tree of targets
+  tree_type target_tree_;
 
   // TODO: Fix const correctness
 
@@ -75,30 +77,31 @@ protected:
   //! The charges associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<charge_type>::const_iterator> c_;
   //! The targets associated with bodies in the source_tree
-  body_map<tree_type, typename std::vector<target_type>::const_iterator> t_;
+  body_map<tree_type, std::vector<target_type>> t_;
   //! The results associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<result_type>::iterator> r_;
 
   //! Evaluator algorithms to apply
   std::vector<EvaluatorBase<self_type>*> evals_;
 
-
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
 public:
   //! Constructor
-  template <typename SourceIter, typename Options>
-  SingleTreeExecutor(const kernel_type& K,
-		     SourceIter first, SourceIter last,
-		     Options& opts)
+  template <typename SourceIter, typename TargetIter, typename Options>
+  ExecutorDualTree(const kernel_type& K,
+		   SourceIter sfirst, SourceIter slast,
+		   TargetIter tfirst, TargetIter tlast,
+		   Options& opts)
     : K_(K),
-      source_tree_(first, last, opts),
+      source_tree_(sfirst, slast, opts),
+      target_tree_(tfirst, tlast, opts),
       M_(std::vector<multipole_type>(source_tree_.boxes())),
       L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
 				 0 : source_tree_.boxes())),
-      s_(std::vector<source_type>(first, last)),
-      t_(s_.data().begin()),
+      s_(std::vector<source_type>(sfirst, slast)),
+      t_(std::vector<target_type>(tfirst, tlast)),
       acceptMultipole(opts.MAC()) {
   }
 
@@ -164,11 +167,11 @@ public:
   inline charge_iterator charge_end(const box_type& b) const {
     return c_.end(b);
   }
-  typedef typename decltype(t_)::body_value_const_iterator target_iterator;
-  inline target_iterator target_begin(const box_type& b) const {
+  typedef typename decltype(t_)::body_value_iterator target_iterator;
+  inline target_iterator target_begin(const box_type& b) {
     return t_.begin(b);
   }
-  inline target_iterator target_end(const box_type& b) const {
+  inline target_iterator target_end(const box_type& b) {
     return t_.end(b);
   }
   typedef typename decltype(r_)::body_value_iterator result_iterator;
@@ -181,11 +184,17 @@ public:
 };
 
 
-template <typename Tree, typename Kernel, typename SourceIter, typename Options>
-SingleTreeExecutor<Kernel,Tree>* make_executor(const Kernel& K,
-					       SourceIter first, SourceIter last,
-					       Options& opts) {
-  return new SingleTreeExecutor<Kernel,Tree>(K, first, last, opts);
+template <typename Tree, typename Kernel,
+	  typename SourceIter, typename TargetIter,
+	  typename Options>
+ExecutorDualTree<Kernel,Tree>* make_executor(const Kernel& K,
+					     SourceIter sfirst, SourceIter slast,
+					     TargetIter tfirst, TargetIter tlast,
+					     Options& opts) {
+  return new ExecutorDualTree<Kernel,Tree>(K,
+					   sfirst, slast,
+					   tfirst, tlast,
+					   opts);
 }
 
 // TODO

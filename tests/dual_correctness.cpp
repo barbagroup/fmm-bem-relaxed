@@ -47,7 +47,9 @@ int main(int argc, char **argv)
   for (int k = 0; k < numBodies; ++k)
     sources[k] = source_type(drand(), drand(), drand());
   // Init targets
-  std::vector<target_type> targets = sources;
+  std::vector<target_type> targets(numBodies);
+  for (int k = 0; k < numBodies; ++k)
+    targets[k] = target_type(drand(), drand(), drand());
   // Init charges
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)

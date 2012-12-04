@@ -3,7 +3,7 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "TransformIterator.hpp"
+#include "TreeContext.hpp"
 
 #include <type_traits>
 
@@ -60,12 +60,22 @@ class SingleTreeExecutor : public ExecutorBase<Kernel>
 protected:
   //! The tree of sources
   tree_type source_tree_;
+
+  // TODO: Fix const correctness
+
   //! Multipole expansions corresponding to Box indices in Tree
-  std::vector<multipole_type> M_;
+  box_map<tree_type, std::vector<multipole_type>> M_;
+  //! The sources associated with bodies in the source_tree
+  body_map<tree_type, std::vector<source_type>> s_;
+  //! The charges associated with bodies in the source_tree
+  body_map<tree_type, typename std::vector<charge_type>::const_iterator> c_;
+  //! The targets associated with bodies in the source_tree
+  body_map<tree_type, typename std::vector<target_type>::iterator> t_;
+  //! The results associated with bodies in the source_tree
+  body_map<tree_type, typename std::vector<result_type>::iterator> r_;
+
   //! Local expansions corresponding to Box indices in the Tree
   std::vector<local_type> L_;   // TODO: Not needed in Treecodes!
-  //! The sources associated with bodies in the source_tree
-  std::vector<source_type> s_;
 
   //! Evaluator algorithms to apply
   std::vector<EvaluatorBase<self_type>*> evals_;
@@ -75,32 +85,6 @@ protected:
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
-  template <typename T>
-  struct body_map {
-    typedef typename std::remove_const<T>::type vT;
-    typedef typename std::vector<vT>::iterator iter;
-    typedef typename std::vector<vT>::const_iterator const_iter;
-    static constexpr bool is_const = std::is_const<T>::value;
-    typename std::conditional<is_const, const_iter, iter>::type begin_;
-    T& operator()(const body_type& b) const {
-      return begin_[b.number()];  // TODO TEMP: number to workaround permute
-    }
-  };
-
-  body_map<const source_type> body2source;
-  body_map<const charge_type> body2charge;
-  body_map<const target_type> body2target;
-  body_map<      result_type> body2result;
-
-  typedef typename tree_type::body_iterator              body_iterator;
-  template <typename UnaryF>
-  using transform_body_iterator = transform_iterator<body_iterator, UnaryF>;
-
-  typedef transform_body_iterator<decltype(body2source)> source_iterator;
-  typedef transform_body_iterator<decltype(body2charge)> charge_iterator;
-  typedef transform_body_iterator<decltype(body2target)> target_iterator;
-  typedef transform_body_iterator<decltype(body2result)> result_iterator;
-
 public:
   //! Constructor
   template <typename SourceIter, typename Options>
@@ -108,9 +92,10 @@ public:
 		     SourceIter first, SourceIter last,
 		     Options& opts)
     : source_tree_(first, last, opts),
-      M_(source_tree_.boxes()),
-      L_(source_tree_.boxes()),   // TODO: Not needed for treecodes
-      s_(first, last),
+      M_(std::vector<multipole_type>(source_tree_.boxes())),
+      s_(std::vector<source_type>(first, last)),
+      t_(s_.data().begin()),
+      L_(source_tree_.boxes()),   // TODO: Not needed for treecodes!
       K_(K),
       acceptMultipole(opts.MAC()) {
   }
@@ -122,11 +107,8 @@ public:
 
   virtual void execute(const std::vector<charge_type>& charges,
 		       std::vector<result_type>& results) {
-    // TEMP Hack
-    body2source.begin_ = s_.begin();
-    body2charge.begin_ = charges.begin();
-    body2target.begin_ = s_.begin();
-    body2result.begin_ = results.begin();
+    c_ = charges.begin();
+    r_ = results.begin();
     for (auto eval : evals_)
       eval->execute(*this);
   }
@@ -147,18 +129,16 @@ public:
   }
 
   // Accessors to make this Executor into a BoxContext
-  inline multipole_type& multipole_expansion(const box_type& b) {
-    return M_[b.index()];
+  inline multipole_type& multipole_expansion(const box_type& box) {
+    return M_(box);
   }
-  inline const multipole_type& multipole_expansion(const box_type& b) const {
-    return M_[b.index()];
+  inline const multipole_type& multipole_expansion(const box_type& box) const {
+    return M_(box);
   }
   inline local_type& local_expansion(const box_type& b) {
-    std::cout << b.index() << std::endl;
     return L_[b.index()];
   }
   inline const local_type& local_expansion(const box_type& b) const {
-    std::cout << b.index() << std::endl;
     return L_[b.index()];
   }
 
@@ -166,30 +146,35 @@ public:
     return b.center();
   }
 
-  inline source_iterator source_begin(const box_type& b) const {
-    assert(source_tree_.contains(b));
-    return make_transform_iterator(b.body_begin(), body2source);
+  // TODO: Fix const correctness
+
+  typedef typename decltype(s_)::body_value_iterator source_iterator;
+  inline source_iterator source_begin(const box_type& b) {
+    return s_.begin(b);
   }
-  inline source_iterator source_end(const box_type& b) const {
-    return make_transform_iterator(b.body_end(), body2source);
+  inline source_iterator source_end(const box_type& b) {
+    return s_.end(b);
   }
+  typedef typename decltype(c_)::body_value_const_iterator charge_iterator;
   inline charge_iterator charge_begin(const box_type& b) const {
-    return make_transform_iterator(b.body_begin(), body2charge);
+    return c_.begin(b);
   }
   inline charge_iterator charge_end(const box_type& b) const {
-    return make_transform_iterator(b.body_end(), body2charge);
+    return c_.end(b);
   }
-  inline target_iterator target_begin(const box_type& b) const {
-    return make_transform_iterator(b.body_begin(), body2target);
+  typedef typename decltype(t_)::body_value_iterator target_iterator;
+  inline target_iterator target_begin(const box_type& b) {
+    return t_.begin(b);
   }
-  inline target_iterator target_end(const box_type& b) const {
-    return make_transform_iterator(b.body_end(), body2target);
+  inline target_iterator target_end(const box_type& b) {
+    return t_.end(b);
   }
+  typedef typename decltype(r_)::body_value_iterator result_iterator;
   inline result_iterator result_begin(const box_type& b) {
-    return make_transform_iterator(b.body_begin(), body2result);
+    return r_.begin(b);
   }
   inline result_iterator result_end(const box_type& b) {
-    return make_transform_iterator(b.body_end(), body2result);
+    return r_.end(b);
   }
 };
 

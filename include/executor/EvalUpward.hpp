@@ -8,7 +8,7 @@
 #include "P2M.hpp"
 #include "M2M.hpp"
 
-template <typename Context>
+template <typename Context, bool INITIALIZE_LOCAL>
 struct EvalUpward : public EvaluatorBase<Context>
 {
   void execute(Context& bc) const {
@@ -26,7 +26,8 @@ struct EvalUpward : public EvaluatorBase<Context>
         double box_size = box.side_length();
 	// TODO: initialize on-demand
 	INITM::eval(K, bc, box, box_size);
-	INITL::eval(K, bc, box, box_size);  // TODO: Don't do for treecodes!
+	if (INITIALIZE_LOCAL)
+	  INITL::eval(K, bc, box, box_size);
 
         if (box.is_leaf()) {
           // If leaf, make P2M calls
@@ -43,6 +44,12 @@ struct EvalUpward : public EvaluatorBase<Context>
 };
 
 template <typename Context, typename Options>
-EvaluatorBase<Context>* make_upward(const Context&, Options&) {
-  return new EvalUpward<Context>();
+EvaluatorBase<Context>* make_upward(const Context&, Options& opts) {
+  if (opts.evaluator == FMMOptions::TREECODE) {
+    return new EvalUpward<Context, false>();
+  } else if (opts.evaluator == FMMOptions::FMM) {
+    return new EvalUpward<Context, true>();
+  } else {
+    return nullptr;
+  }
 }

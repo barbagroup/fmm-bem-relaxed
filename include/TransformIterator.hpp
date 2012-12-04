@@ -30,8 +30,7 @@ public:
       : it_(x), f_(f) {
   }
   // Copy constructor
-  template <class I2, class F2>
-  transform_iterator(const transform_iterator<I2, F2>& t)
+  transform_iterator(const transform_iterator& t)
       : it_(t.it_), f_(t.f_) {
   }
 
@@ -46,7 +45,7 @@ public:
 
   // OPERATORS
 
-  reference operator*() const {
+  const reference operator*() const {
     return f_(*it_);
   }
   transform_iterator& operator++() {

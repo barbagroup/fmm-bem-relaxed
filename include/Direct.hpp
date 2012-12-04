@@ -56,10 +56,10 @@ class Direct
     // Optimize on if(std::iterator_traits<All Iters>::iterator_category == random_access_iterator)
     // to eliminate multiple increments
 
-    typedef typename std::iterator_traits<ResultIter>::reference result_reference;
+    //typedef typename std::iterator_traits<ResultIter>::reference result_reference;
 
     for ( ; t_begin!=t_end; ++t_begin, ++r_begin) {
-      result_reference r = *r_begin;
+      auto& r = *r_begin;
 
       SourceIter s = s_begin;
       ChargeIter c = c_begin;

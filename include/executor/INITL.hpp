@@ -28,14 +28,13 @@ public:
 
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& b,
-			  double box_size)
+                          BoxContext& bc,
+                          const Box& b)
   {
 #ifdef DEBUG
     printf("initL: %d\n", b.index());
 #endif
 
-    INITL::eval(K, bc.local_expansion(b), box_size);
+    INITL::eval(K, bc.local_expansion(b), bc.box_size(b));
   }
 };

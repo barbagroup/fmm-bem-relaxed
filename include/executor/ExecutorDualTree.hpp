@@ -150,6 +150,9 @@ public:
   inline point_type center(const box_type& b) const {
     return b.center();
   }
+  inline double box_size(const box_type& b) const {
+    return b.side_length();
+  }
 
   // TODO: Fix const correctness
 

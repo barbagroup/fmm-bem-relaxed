@@ -6,59 +6,67 @@
 #include "M2P.hpp"
 #include "P2P.hpp"
 
-#include <functional>
 #include <deque>
 
-template <typename Context, FMMOptions::EvalType TYPE>
+template <typename Context, bool IS_FMM>
 class EvalInteraction : public EvaluatorBase<Context>
 {
  public:
   void execute(Context& bc) const {
-    auto& stree = bc.source_tree();
-    auto& ttree = bc.target_tree();
-    auto& K = bc.kernel();
-
-    typedef typename Context::box_type Box;
-    typedef typename std::pair<Box, Box> box_pair;
-    std::deque<box_pair> pairQ;
-
-    if(stree.root().is_leaf() && ttree.root().is_leaf())
-      return P2P::eval(K, bc, stree.root(), ttree.root(), P2P::ONE_SIDED());
-
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
-    pairQ.push_back(box_pair(stree.root(), ttree.root()));
+	  typedef typename Context::box_type box_type;
+	  typedef std::pair<box_type, box_type> box_pair;
+    std::deque<box_pair> pairQ;
+    pairQ.push_back(box_pair(bc.source_tree().root(),
+                             bc.target_tree().root()));
 
     while (!pairQ.empty()) {
       auto b1 = pairQ.front().first;
       auto b2 = pairQ.front().second;
       pairQ.pop_front();
 
-      if (b2.is_leaf() || (!b1.is_leaf() && b1.side_length() > b2.side_length())) {
-        // Split the first box into children and interact
-        auto c_end = b1.child_end();
-        for (auto cit = b1.child_begin(); cit != c_end; ++cit)
-          interact(K, bc, *cit, b2, pairQ);
+      if (b1.is_leaf()) {
+	      if (b2.is_leaf()) {
+		      // Both are leaves, P2P
+		      P2P::eval(bc.kernel(), bc, b1, b2, P2P::ONE_SIDED());
+	      } else {
+		      // b2 is not a leaf, Split the second box into children and interact
+		      auto c_end = b2.child_end();
+		      for (auto cit = b2.child_begin(); cit != c_end; ++cit)
+			      interact(bc, b1, *cit, pairQ);
+	      }
+      } else if (b2.is_leaf()) {
+	      // b1 is not a leaf, Split the first box into children and interact
+	      auto c_end = b1.child_end();
+	      for (auto cit = b1.child_begin(); cit != c_end; ++cit)
+		      interact(bc, *cit, b2, pairQ);
       } else {
-        // Split the second box into children and interact
-        auto c_end = b2.child_end();
-        for (auto cit = b2.child_begin(); cit != c_end; ++cit)
-          interact(K, bc, b1, *cit, pairQ);
+	      // Neither are leaves, Split the larger into children and interact
+	      if (b1.side_length() > b2.side_length()) {   // TODO: optimize?
+		      // Split the first box into children and interact
+		      auto c_end = b1.child_end();
+		      for (auto cit = b1.child_begin(); cit != c_end; ++cit)
+			      interact(bc, *cit, b2, pairQ);
+	      } else {
+		      // Split the second box into children and interact
+		      auto c_end = b2.child_end();
+		      for (auto cit = b2.child_begin(); cit != c_end; ++cit)
+			      interact(bc, b1, *cit, pairQ);
+	      }
       }
     }
   }
 
-  template <typename Kernel, typename BoxContext, typename BOX, typename Q>
-  void interact(const Kernel& K, BoxContext& bc,
+  template <typename BoxContext, typename BOX, typename Q>
+  void interact(BoxContext& bc,
                 const BOX& b1, const BOX& b2,
                 Q& pairQ) const {
     if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      if (TYPE == FMMOptions::FMM)
-        M2L::eval(K, bc, b1, b2);
-      else if (TYPE == FMMOptions::TREECODE)
-        M2P::eval(K, bc, b1, b2);
-    } else if(b1.is_leaf() && b2.is_leaf()) {
-      P2P::eval(K, bc, b2, b1, P2P::ONE_SIDED());
+      if (IS_FMM)
+	      M2L::eval(bc.kernel(), bc, b1, b2);
+      else
+	      M2P::eval(bc.kernel(), bc, b1, b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }
@@ -67,11 +75,11 @@ class EvalInteraction : public EvaluatorBase<Context>
 
 
 template <typename Context, typename Options>
-EvaluatorBase<Context>* make_interact(const Context&, Options& opts) {
+EvaluatorBase<Context>* make_interact(Context&, Options& opts) {
   if (opts.evaluator == FMMOptions::FMM) {
-    return new EvalInteraction<Context,FMMOptions::FMM>();
+    return new EvalInteraction<Context, true>();
   } else if (opts.evaluator == FMMOptions::TREECODE) {
-    return new EvalInteraction<Context, FMMOptions::TREECODE>();
+    return new EvalInteraction<Context, false>();
   }
   return nullptr;
 }

@@ -30,7 +30,7 @@ inline double drand() {
 
 // Random number in [A,B)
 inline double drand(double A, double B) {
-  return (B-A) * drand() + A;
+  return A + (B-A) * drand();
 }
 
 int main(int argc, char **argv)

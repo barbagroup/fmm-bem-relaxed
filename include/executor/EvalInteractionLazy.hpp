@@ -37,11 +37,6 @@ class EvalInteractionLazy : public Evaluator<EvalInteractionLazy<Tree,TYPE>>
 
  public:
 
-  template <typename Kernel, typename STree, typename TTree, typename Options>
-  void create(const Kernel&, STree&, TTree&, Options&) {
-    //acceptMultipole = opts.MAC();
-  }
-
   template <typename BoxContext>
   void execute(BoxContext& bc) const {
     typedef typename Tree::box_type Box;

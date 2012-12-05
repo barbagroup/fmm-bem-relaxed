@@ -9,7 +9,6 @@
 class FMMOptions
 {
 public:
-  bool sources_equal_targets_; // TODO: Call this Symmetric or Galerkin? s == t
   bool lazy_evaluation; // use lazy evaluation of multipole / local expansions / translations?
 
   //! Evaluation type
@@ -36,8 +35,7 @@ public:
   bool printTree;
 
   FMMOptions()
-    : sources_equal_targets_(true),
-      lazy_evaluation(false),
+    : lazy_evaluation(false),
       evaluator(FMM),
       MAC_(DefaultMAC(0.5)),
       NCRIT_(126),
@@ -58,14 +56,6 @@ public:
 
   unsigned max_per_box() const {
     return NCRIT_;
-  }
-
-  void set_sources_equal_targets(bool val) {
-    sources_equal_targets_ = val;
-  }
-
-  bool sources_equal_targets() const {
-    return sources_equal_targets_;
   }
 
   void print_tree(bool v) { printTree = v; }

@@ -9,7 +9,7 @@
 
 class INITL
 {
-  /** If no init_multipole dispatcher matches */
+  /** If no init_local dispatcher matches */
   template <typename... Args>
   inline static void eval(Args...) {
     // Do nothing

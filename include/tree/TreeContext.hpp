@@ -3,29 +3,29 @@
 #include "TransformIterator.hpp"
 
 template <typename Tree, typename Indexable>
-struct body_map {
-  typedef body_map<Tree,Indexable> self_type;
-  typedef typename Indexable::reference reference;
+struct BodyMap {
+  typedef BodyMap<Tree,Indexable> self_type;
+  typedef typename Indexable::value_type value_type;
   typedef typename Tree::box_type box_type;
   typedef typename Tree::body_type body_type;
   typedef typename Tree::body_iterator body_iterator;
 
   // Default Constructor
-  body_map() {
+  BodyMap() {
   }
   // Constructor
-  body_map(const Indexable& body_value)
+  BodyMap(const Indexable& body_value)
     : body_value_(body_value) {
   }
   // RValue constructor for efficiency
-  body_map(Indexable&& body_value)
+  BodyMap(Indexable&& body_value)
     : body_value_(std::move(body_value)) {
   }
 
-  const reference operator()(const body_type& b) const {
+  const value_type& operator()(const body_type& b) const {
     return body_value_[b.number()];  // TODO TEMP: number to workaround permute
   }
-  reference operator()(const body_type& b) {
+  value_type& operator()(const body_type& b) {
     return body_value_[b.number()];  // TODO TEMP: number to workaround permute
   }
 
@@ -60,20 +60,19 @@ private:
 
 
 template <typename Tree, typename Indexable>
-struct box_map {
-  typedef box_map<Tree,Indexable> self_type;
+struct BoxMap {
   typedef typename Indexable::value_type value_type;
   typedef typename Tree::box_type box_type;
 
   // Default Constructor
-  box_map() {
+  BoxMap() {
   }
   // Constructor
-  box_map(const Indexable& box_value)
+  BoxMap(const Indexable& box_value)
     : box_value_(box_value) {
   }
   // RValue constructor for efficiency
-  box_map(Indexable&& box_value)
+  BoxMap(Indexable&& box_value)
     : box_value_(std::move(box_value)) {
   }
 

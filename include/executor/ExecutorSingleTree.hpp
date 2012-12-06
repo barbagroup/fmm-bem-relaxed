@@ -67,15 +67,15 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   // TODO: Fix const correctness
 
   //! Multipole expansions corresponding to Box indices in Tree
-  box_map<tree_type, std::vector<multipole_type>> M_;
+  BoxMap<tree_type, std::vector<multipole_type>> M_;
   //! Local expansions corresponding to Box indices in Tree
-  box_map<tree_type, std::vector<local_type>> L_;
+  BoxMap<tree_type, std::vector<local_type>> L_;
   //! The sources associated with bodies in the source_tree (aliased as targets)
-  body_map<tree_type, std::vector<source_type>> s_;
+  BodyMap<tree_type, std::vector<source_type>> s_;
   //! The charges associated with bodies in the source_tree
-  body_map<tree_type, typename std::vector<charge_type>::const_iterator> c_;
+  BodyMap<tree_type, typename std::vector<charge_type>::const_iterator> c_;
   //! The results associated with bodies in the source_tree
-  body_map<tree_type, typename std::vector<result_type>::iterator> r_;
+  BodyMap<tree_type, typename std::vector<result_type>::iterator> r_;
 
   //! Evaluator algorithms to apply
   EvaluatorCollection<self_type> evals_;
@@ -147,11 +147,11 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
 
   // TODO: Fix const correctness
 
-  typedef typename decltype(s_)::body_value_iterator source_iterator;
-  inline source_iterator source_begin(const box_type& b) {
+  typedef typename decltype(s_)::body_value_const_iterator source_iterator;
+  inline source_iterator source_begin(const box_type& b) const {
     return s_.begin(b);
   }
-  inline source_iterator source_end(const box_type& b) {
+  inline source_iterator source_end(const box_type& b) const {
     return s_.end(b);
   }
   typedef typename decltype(c_)::body_value_const_iterator charge_iterator;
@@ -161,10 +161,10 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   inline charge_iterator charge_end(const box_type& b) const {
     return c_.end(b);
   }
-  inline source_iterator target_begin(const box_type& b) {
+  inline source_iterator target_begin(const box_type& b) const {
     return s_.begin(b);
   }
-  inline source_iterator target_end(const box_type& b) {
+  inline source_iterator target_end(const box_type& b) const {
     return s_.end(b);
   }
   typedef typename decltype(r_)::body_value_iterator result_iterator;

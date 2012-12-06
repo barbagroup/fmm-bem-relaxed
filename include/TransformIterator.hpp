@@ -48,6 +48,11 @@ public:
   const reference operator*() const {
     return f_(*it_);
   }
+  /*
+  reference operator*() {
+    return f_(*it_);
+  }
+  */
   transform_iterator& operator++() {
     ++it_;
     return *this;

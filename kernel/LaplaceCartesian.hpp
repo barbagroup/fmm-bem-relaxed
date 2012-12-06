@@ -6,6 +6,7 @@
  * K(t,s) = (s-t) / |s-t|^3  // Laplace force
  */
 
+#include "Vec.hpp"
 
 typedef double real;
 
@@ -776,7 +777,7 @@ class LaplaceCartesian
     real R2 = normSq(dist);          //   R^2
     real invR2 = 1.0 / R2;           //   1 / R^2
     if (R2 < 1e-8) invR2 = 0;        //   Exclude self interaction
-    real invR = std::sqrt(invR2);    //   potential
+    real invR = sqrt(invR2);         //   potential
     dist *= invR2 * invR;            //   force
     return kernel_value_type(invR, dist[0], dist[1], dist[2]);
   }
@@ -820,20 +821,20 @@ class LaplaceCartesian
   /** Kernel M2L operation
    * L += Op(M)
    *
-   * @param[in] Msource The multpole expansion source
-   * @param[in,out] Ltarget The local expansion target
+   * @param[in] M The multpole expansion source
+   * @param[in,out] L The local expansion target
    * @param[in] translation The vector from source to target
    * @pre translation obeys the multipole-acceptance criteria
    * @pre Msource includes the influence of all points within its box
    */
-  void M2L(const multipole_type& Msource,
-           local_type& Ltarget,
+  void M2L(const multipole_type& M,
+           local_type& L,
            const point_type& translation) const {
     real invR2 = 1.0 / normSq(translation);
-    real invR  = Msource[0] * std::sqrt(invR2);
+    real invR  = M[0] * sqrt(invR2);
     local_type C;
     getCoef<P>(C, translation, invR2, invR);
-    sumM2L<P>(Ltarget, C, Msource);
+    sumM2L<P>(L, C, M);
   }
 
   /** Kernel M2P operation
@@ -849,7 +850,7 @@ class LaplaceCartesian
            const target_type& target, result_type& result) const {
     point_type dist = target - center;
     real invR2 = 1.0 / normSq(dist);
-    real invR  = M[0] * std::sqrt(invR2);
+    real invR  = M[0] * sqrt(invR2);
     local_type C;
     getCoef<P>(C, dist, invR2, invR);
     sumM2P<P>(result, C, M);

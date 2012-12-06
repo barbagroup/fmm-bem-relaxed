@@ -57,7 +57,7 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   //! Kernel result type
   typedef typename kernel_type::result_type result_type;
 
-protected:
+ protected:
   //! Reference to the Kernel
   const kernel_type& K_;
 
@@ -70,12 +70,10 @@ protected:
   box_map<tree_type, std::vector<multipole_type>> M_;
   //! Local expansions corresponding to Box indices in Tree
   box_map<tree_type, std::vector<local_type>> L_;
-  //! The sources associated with bodies in the source_tree
+  //! The sources associated with bodies in the source_tree (aliased as targets)
   body_map<tree_type, std::vector<source_type>> s_;
   //! The charges associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<charge_type>::const_iterator> c_;
-  //! The targets associated with bodies in the source_tree
-  body_map<tree_type, typename std::vector<target_type>::const_iterator> t_;
   //! The results associated with bodies in the source_tree
   body_map<tree_type, typename std::vector<result_type>::iterator> r_;
 
@@ -85,20 +83,24 @@ protected:
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
-public:
+ public:
   //! Constructor
   template <typename SourceIter, typename Options>
   ExecutorSingleTree(const kernel_type& K,
-		     SourceIter first, SourceIter last,
-		     Options& opts)
-    : K_(K),
-      source_tree_(first, last, opts),
-      M_(std::vector<multipole_type>(source_tree_.boxes())),
-      L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
-				 0 : source_tree_.boxes())),
-      s_(std::vector<source_type>(first, last)),
-      t_(s_.data().begin()),
-      acceptMultipole(opts.MAC()) {
+                     SourceIter first, SourceIter last,
+                     Options& opts)
+      : K_(K),
+        source_tree_(first, last, opts),
+        M_(std::vector<multipole_type>(source_tree_.boxes())),
+        L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
+                                   0 : source_tree_.boxes())),
+        s_(std::vector<source_type>(first, last)),
+        acceptMultipole(opts.MAC()) {
+  }
+
+  virtual ~ExecutorSingleTree() {
+    for (auto eval : evals_)
+      delete eval;
   }
 
   void insert_eval(EvaluatorBase<self_type>* eval) {
@@ -107,7 +109,7 @@ public:
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
-		       std::vector<result_type>& results) {
+                       std::vector<result_type>& results) {
     c_ = charges.begin();
     r_ = results.begin();
     for (auto eval : evals_)
@@ -166,12 +168,11 @@ public:
   inline charge_iterator charge_end(const box_type& b) const {
     return c_.end(b);
   }
-  typedef typename decltype(t_)::body_value_const_iterator target_iterator;
-  inline target_iterator target_begin(const box_type& b) const {
-    return t_.begin(b);
+  inline source_iterator target_begin(const box_type& b) {
+    return s_.begin(b);
   }
-  inline target_iterator target_end(const box_type& b) const {
-    return t_.end(b);
+  inline source_iterator target_end(const box_type& b) {
+    return s_.end(b);
   }
   typedef typename decltype(r_)::body_value_iterator result_iterator;
   inline result_iterator result_begin(const box_type& b) {
@@ -185,33 +186,33 @@ public:
 
 template <typename Tree, typename Kernel, typename SourceIter, typename Options>
 ExecutorSingleTree<Kernel,Tree>* make_executor(const Kernel& K,
-					       SourceIter first, SourceIter last,
-					       Options& opts) {
+                                               SourceIter first, SourceIter last,
+                                               Options& opts) {
   return new ExecutorSingleTree<Kernel,Tree>(K, first, last, opts);
 }
 
 // TODO
-  /*
-    // This assumes the the body indices are consecutive within a box
-    // The assumption is true for Octree,
-    // but should be left for an "optimized" Evaluator that
-    // explicitely makes this assumption
-  inline charge_iterator charge_begin(const box_type& b) const {
-    return charges_begin + b.body_begin()->index();
-  }
-  inline charge_iterator charge_end(const box_type& b) const {
-    return charges_begin + b.body_end()->index();
-  }
-  */
-  /*
-    // This assumes the the body indices are consecutive within a box
-    // The assumption is true for Octree,
-    // but should be left for an "optimized" Evaluator that
-    // explicitely makes this assumption
-  inline result_iterator result_begin(const box_type& b) {
-    return results_begin + b.body_begin()->index();
-  }
-  inline result_iterator result_end(const box_type& b) {
-    return results_begin + b.body_end()->index();
-  }
-  */
+/*
+// This assumes the the body indices are consecutive within a box
+// The assumption is true for Octree,
+// but should be left for an "optimized" Evaluator that
+// explicitely makes this assumption
+inline charge_iterator charge_begin(const box_type& b) const {
+return charges_begin + b.body_begin()->index();
+}
+inline charge_iterator charge_end(const box_type& b) const {
+return charges_begin + b.body_end()->index();
+}
+*/
+/*
+// This assumes the the body indices are consecutive within a box
+// The assumption is true for Octree,
+// but should be left for an "optimized" Evaluator that
+// explicitely makes this assumption
+inline result_iterator result_begin(const box_type& b) {
+return results_begin + b.body_begin()->index();
+}
+inline result_iterator result_end(const box_type& b) {
+return results_begin + b.body_end()->index();
+}
+*/

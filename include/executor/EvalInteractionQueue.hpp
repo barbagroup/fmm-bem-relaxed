@@ -93,9 +93,9 @@ private:
   void interact(Context& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
     if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      LR_list.push_back(std::make_pair(b1,b2));
+      LR_list.push_back(box_pair(b1,b2));
     } else {
-      pairQ.push_back(std::make_pair(b1,b2));
+      pairQ.push_back(box_pair(b1,b2));
     }
   }
 };

@@ -57,7 +57,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   //! Kernel result type
   typedef typename kernel_type::result_type result_type;
 
-protected:
+ protected:
   //! Reference to the Kernel
   const kernel_type& K_;
 
@@ -87,22 +87,27 @@ protected:
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
-public:
+ public:
   //! Constructor
   template <typename SourceIter, typename TargetIter, typename Options>
   ExecutorDualTree(const kernel_type& K,
-		   SourceIter sfirst, SourceIter slast,
-		   TargetIter tfirst, TargetIter tlast,
-		   Options& opts)
-    : K_(K),
-      source_tree_(sfirst, slast, opts),
-      target_tree_(tfirst, tlast, opts),
-      M_(std::vector<multipole_type>(source_tree_.boxes())),
-      L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
-				 0 : source_tree_.boxes())),
-      s_(std::vector<source_type>(sfirst, slast)),
-      t_(std::vector<target_type>(tfirst, tlast)),
-      acceptMultipole(opts.MAC()) {
+                   SourceIter sfirst, SourceIter slast,
+                   TargetIter tfirst, TargetIter tlast,
+                   Options& opts)
+      : K_(K),
+        source_tree_(sfirst, slast, opts),
+        target_tree_(tfirst, tlast, opts),
+        M_(std::vector<multipole_type>(source_tree_.boxes())),
+        L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
+                                   0 : source_tree_.boxes())),
+        s_(std::vector<source_type>(sfirst, slast)),
+    t_(std::vector<target_type>(tfirst, tlast)),
+    acceptMultipole(opts.MAC()) {
+  }
+
+  virtual ~ExecutorDualTree() {
+    for (auto eval : evals_)
+      delete eval;
   }
 
   void insert_eval(EvaluatorBase<self_type>* eval) {
@@ -111,7 +116,7 @@ public:
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
-		       std::vector<result_type>& results) {
+                       std::vector<result_type>& results) {
     c_ = charges.begin();
     r_ = results.begin();
     for (auto eval : evals_)
@@ -188,40 +193,14 @@ public:
 
 
 template <typename Tree, typename Kernel,
-	  typename SourceIter, typename TargetIter,
-	  typename Options>
+          typename SourceIter, typename TargetIter,
+          typename Options>
 ExecutorDualTree<Kernel,Tree>* make_executor(const Kernel& K,
-					     SourceIter sfirst, SourceIter slast,
-					     TargetIter tfirst, TargetIter tlast,
-					     Options& opts) {
+                                             SourceIter sfirst, SourceIter slast,
+                                             TargetIter tfirst, TargetIter tlast,
+                                             Options& opts) {
   return new ExecutorDualTree<Kernel,Tree>(K,
-					   sfirst, slast,
-					   tfirst, tlast,
-					   opts);
+                                           sfirst, slast,
+                                           tfirst, tlast,
+                                           opts);
 }
-
-// TODO
-  /*
-    // This assumes the the body indices are consecutive within a box
-    // The assumption is true for Octree,
-    // but should be left for an "optimized" Evaluator that
-    // explicitely makes this assumption
-  inline charge_iterator charge_begin(const box_type& b) const {
-    return charges_begin + b.body_begin()->index();
-  }
-  inline charge_iterator charge_end(const box_type& b) const {
-    return charges_begin + b.body_end()->index();
-  }
-  */
-  /*
-    // This assumes the the body indices are consecutive within a box
-    // The assumption is true for Octree,
-    // but should be left for an "optimized" Evaluator that
-    // explicitely makes this assumption
-  inline result_iterator result_begin(const box_type& b) {
-    return results_begin + b.body_begin()->index();
-  }
-  inline result_iterator result_end(const box_type& b) {
-    return results_begin + b.body_end()->index();
-  }
-  */

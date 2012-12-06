@@ -11,11 +11,14 @@
 template <typename Context, bool IS_FMM>
 class EvalInteraction : public EvaluatorBase<Context>
 {
+  //! type of box
+  typedef typename Context::box_type box_type;
+  //! Pair of boxees
+  typedef std::pair<box_type, box_type> box_pair;
+
  public:
   void execute(Context& bc) const {
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
-	  typedef typename Context::box_type box_type;
-	  typedef std::pair<box_type, box_type> box_pair;
     std::deque<box_pair> pairQ;
     pairQ.push_back(box_pair(bc.source_tree().root(),
                              bc.target_tree().root()));
@@ -68,7 +71,7 @@ class EvalInteraction : public EvaluatorBase<Context>
       else
 	      M2P::eval(bc.kernel(), bc, b1, b2);
     } else {
-      pairQ.push_back(std::make_pair(b1,b2));
+      pairQ.push_back(box_pair(b1,b2));
     }
   }
 };

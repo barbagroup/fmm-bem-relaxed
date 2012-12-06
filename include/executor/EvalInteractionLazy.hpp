@@ -99,8 +99,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
  private:
 
   /** Recursively resolve all needed multipole expansions */
-  template <typename BoxContext, typename BOX>
-  void resolve_multipole(BoxContext& bc, BOX b) const
+  void resolve_multipole(Context& bc, const box_type& b) const
   {
     // Early exit if already initialised
     if (initialised_M.count(b.index())) return;
@@ -128,8 +127,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   /** Downward pass of L2L & L2P
    *  We can always assume that the called Local expansion has been initialised
    */
-  template <typename BoxContext>
-  void propagate_local(BoxContext& bc, box_type b) const
+  void propagate_local(Context& bc, const box_type& b) const
   {
     if (b.is_leaf()) {
       // call L2P
@@ -151,8 +149,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  template <typename BoxContext>
-  void eval_LR_list(BoxContext& bc) const
+  void eval_LR_list(Context& bc) const
   {
     for (auto it=LR_list.begin(); it!=LR_list.end(); ++it) {
       // resolve all needed multipole expansions from lower levels of the tree
@@ -174,8 +171,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  template <typename BoxContext>
-  void eval_L_list(BoxContext& bc) const
+  void eval_L_list(Context& bc) const
   {
     for (auto it=L_list.begin(); it!=L_list.end(); ++it) {
       // propagate this local expansion down the tree
@@ -183,8 +179,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  template <typename BoxContext>
-  void eval_P2P_list(BoxContext& bc) const
+  void eval_P2P_list(Context& bc) const
   {
     for (auto it=P2P_list.begin(); it!=P2P_list.end(); ++it) {
       // evaluate this pair using P2P
@@ -192,15 +187,17 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  template <typename BoxContext, typename BOX, typename Q>
-  void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
+  template <typename Q>
+  void interact(Context& bc,
+                const box_type& b1, const box_type& b2,
+                Q& pairQ) const {
     if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      LR_list.push_back(std::make_pair(b1,b2));
+      LR_list.push_back(box_pair(b1,b2));
       if (IS_FMM)
         L_list.insert(b2);
     } else {
-      pairQ.push_back(std::make_pair(b1,b2));
+      pairQ.push_back(box_pair(b1,b2));
     }
   }
 };

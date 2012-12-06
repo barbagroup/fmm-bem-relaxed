@@ -188,8 +188,7 @@ struct ExpansionTraits : public KernelTraits<Kernel>
       (has_M2M) &&
       (has_M2P || has_vector_M2P);
 
-  static constexpr bool is_valid_fmm =
-      (has_eval_op || has_vector_P2P_asymm) &&
+  static constexpr bool is_valid_fmm = (has_eval_op || has_vector_P2P_asymm) &&
       (has_P2M || has_vector_P2M) &&
       (has_M2M) &&
       (has_M2L) &&
@@ -198,6 +197,9 @@ struct ExpansionTraits : public KernelTraits<Kernel>
 
   friend std::ostream& operator<<(std::ostream& s, const self_type& traits) {
     s << static_cast<super_type>(traits);
+    s << "has_init_multipole: " << traits.has_init_multipole << std::endl;
+    s << "has_init_local: " << traits.has_init_local << std::endl;
+    s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;
     s << "has_P2M: " << traits.has_P2M << std::endl;
     s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;
     s << "has_M2M: " << traits.has_M2M << std::endl;

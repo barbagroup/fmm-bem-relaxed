@@ -35,7 +35,7 @@ CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I./include -I./include/tree -I./include/executor -I./kernel
+INCLUDES = -I. -I./include -I./include/tree -I./include/executor -I./kernel -I./BEM
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
@@ -54,9 +54,6 @@ bem: serialBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 serialrun: serialrun.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
-bem: serialBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 test_tree: test_tree.o

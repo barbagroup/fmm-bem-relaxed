@@ -50,6 +50,14 @@ class Matrix
       vals_[col*rows_ + i] = v[i];
     }
   }
+  void print() {
+    for (unsigned i=0; i<rows_; i++) {
+      for (unsigned j=0; j<cols_; j++) {
+        printf("%.3lg  ",this->operator()(i,j));
+      }
+      printf("\n");
+    }
+  }
 };
 
 namespace blas {
@@ -141,9 +149,110 @@ void fmm_gmres(FMM& fmm,
                std::vector<typename FMM::result_type>& b,
                const SolverOptions& opts)
 {
-  typedef typename FMM::source_type source_type;
-  typedef typename FMM::charge_type charge_type;
-  typedef typename FMM::result_type result_type;
+  const int N = x.size();
+  const int R = opts.restart;
+  const int max_iters = opts.max_iters;
+  double beta = 0.;
+
+  int i; // , j;
+  int iter = 0;
+  // allocate the workspace
+  double resid = 0;
+  std::vector<typename FMM::result_type> w(N);
+  std::vector<double> V0(N);
+  Matrix<double> V(N,R+1);
+  Matrix<double> H(R+1,R);
+  std::vector<double> s(R+1);
+  std::vector<double> cs(R);
+  std::vector<double> sn(R);
+  // bool converged = false;
+
+  // main loop
+  do {
+    // dot product of A*x -- FMM call
+    // w = fmm.execute(x); // V(0) = A*x
+    // Direct::matvec(k,panels,x,b);
+    w = fmm.execute(x);
+    //printf("V(0) = A*x\n");
+    // V(0) = V(0) - b
+    blas::axpy(b,w,-1.);
+    //printf("V(0) = -V(0) / beta\n");
+    // V(0) = M*V(0) -- preconditioner step if desired
+    beta = blas::nrm2(w); // beta = ||V(0)||
+    blas::scal(w,-1./beta); // V(0) = -V(0)/beta
+    // V(:,0) = V(0) { V(:,0) = w }
+    V.set_column(0,w);
+    // set S = 0
+
+    s[0] = beta;
+    std::cout << "beta " << beta << std::endl;
+    i = -1;
+    resid = s[0];
+
+
+    // inner loop
+    do {
+      ++i;
+      ++iter;
+
+      // perform w = A*x
+      // V0 = fmm.execute(w);
+      std::fill(V0.begin(),V0.end(),0.);
+      // Direct::matvec(k,panels,V.column(i),V0);
+      V0 = fmm.execute(V.column(i));
+      w = V0; // instead of preconditioner step
+
+      for (int k=0; k<=i; k++) {
+        // H(k,i) = dotc(w,V(:,k));
+        auto V_col = V.column(k);
+        H(k,i) = blas::dotc(w,V_col);
+        // V(i+1) -= H(k,i)*V(k)
+        blas::axpy(V_col,w,-H(k,i));
+      }
+
+      // H(i+1,i) = nrm2(w)
+      H(i+1,i) = blas::nrm2(w);
+      // V(i+1) = V(i+1) / H(i+1,i)
+      auto w_temp = w;
+      blas::scal(w_temp,1./H(i+1,i));
+      // V(:,i+1) = w
+      V.set_column(i+1,w_temp);
+
+      PlaneRotation(H,cs,sn,s,i);
+
+      resid = s[i+1];
+
+      if (fabs(resid) < opts.residual) break;
+      printf("it: %03d, res: %.3e\n",iter,fabs(resid));
+
+    } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
+
+    // solve upper triangular system in place
+    for (int j=i; j >= 0; j--) {
+      s[j] /= H(j,j);
+      // s[0:j] = s[0:j] - s[j]*H(0:j,j)
+      for (int k=j-1; k>=0; k--) {
+        s[k] -= H(k,j)*s[j];
+      }
+    }
+
+    // Update the solution
+    for (int j=0; j<=i; j++) {
+      // x =x + x[j]*V(:,j)
+      blas::axpy(V.column(j),x,s[j]);
+    }
+    if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
+
+  } while (fabs(resid) > opts.residual && iter < opts.max_iters);
+  printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
+}
+
+template <typename kernel, typename source_type, typename charge_type, typename result_type, typename SolverOptions>
+void direct_gmres(kernel& k, std::vector<source_type>& panels,
+                  std::vector<charge_type>& x,
+                  std::vector<result_type>& b,
+                  const SolverOptions& opts)
+{
   const int N = x.size();
   const int R = opts.restart;
   const int max_iters = opts.max_iters;
@@ -164,9 +273,9 @@ void fmm_gmres(FMM& fmm,
 
   // main loop
   do {
-    iter++;
     // dot product of A*x -- FMM call
-    w = fmm.execute(x); // V(0) = A*x
+    // w = fmm.execute(x); // V(0) = A*x
+    Direct::matvec(k,panels,x,b);
     //printf("V(0) = A*x\n");
     // V(0) = V(0) - b
     blas::axpy(b,w,-1.);
@@ -177,23 +286,24 @@ void fmm_gmres(FMM& fmm,
     // V(:,0) = V(0) { V(:,0) = w }
     V.set_column(0,w);
     // set S = 0
-    for (unsigned l=0; l<s.size(); l++) s[l] = 0.;
-    //printf("V(:,0):\n");
-    for (unsigned l=0; l<V.rows(); l++) {
-      //printf("%lg\n",(double)V(l,0));
-    }
 
     s[0] = beta;
+    std::cout << "beta " << beta << std::endl;
     i = -1;
     resid = s[0];
+
 
     // inner loop
     do {
       ++i;
+      ++iter;
 
       // perform w = A*x
-      V0 = fmm.execute(w);
+      // V0 = fmm.execute(w);
+      std::fill(V0.begin(),V0.end(),0.);
+      Direct::matvec(k,panels,V.column(i),V0);
       w = V0; // instead of preconditioner step
+
 
       for (int k=0; k<=i; k++) {
         // H(k,i) = dotc(w,V(:,k));
@@ -206,15 +316,17 @@ void fmm_gmres(FMM& fmm,
       // H(i+1,i) = nrm2(w)
       H(i+1,i) = blas::nrm2(w);
       // V(i+1) = V(i+1) / H(i+1,i)
-      blas::scal(w,1./H(i+1,i));
+      auto w_temp = w;
+      blas::scal(w_temp,1./H(i+1,i));
       // V(:,i+1) = w
-      V.set_column(i+1,w);
+      V.set_column(i+1,w_temp);
 
       PlaneRotation(H,cs,sn,s,i);
 
       resid = s[i+1];
 
       if (fabs(resid) < opts.residual) break;
+      printf("it: %03d, res: %.3e\n",iter,fabs(resid));
 
     } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
 
@@ -283,10 +395,6 @@ void gmres(Mat& A,
     V.set_column(0,w);
     // set S = 0
     for (unsigned l=0; l<s.size(); l++) s[l] = 0.;
-    //printf("V(:,0):\n");
-    for (unsigned l=0; l<V.rows(); l++) {
-      //printf("%lg\n",(double)V(l,0));
-    }
 
     s[0] = beta;
     i = -1;

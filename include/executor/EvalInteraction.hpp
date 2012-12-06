@@ -57,8 +57,8 @@ class EvalInteraction : public EvaluatorBase<Context>
     }
   }
 
-  template <typename BoxContext, typename BOX, typename Q>
-  void interact(BoxContext& bc,
+  template <typename BOX, typename Q>
+  void interact(Context& bc,
                 const BOX& b1, const BOX& b2,
                 Q& pairQ) const {
     if (bc.accept_multipole(b1, b2)) {
@@ -72,6 +72,8 @@ class EvalInteraction : public EvaluatorBase<Context>
     }
   }
 };
+
+
 
 
 template <typename Context, typename Options>

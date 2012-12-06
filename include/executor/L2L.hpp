@@ -26,20 +26,20 @@ struct L2L
     K.L2L(source, target, translation);
   }
 
-public:
+ public:
 
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& source,
-			  const Box& target)
+                          BoxContext& bc,
+                          const Box& source,
+                          const Box& target)
   {
 #ifdef DEBUG
     printf("L2L: %d to %d\n", source.index(), target.index());
 #endif
 
     L2L::eval(K,
-	      bc.local_expansion(source), bc.local_expansion(target),
-	      bc.center(target) - bc.center(source));
+              bc.local_expansion(source), bc.local_expansion(target),
+              bc.center(target) - bc.center(source));
   }
 };

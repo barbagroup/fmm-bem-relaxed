@@ -9,8 +9,8 @@
 #include "EvalInteraction.hpp"
 #include "EvalDownward.hpp"
 
+#include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
-//#include "EvalInteractionQueue.hpp"
 
 #include "Octree.hpp"
 
@@ -35,11 +35,11 @@ void make_evaluators(Executor& executor, Options& opts)
 /** Single tree executor construction
  */
 template <typename Kernel,
-	  typename SourceIter,
-	  typename Options>
+          typename SourceIter,
+          typename Options>
 ExecutorBase<Kernel>* make_executor(const Kernel& K,
-				    SourceIter first, SourceIter last,
-				    Options& opts) {
+                                    SourceIter first, SourceIter last,
+                                    Options& opts) {
   typedef Octree<typename Kernel::point_type> Tree;
 
   auto executor = make_executor<Tree>(K,
@@ -54,12 +54,12 @@ ExecutorBase<Kernel>* make_executor(const Kernel& K,
 /** Dual tree executor construction
  */
 template <typename Kernel,
-	  typename SourceIter, typename TargetIter,
-	  typename Options>
+          typename SourceIter, typename TargetIter,
+          typename Options>
 ExecutorBase<Kernel>* make_executor(const Kernel& K,
-				    SourceIter sfirst, SourceIter slast,
-				    TargetIter tfirst, TargetIter tlast,
-				    Options& opts) {
+                                    SourceIter sfirst, SourceIter slast,
+                                    TargetIter tfirst, TargetIter tlast,
+                                    Options& opts) {
   typedef Octree<typename Kernel::point_type> Tree;
 
   auto executor = make_executor<Tree>(K,

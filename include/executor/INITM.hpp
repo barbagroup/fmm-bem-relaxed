@@ -24,7 +24,7 @@ class INITM
     K.init_multipole(M, box_size);
   }
 
-public:
+ public:
 
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,

@@ -96,7 +96,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     eval_L_list(bc);
   }
 
-private:
+ private:
 
   /** Recursively resolve all needed multipole expansions */
   template <typename BoxContext, typename BOX>
@@ -126,7 +126,8 @@ private:
   }
 
   /** Downward pass of L2L & L2P
-   *  We can always assume that the called Local expansion has been initialised */
+   *  We can always assume that the called Local expansion has been initialised
+   */
   template <typename BoxContext>
   void propagate_local(BoxContext& bc, box_type b) const
   {
@@ -195,12 +196,9 @@ private:
   void interact(BoxContext& bc, const BOX& b1, const BOX& b2, Q& pairQ) const {
     if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
-      if (IS_FMM) {
-        LR_list.push_back(std::make_pair(b1,b2));
-        L_list.insert(b2); // push_back(b2);
-      } else {
-        LR_list.push_back(std::make_pair(b1,b2));
-      }
+      LR_list.push_back(std::make_pair(b1,b2));
+      if (IS_FMM)
+        L_list.insert(b2);
     } else {
       pairQ.push_back(std::make_pair(b1,b2));
     }

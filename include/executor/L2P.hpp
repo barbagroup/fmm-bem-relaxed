@@ -34,8 +34,8 @@ struct L2P
    */
   template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static
-  typename std::enable_if<ExpansionTraits<Kernel>::has_L2P &&
-			  !ExpansionTraits<Kernel>::has_vector_L2P>::type
+  typename std::enable_if<ExpansionTraits<Kernel>::has_L2P &
+                          !ExpansionTraits<Kernel>::has_vector_L2P>::type
   eval(const Kernel& K,
        const typename Kernel::local_type& L,
        const typename Kernel::point_type& center,
@@ -50,8 +50,8 @@ struct L2P
    */
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& box)
+                          BoxContext& bc,
+                          const Box& box)
   {
 #ifdef DEBUG
     printf("L2P: %d\n", box.index());

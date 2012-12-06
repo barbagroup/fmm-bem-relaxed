@@ -26,20 +26,20 @@ class M2L
     K.M2L(source, target, translation);
   }
 
-public:
+ public:
 
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& source,
-			  const Box& target)
+                          BoxContext& bc,
+                          const Box& source,
+                          const Box& target)
   {
 #ifdef DEBUG
     printf("M2L: %d to %d\n", source.index(), target.index());
 #endif
 
     M2L::eval(K,
-	      bc.multipole_expansion(source), bc.local_expansion(target),
-	      bc.center(target) - bc.center(source));
+              bc.multipole_expansion(source), bc.local_expansion(target),
+              bc.center(target) - bc.center(source));
   }
 };

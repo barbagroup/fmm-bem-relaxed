@@ -1,5 +1,5 @@
 #pragma once
-/** @file INITM.hpp
+/** @file INITL.hpp
  * @brief Dispatch methods for the initializing a local expansion
  *
  */
@@ -24,7 +24,7 @@ class INITL
     K.init_local(L, box_size);
   }
 
-public:
+ public:
 
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,

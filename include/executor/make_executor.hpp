@@ -20,15 +20,15 @@ void make_evaluators(Executor& executor, Options& opts)
 	if (opts.lazy_evaluation) {
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
-		executor.insert_eval(lazy_eval);
+		executor.insert(lazy_eval);
 	} else {
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
-		executor.insert_eval(upward);
+		executor.insert(upward);
 		auto inter = make_interact(executor, opts);
-		executor.insert_eval(inter);
+		executor.insert(inter);
 		auto downward = make_downward(executor, opts);
-		executor.insert_eval(downward);
+		executor.insert(downward);
 	}
 }
 

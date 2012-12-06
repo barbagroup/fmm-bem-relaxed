@@ -82,7 +82,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   body_map<tree_type, typename std::vector<result_type>::iterator> r_;
 
   //! Evaluator algorithms to apply
-  std::vector<EvaluatorBase<self_type>*> evals_;
+  EvaluatorCollection<self_type> evals_;
 
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
@@ -105,22 +105,15 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     acceptMultipole(opts.MAC()) {
   }
 
-  virtual ~ExecutorDualTree() {
-    for (auto eval : evals_)
-      delete eval;
-  }
-
-  void insert_eval(EvaluatorBase<self_type>* eval) {
-    if (eval)
-      evals_.push_back(eval);
+  void insert(EvaluatorBase<self_type>* eval) {
+    evals_.insert(eval);
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
                        std::vector<result_type>& results) {
     c_ = charges.begin();
     r_ = results.begin();
-    for (auto eval : evals_)
-      eval->execute(*this);
+    evals_.execute(*this);
   }
 
   bool accept_multipole(const box_type& source, const box_type& target) const {

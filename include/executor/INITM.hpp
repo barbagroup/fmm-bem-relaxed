@@ -26,10 +26,10 @@ class INITM
 
  public:
 
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
-                          BoxContext& bc,
-                          const Box& b)
+                          Context& bc,
+                          const typename Context::box_type& b)
   {
 #ifdef DEBUG
     printf("initM: %d\n", b.index());

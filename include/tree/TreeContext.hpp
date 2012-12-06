@@ -15,11 +15,11 @@ struct BodyMap {
   }
   // Constructor
   BodyMap(const Indexable& body_value)
-    : body_value_(body_value) {
+      : body_value_(body_value) {
   }
   // RValue constructor for efficiency
   BodyMap(Indexable&& body_value)
-    : body_value_(std::move(body_value)) {
+      : body_value_(std::move(body_value)) {
   }
 
   const value_type& operator()(const body_type& b) const {
@@ -54,7 +54,7 @@ struct BodyMap {
     return *this;
   }
 
-private:
+ private:
   Indexable body_value_;
 };
 
@@ -69,11 +69,11 @@ struct BoxMap {
   }
   // Constructor
   BoxMap(const Indexable& box_value)
-    : box_value_(box_value) {
+      : box_value_(box_value) {
   }
   // RValue constructor for efficiency
   BoxMap(Indexable&& box_value)
-    : box_value_(std::move(box_value)) {
+      : box_value_(std::move(box_value)) {
   }
 
   const value_type& operator()(const box_type& box) const {
@@ -87,6 +87,6 @@ struct BoxMap {
     return box_value_;
   }
 
-private:
+ private:
   Indexable box_value_;
 };

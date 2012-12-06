@@ -437,7 +437,8 @@ class LaplaceSpherical
  private:
 
   //! Evaluate solid harmonics \f$ r^n Y_{n}^{m} \f$
-  void evalMultipole(real rho, real alpha, real beta, complex *Ynm, complex *YnmTheta) const {
+  void evalMultipole(real rho, real alpha, real beta,
+                     complex* Ynm, complex* YnmTheta) const {
     real x = std::cos(alpha);                                   // x = cos(alpha)
     real y = std::sin(alpha);                                   // y = sin(alpha)
     real fact = 1;                                              // Initialize 2 * m + 1
@@ -472,7 +473,8 @@ class LaplaceSpherical
   }
 
   //! Evaluate singular harmonics \f$ r^{-n-1} Y_n^m \f$
-  void evalLocal(real rho, real alpha, real beta, complex *Ynm, complex *YnmTheta) const {
+  void evalLocal(real rho, real alpha, real beta,
+                 complex* Ynm, complex* YnmTheta) const {
     real x = std::cos(alpha);                                   // x = cos(alpha)
     real y = std::sin(alpha);                                   // y = sin(alpha)
     real fact = 1;                                              // Initialize 2 * m + 1
@@ -506,7 +508,8 @@ class LaplaceSpherical
     }                                                           // End loop over m in Ynm
   }
 
-  //! Get r,theta,phi from x,y,z
+  /** Cartesian to spherical coordinates
+   */
   void cart2sph(real& r, real& theta, real& phi, point_type dist=0) const {
     r = norm(dist) + EPS;                                       // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
@@ -521,16 +524,23 @@ class LaplaceSpherical
     }                                                           // End if for x,y cases
   }
 
-  //! Spherical to cartesian coordinates
+  /** Spherical to cartesian coordinates
+   */
   template<typename T>
-  void sph2cart(real r, real theta, real phi, T spherical, T &cartesian) const {
-    cartesian[0] = sin(theta) * cos(phi) * spherical[0]         // x component (not x itself)
+  void sph2cart(real r, real theta, real phi, T spherical,
+                T& cartesian) const {
+
+
+    // x component (not x itself)
+    cartesian[0] = sin(theta) * cos(phi) * spherical[0]
         + cos(theta) * cos(phi) / r * spherical[1]
         - sin(phi) / r / sin(theta) * spherical[2];
-    cartesian[1] = sin(theta) * sin(phi) * spherical[0]         // y component (not y itself)
+    // y component (not y itself)
+    cartesian[1] = sin(theta) * sin(phi) * spherical[0]
         + cos(theta) * sin(phi) / r * spherical[1]
         + cos(phi) / r / sin(theta) * spherical[2];
-    cartesian[2] = cos(theta) * spherical[0]                    // z component (not z itself)
+    // z component (not z itself)
+    cartesian[2] = cos(theta) * spherical[0]
         - sin(theta) / r * spherical[1];
   }
 };

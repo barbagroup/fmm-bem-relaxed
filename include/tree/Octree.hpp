@@ -347,12 +347,12 @@ class Octree
     }
     /** Write a Box to an output stream */
     inline friend std::ostream& operator<<(std::ostream& s,
-					   const box_type& b) {
+                                           const box_type& b) {
       return s << "Box " << b.index()
-	       << " (Level " << b.level() << ", Parent " << b.parent().index()
-	       << ", Bodies " << b.body_begin()->index()
-	       << "-" << (--b.body_end())->index()
-	       << "): " << b.center();
+               << " (Level " << b.level() << ", Parent " << b.parent().index()
+               << ", Bodies " << b.body_begin()->index()
+               << "-" << (--b.body_end())->index()
+               << "): " << b.center();
     }
    private:
     unsigned idx_;
@@ -485,13 +485,13 @@ class Octree
 
   //! Construct an octree encompassing a bounding box
   Octree(const BoundingBox<Point>& bb)
-    : coder_(bb) {
+      : coder_(bb) {
   }
 
   template <typename PointIter, typename Options>
   Octree(PointIter first, PointIter last,
-	 Options& opts)
-    : coder_(get_boundingbox(first, last)) {
+         Options& opts)
+      : coder_(get_boundingbox(first, last)) {
     construct_tree(first, last, opts.max_per_box());
   }
 
@@ -631,7 +631,7 @@ class Octree
   //! Uses incremental bucket sorting
   template <typename SourceIter>
   void construct_tree(SourceIter p_begin, SourceIter p_end,
-		      unsigned NCRIT = 126) {
+                      unsigned NCRIT = 126) {
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
@@ -744,18 +744,18 @@ class Octree
 
   /** Write an Octree to an output stream */
   inline friend std::ostream& operator<<(std::ostream& s,
-					 const tree_type& t) {
+                                         const tree_type& t) {
     struct {
       inline std::ostream& print(std::ostream& ss,
-				 const box_type& b) {
-	ss << std::string(2*b.level(), ' ') << b;
-	if (!b.is_leaf()) {
-	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
-	    ss << "\n";
-	    print(ss,*ci);
-	  }
-	}
-	return ss;
+                                 const box_type& b) {
+        ss << std::string(2*b.level(), ' ') << b;
+        if (!b.is_leaf()) {
+          for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
+            ss << "\n";
+            print(ss,*ci);
+          }
+        }
+        return ss;
       }
     } level_traverse;
 
@@ -794,9 +794,9 @@ class Octree
   }
 #endif
 
-private:
-Octree(const Octree& other_tree) {};
-void operator=(const Octree& other_tree) {};
+ private:
+  Octree(const Octree& other_tree) {};
+  void operator=(const Octree& other_tree) {};
 };
 
 

@@ -56,10 +56,10 @@ class Direct
     // Optimize on if(std::iterator_traits<All Iters>::iterator_category == random_access_iterator)
     // to eliminate multiple increments
 
-    //typedef typename std::iterator_traits<ResultIter>::reference result_reference;
+    typedef typename std::iterator_traits<ResultIter>::reference result_reference;
 
     for ( ; t_begin!=t_end; ++t_begin, ++r_begin) {
-      auto& r = *r_begin;
+      result_reference r = *r_begin;
 
       SourceIter s = s_begin;
       ChargeIter c = c_begin;
@@ -105,11 +105,11 @@ class Direct
        ChargeIter c2_begin,
        ResultIter r1_begin, ResultIter r2_begin)
   {
-    typedef typename std::iterator_traits<ResultIter>::reference result_reference;
-
     // TODO
     // Optimize on p1 == p2 (i.e. self-box interaction)
     // Optimize on random_access_iterator?
+
+    typedef typename std::iterator_traits<ResultIter>::reference result_reference;
 
     for ( ; p1_begin != p1_end; ++p1_begin, ++c1_begin, ++r1_begin) {
       result_reference r1 = *r1_begin;

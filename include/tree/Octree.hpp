@@ -665,7 +665,7 @@ class Octree
 
       // Sort the points in this box into the eight "bucket" children
       auto off = bucket_sort(code_begin, code_end, 8,
-                             [shift] (code_pair& v)
+                             [shift] (const code_pair& v)
                              { return (v.first >> shift) & 7; });
 
       // Split this box - point offsets become box offsets

@@ -109,6 +109,9 @@ struct BodyMap {
 
  private:
   Indexable body_value_;
+  // Making sure this isn't copied by the transform_iterator
+  BodyMap(const BodyMap&) {}
+  void operator=(const BodyMap&) {}
 };
 
 

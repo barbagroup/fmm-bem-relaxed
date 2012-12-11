@@ -35,8 +35,8 @@ class P2M
    */
   template <typename Kernel, typename SourceIter, typename ChargeIter>
   inline static
-  typename std::enable_if<ExpansionTraits<Kernel>::has_P2M &&
-			  !ExpansionTraits<Kernel>::has_vector_P2M>::type
+  typename std::enable_if<ExpansionTraits<Kernel>::has_P2M &
+                          !ExpansionTraits<Kernel>::has_vector_P2M>::type
   eval(const Kernel& K,
        SourceIter s_begin, SourceIter s_end,
        ChargeIter c_begin,
@@ -52,8 +52,8 @@ class P2M
    */
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(const Kernel& K,
-			  BoxContext& bc,
-			  const Box& box)
+                          BoxContext& bc,
+                          const Box& box)
   {
 #ifdef DEBUG
     printf("P2M: %d\n", box.index());

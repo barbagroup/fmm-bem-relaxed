@@ -24,18 +24,17 @@ class INITM
     K.init_multipole(M, box_size);
   }
 
-public:
+ public:
 
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& b,
-			  double box_size)
+                          Context& bc,
+                          const typename Context::box_type& b)
   {
 #ifdef DEBUG
-    printf("initM: %d to %d\n", b.index());
+    printf("initM: %d\n", b.index());
 #endif
 
-    INITM::eval(K, bc.multipole_expansion(b), box_size);
+    INITM::eval(K, bc.multipole_expansion(b), bc.box_size(b));
   }
 };

@@ -34,8 +34,8 @@ class M2P
    */
   template <typename Kernel, typename TargetIter, typename ResultIter>
   inline static
-  typename std::enable_if<ExpansionTraits<Kernel>::has_M2P &&
-			  !ExpansionTraits<Kernel>::has_vector_M2P>::type
+  typename std::enable_if<ExpansionTraits<Kernel>::has_M2P &
+                          !ExpansionTraits<Kernel>::has_vector_M2P>::type
   eval(const Kernel& K,
        const typename Kernel::multipole_type& M,
        const typename Kernel::point_type& center,
@@ -51,9 +51,9 @@ class M2P
    */
   template <typename Kernel, typename BoxContext, typename Box>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& source,
-			  const Box& target) {
+                          BoxContext& bc,
+                          const Box& source,
+                          const Box& target) {
 #ifdef DEBUG
     printf("M2P: %d to %d\n", source.index(), target.index());
 #endif

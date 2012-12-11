@@ -19,8 +19,8 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
-//#define CART_KERNEL
+//#define SPH_KERNEL
+#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
 // Random number in [0,1)
@@ -30,7 +30,7 @@ inline double drand() {
 
 // Random number in [A,B)
 inline double drand(double A, double B) {
-  return (B-A) * drand() + A;
+  return A + (B-A) * drand();
 }
 
 int main(int argc, char **argv)

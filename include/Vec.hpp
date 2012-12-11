@@ -50,7 +50,7 @@ class SmallVec {
  public:
   static constexpr unsigned dimension = DIM;
   typedef POINT point_type;
-  typedef typename std::remove_reference<decltype(a[0])>::type value_type;
+  typedef typename std::decay<decltype(a[0])>::type value_type;
 
   // CONSTRUCTORS
 
@@ -135,6 +135,12 @@ class SmallVec {
     for_i a[i] /= b[i];
     return *this;
   }
+  /** Compute the dot product of this SmallVec with another SmallVec */
+  inline value_type dot(const SmallVec& b) const {
+    value_type d(0);
+    for_i d += a[i]*b[i];
+    return d;
+  }
 
   // ACCESSORS
 
@@ -151,12 +157,6 @@ class SmallVec {
     return a[i];
   }
 
-  /** Compute the dot product of this SmallVec with another SmallVec */
-  inline value_type dot(const SmallVec& b) const {
-    value_type d(0);
-    for_i d += a[i]*b[i];
-    return d;
-  }
   /** Compute the dot product of this SmallVec with another SmallVec */
   inline friend value_type dot(const SmallVec& a, const SmallVec& b) {
     return a.dot(b);
@@ -187,12 +187,31 @@ class SmallVec {
 
 #undef for_i
 
+// OPERATORS
+
+/** Compute the dot product of two SmallVecs */
+template <unsigned D, typename P>
+inline typename SmallVec<D,P>::value_type dot(const SmallVec<D,P>& a,
+                                              const SmallVec<D,P>& b) {
+  return a.dot(b);
+}
+/** Compute the squared L2 norm of this SmallVec */
+template <unsigned D, typename P>
+inline typename SmallVec<D,P>::value_type normSq(const SmallVec<D,P>& a) {
+  return a.dot(a);
+}
+/** Compute the L2 norm of this SmallVec */
+template <unsigned D, typename P>
+inline typename SmallVec<D,P>::value_type norm(const SmallVec<D,P>& a) {
+  return sqrt(normSq(a));
+}
+
 // ARITHMETIC
 
 /** Unary plus: Return @a p. ("+p" should work if "-p" works.) */
 template <unsigned D, typename P>
-inline SmallVec<D,P> operator+(const SmallVec<D,P>& p) {
-  return p;
+inline SmallVec<D,P> operator+(const SmallVec<D,P>& a) {
+  return a;
 }
 template <unsigned D, typename P>
 inline SmallVec<D,P> operator+(SmallVec<D,P> a, const SmallVec<D,P>& b) {
@@ -203,8 +222,8 @@ inline SmallVec<D,P> operator-(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a -= b;
 }
 template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(SmallVec<D,P> p, double d) {
-  return p *= d;
+inline SmallVec<D,P> operator*(SmallVec<D,P> a, double b) {
+  return a *= b;
 }
 template <unsigned D, typename P>
 inline SmallVec<D,P> operator*(double b, SmallVec<D,P> a) {
@@ -215,8 +234,8 @@ inline SmallVec<D,P> operator*(SmallVec<D,P> a, const SmallVec<D,P>& b) {
   return a *= b;
 }
 template <unsigned D, typename P>
-inline SmallVec<D,P> operator/(SmallVec<D,P> p, double d) {
-  return p /= d;
+inline SmallVec<D,P> operator/(SmallVec<D,P> a, double b) {
+  return a /= b;
 }
 template <unsigned D, typename P>
 inline SmallVec<D,P> operator/(SmallVec<D,P> a, const SmallVec<D,P>& b) {

@@ -1,5 +1,5 @@
 #pragma once
-/** @file INITM.hpp
+/** @file INITL.hpp
  * @brief Dispatch methods for the initializing a local expansion
  *
  */
@@ -9,7 +9,7 @@
 
 class INITL
 {
-  /** If no init_multipole dispatcher matches */
+  /** If no init_local dispatcher matches */
   template <typename... Args>
   inline static void eval(Args...) {
     // Do nothing
@@ -24,18 +24,17 @@ class INITL
     K.init_local(L, box_size);
   }
 
-public:
+ public:
 
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
-			  BoxContext& bc,
-			  const Box& b,
-			  double box_size)
+                          Context& bc,
+                          const typename Context::box_type& b)
   {
 #ifdef DEBUG
-    printf("initL: %d to %d\n", b.index());
+    printf("initL: %d\n", b.index());
 #endif
 
-    INITL::eval(K, bc.local_expansion(b), box_size);
+    INITL::eval(K, bc.local_expansion(b), bc.box_size(b));
   }
 };

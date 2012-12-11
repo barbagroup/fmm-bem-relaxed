@@ -347,12 +347,12 @@ class Octree
     }
     /** Write a Box to an output stream */
     inline friend std::ostream& operator<<(std::ostream& s,
-					   const box_type& b) {
+                                           const box_type& b) {
       return s << "Box " << b.index()
-	       << " (Level " << b.level() << ", Parent " << b.parent().index()
-	       << ", Bodies " << b.body_begin()->index()
-	       << "-" << (--b.body_end())->index()
-	       << "): " << b.center();
+               << " (Level " << b.level() << ", Parent " << b.parent().index()
+               << ", Bodies " << b.body_begin()->index()
+               << "-" << (--b.body_end())->index()
+               << "): " << b.center();
     }
    private:
     unsigned idx_;
@@ -485,13 +485,13 @@ class Octree
 
   //! Construct an octree encompassing a bounding box
   Octree(const BoundingBox<Point>& bb)
-    : coder_(bb) {
+      : coder_(bb) {
   }
 
   template <typename PointIter, typename Options>
   Octree(PointIter first, PointIter last,
-	 Options& opts)
-    : coder_(get_boundingbox(first, last)) {
+         Options& opts)
+      : coder_(get_boundingbox(first, last)) {
     construct_tree(first, last, opts.max_per_box());
   }
 
@@ -525,6 +525,15 @@ class Octree
    */
   inline unsigned levels() const {
     return level_offset_.size() - 1;
+  }
+
+  inline bool contains(const box_type& box) const {
+    std::cout << box.tree_ << "\t" << this << std::endl;
+    return box.tree_ == const_cast<tree_type*>(this);
+  }
+
+  inline bool contains(const body_type& body) const {
+    return body.tree_ == const_cast<tree_type*>(this);
   }
 
 #if 0
@@ -622,7 +631,7 @@ class Octree
   //! Uses incremental bucket sorting
   template <typename SourceIter>
   void construct_tree(SourceIter p_begin, SourceIter p_end,
-		      unsigned NCRIT = 126) {
+                      unsigned NCRIT = 126) {
     // Create a code-idx pair vector
     typedef std::pair<code_type, unsigned> code_pair;
     std::vector<code_pair> codes;
@@ -656,7 +665,7 @@ class Octree
 
       // Sort the points in this box into the eight "bucket" children
       auto off = bucket_sort(code_begin, code_end, 8,
-                             [shift] (code_pair& v)
+                             [shift] (const code_pair& v)
                              { return (v.first >> shift) & 7; });
 
       // Split this box - point offsets become box offsets
@@ -735,18 +744,18 @@ class Octree
 
   /** Write an Octree to an output stream */
   inline friend std::ostream& operator<<(std::ostream& s,
-					 const tree_type& t) {
+                                         const tree_type& t) {
     struct {
       inline std::ostream& print(std::ostream& ss,
-				 const box_type& b) {
-	ss << std::string(2*b.level(), ' ') << b;
-	if (!b.is_leaf()) {
-	  for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
-	    ss << "\n";
-	    print(ss,*ci);
-	  }
-	}
-	return ss;
+                                 const box_type& b) {
+        ss << std::string(2*b.level(), ' ') << b;
+        if (!b.is_leaf()) {
+          for (auto ci = b.child_begin(); ci != b.child_end(); ++ci) {
+            ss << "\n";
+            print(ss,*ci);
+          }
+        }
+        return ss;
       }
     } level_traverse;
 
@@ -784,6 +793,10 @@ class Octree
     return temp;
   }
 #endif
+
+ private:
+  Octree(const Octree& other_tree) {};
+  void operator=(const Octree& other_tree) {};
 };
 
 

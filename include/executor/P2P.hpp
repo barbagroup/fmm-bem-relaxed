@@ -18,7 +18,7 @@ struct P2P
                           BoxContext& bc,
                           const Box& source,
                           const Box& target,
-                          ONE_SIDED)
+                          const ONE_SIDED&)
   {
 #ifdef DEBUG
     printf("P2P: %d to %d\n", source.index(), target.index());
@@ -38,7 +38,7 @@ struct P2P
                           BoxContext& bc,
                           const Box& source,
                           const Box& target,
-                          TWO_SIDED)
+                          const TWO_SIDED&)
   {
 #ifdef DEBUG
     printf("P2P: %d to %d\n", source.index(), target.index());

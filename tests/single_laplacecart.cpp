@@ -4,22 +4,16 @@
 #include <iostream>
 #include <cstring>
 
-int main(int argc, char **argv)
-{
-  (void) argc;
-  (void) argv;
-
-  typedef LaplaceCartesian<5> kernel_type;
-  typedef kernel_type::point_type point_type;
-  typedef kernel_type::source_type source_type;
-  typedef kernel_type::target_type target_type;
-  typedef kernel_type::charge_type charge_type;
-  typedef kernel_type::result_type result_type;
-  typedef kernel_type::multipole_type multipole_type;
-  typedef kernel_type::local_type local_type;
-
-  // init kernel
-  kernel_type K;
+template <typename Kernel>
+void do_test(const Kernel& K) {
+  typedef Kernel kernel_type;
+  typedef typename kernel_type::point_type point_type;
+  typedef typename kernel_type::source_type source_type;
+  typedef typename kernel_type::target_type target_type;
+  typedef typename kernel_type::charge_type charge_type;
+  typedef typename kernel_type::result_type result_type;
+  typedef typename kernel_type::multipole_type multipole_type;
+  typedef typename kernel_type::local_type local_type;
 
   // init source
   source_type s = source_type(0,0,0);
@@ -62,5 +56,15 @@ int main(int argc, char **argv)
 
   printf("M2P error: %.4le\n", M2P_error);
   printf("FMM error: %.4le\n", FMM_error);
+}
+
+
+
+int main(int argc, char **argv)
+{
+  (void) argc;
+  (void) argv;
+
+  do_test(LaplaceCartesian<5>());
 }
 

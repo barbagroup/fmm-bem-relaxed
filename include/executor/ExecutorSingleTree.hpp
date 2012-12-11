@@ -145,8 +145,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
     return b.side_length();
   }
 
-  // TODO: Fix const correctness
-
   typedef typename decltype(s_)::body_value_const_iterator source_iterator;
   inline source_iterator source_begin(const box_type& b) const {
     return s_.begin(b);

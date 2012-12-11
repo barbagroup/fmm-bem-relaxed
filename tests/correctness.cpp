@@ -46,7 +46,6 @@ int main(int argc, char **argv)
   std::vector<source_type> points(numBodies);
   for (int k = 0; k < numBodies; ++k)
     points[k] = source_type(drand(), drand(), drand());
-  std::vector<target_type> targets = points;
 
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k)
@@ -54,7 +53,7 @@ int main(int argc, char **argv)
 
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
-  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, targets, opts);
+  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
 
   // Execute the FMM
   //fmm_execute(plan, charges, target_points);
@@ -72,7 +71,7 @@ int main(int argc, char **argv)
       printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
 
       if ((exact[k] - result[k]) / exact[k] > 1e-13)
-	++wrong_results;
+        ++wrong_results;
     }
     printf("Wrong counts: %d\n", wrong_results);
   }

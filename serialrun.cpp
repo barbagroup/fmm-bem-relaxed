@@ -19,8 +19,8 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-//#define SPH_KERNEL
-#define CART_KERNEL
+#define SPH_KERNEL
+//#define CART_KERNEL
 //#define YUKAWA_KERNEL
 
 // Random number in [0,1)

@@ -7,19 +7,19 @@
 #include <utility>
 using namespace std::rel_ops;
 
-#define SFINAE_TEMPLATE(NAME, OP)                                          \
-  template <typename ReturnType, typename... Args>                         \
-  struct NAME {                                                            \
+#define SFINAE_TEMPLATE(NAME, OP)                                       \
+  template <typename ReturnType, typename... Args>                      \
+  struct NAME {                                                         \
     template <class A, ReturnType (A::*)(Args...) const> struct SFINAE {}; \
-    template <class A> static std::true_type  sfinae(SFINAE<A,&A::OP>*);   \
-    template <class A> static std::false_type sfinae(...);                 \
-    static constexpr bool value = decltype(sfinae<Kernel>(0))::value;      \
+    template <class A> static std::true_type  sfinae(SFINAE<A,&A::OP>*); \
+    template <class A> static std::false_type sfinae(...);              \
+    static constexpr bool value = decltype(sfinae<Kernel>(0))::value;   \
   }
 
 
 template <typename Kernel>
 struct KernelTraits {
-  typedef KernelTraits<Kernel> this_type;
+  typedef KernelTraits<Kernel> self_type;
 
   typedef Kernel kernel_type;
 
@@ -58,26 +58,26 @@ struct KernelTraits {
   // Kernel Evaluations and P2P
   SFINAE_TEMPLATE(HasEvalOp,operator());
   static constexpr bool has_eval_op =
-  HasEvalOp<kernel_value_type,
-	    const target_type&, const source_type&>::value;
+      HasEvalOp<kernel_value_type,
+                const target_type&, const source_type&>::value;
   SFINAE_TEMPLATE(HasTranspose,transpose);
   static constexpr bool has_transpose =
-  HasTranspose<kernel_value_type,
-	       const kernel_value_type&>::value;
+      HasTranspose<kernel_value_type,
+                   const kernel_value_type&>::value;
   SFINAE_TEMPLATE(HasP2P,P2P);
   static constexpr bool has_vector_P2P_symm =
-  HasP2P<void,
-	 source_iterator, source_iterator, charge_iterator,
-	 target_iterator, target_iterator, charge_iterator,
-	 result_iterator, result_iterator>::value;
+      HasP2P<void,
+             source_iterator, source_iterator, charge_iterator,
+             target_iterator, target_iterator, charge_iterator,
+             result_iterator, result_iterator>::value;
   static constexpr bool has_vector_P2P_asymm =
-  HasP2P<void,
-	 source_iterator, source_iterator, charge_iterator,
-	 target_iterator, target_iterator, result_iterator>::value;
+      HasP2P<void,
+             source_iterator, source_iterator, charge_iterator,
+             target_iterator, target_iterator, result_iterator>::value;
 
   static constexpr bool is_valid_kernel = has_eval_op || has_vector_P2P_asymm;
 
-  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+  friend std::ostream& operator<<(std::ostream& s, const self_type& traits) {
     s << "has_eval_op: " << traits.has_eval_op << std::endl;
     s << "has_transpose: " << traits.has_transpose << std::endl;
     s << "has_vector_P2P_symm: " << traits.has_vector_P2P_symm << std::endl;
@@ -92,7 +92,7 @@ struct KernelTraits {
 template <typename Kernel>
 struct ExpansionTraits : public KernelTraits<Kernel>
 {
-  typedef ExpansionTraits<Kernel> this_type;
+  typedef ExpansionTraits<Kernel> self_type;
   typedef KernelTraits<Kernel> super_type;
 
   typedef typename super_type::source_type       source_type;
@@ -118,12 +118,12 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   // Initializers
   SFINAE_TEMPLATE(HasInitMultipole,init_multipole);
   static constexpr bool has_init_multipole =
-  HasInitMultipole<void,
-		   multipole_type&, double>::value;
+      HasInitMultipole<void,
+                       multipole_type&, double>::value;
   SFINAE_TEMPLATE(HasInitLocal,init_local);
   static constexpr bool has_init_local =
-  HasInitLocal<void,
-	       local_type&, double>::value;
+      HasInitLocal<void,
+                   local_type&, double>::value;
 
   // Kernel Evaluations and P2P
   static constexpr bool has_eval_op          = super_type::has_eval_op;
@@ -134,70 +134,72 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   // P2M
   SFINAE_TEMPLATE(HasP2M,P2M);
   static constexpr bool has_P2M =
-  HasP2M<void,
-	 const source_type&, const charge_type&,
-	 const point_type&, multipole_type&>::value;
+      HasP2M<void,
+             const source_type&, const charge_type&,
+             const point_type&, multipole_type&>::value;
   static constexpr bool has_vector_P2M =
-  HasP2M<void,
-	 source_iterator, source_iterator, charge_iterator,
-	 const point_type&, multipole_type&>::value;
+      HasP2M<void,
+             source_iterator, source_iterator, charge_iterator,
+             const point_type&, multipole_type&>::value;
 
   // M2M
   SFINAE_TEMPLATE(HasM2M,M2M);
   static constexpr bool has_M2M =
-  HasM2M<void,
-	 const multipole_type&, multipole_type&, const point_type&>::value;
+      HasM2M<void,
+             const multipole_type&, multipole_type&, const point_type&>::value;
 
   // M2P
   SFINAE_TEMPLATE(HasM2P,M2P);
   static constexpr bool has_M2P =
-  HasM2P<void,
-	 const multipole_type&, const point_type&,
-	 const target_type&, result_type&>::value;
+      HasM2P<void,
+             const multipole_type&, const point_type&,
+             const target_type&, result_type&>::value;
   static constexpr bool has_vector_M2P =
-  HasM2P<void,
-	 const multipole_type&, const point_type&,
-	 target_iterator, target_iterator, result_iterator>::value;
+      HasM2P<void,
+             const multipole_type&, const point_type&,
+             target_iterator, target_iterator, result_iterator>::value;
 
   // M2L
   SFINAE_TEMPLATE(HasM2L,M2L);
   static constexpr bool has_M2L =
-  HasM2L<void,
-	 const multipole_type&, local_type&, const point_type&>::value;
+      HasM2L<void,
+             const multipole_type&, local_type&, const point_type&>::value;
 
   // L2L
   SFINAE_TEMPLATE(HasL2L,L2L);
   static constexpr bool has_L2L =
-  HasL2L<void,
-	 const local_type&, local_type&, const point_type&>::value;
+      HasL2L<void,
+             const local_type&, local_type&, const point_type&>::value;
 
   // L2P
   SFINAE_TEMPLATE(HasL2P,L2P);
   static constexpr bool has_L2P =
-  HasL2P<void,
-	 const local_type&, const point_type&,
-	 const target_type&, result_type&>::value;
+      HasL2P<void,
+             const local_type&, const point_type&,
+             const target_type&, result_type&>::value;
   static constexpr bool has_vector_L2P =
-  HasL2P<void,
-	 const local_type&, const point_type&,
-	 target_iterator, target_iterator, result_iterator>::value;
+      HasL2P<void,
+             const local_type&, const point_type&,
+             target_iterator, target_iterator, result_iterator>::value;
 
   static constexpr bool is_valid_treecode =
-  (has_eval_op || has_vector_P2P_asymm) &&
-  (has_P2M || has_vector_P2M) &&
-  (has_M2M) &&
-  (has_M2P || has_vector_M2P);
+      (has_eval_op || has_vector_P2P_asymm) &&
+      (has_P2M || has_vector_P2M) &&
+      (has_M2M) &&
+      (has_M2P || has_vector_M2P);
 
-  static constexpr bool is_valid_fmm =
-  (has_eval_op || has_vector_P2P_asymm) &&
-  (has_P2M || has_vector_P2M) &&
-  (has_M2M) &&
-  (has_M2L) &&
-  (has_L2L) &&
-  (has_L2P || has_vector_L2P);
+  static constexpr bool is_valid_fmm = (has_eval_op || has_vector_P2P_asymm) &&
+      (has_P2M || has_vector_P2M) &&
+      (has_M2M) &&
+      (has_M2L) &&
+      (has_L2L) &&
+      (has_L2P || has_vector_L2P);
 
-  friend std::ostream& operator<<(std::ostream& s, const this_type& traits) {
+  friend std::ostream& operator<<(std::ostream& s, const self_type& traits) {
     s << static_cast<super_type>(traits);
+    s << "has_init_multipole: " << traits.has_init_multipole << std::endl;
+    s << "has_init_local: " << traits.has_init_local << std::endl;
+    s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;
     s << "has_P2M: " << traits.has_P2M << std::endl;
     s << "has_vector_P2M: " << traits.has_vector_P2M << std::endl;
     s << "has_M2M: " << traits.has_M2M << std::endl;

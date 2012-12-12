@@ -48,7 +48,21 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: single_body multi_level scaling correctness dual_correctness
+EXECS += multi_level
+EXECS += scaling
+EXECS += correctness
+EXECS += dual_correctness
+EXECS += single_body
+EXECS += single_laplacecart
+
+all: $(EXECS)
+
+
+multi_level: multi_level.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+scaling: scaling.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 correctness: correctness.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
@@ -59,28 +73,21 @@ dual_correctness: dual_correctness.o
 single_body: single_body.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-multi_level: multi_level.o
+single_laplacecart: single_laplacecart.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-multi_yukawa: multi_yukawa.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-scaling: scaling.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
-yukawa: single_yukawa.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's
 #   $<: the name of the prereq of the rule (a .cpp file)
 #   $@: the name of the target of the rule (a .o file)
-.cpp.o:
+%.o: %.cpp
 	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(DEFS) $(INCLUDES) -c -o $@ $<
 
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) single_body multi_level scaling correctness dual_correctness
+	-$(RM) $(EXECS)
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

@@ -6,6 +6,7 @@
  * K(t,s) = (s-t) / |s-t|^3  // Laplace force
  */
 
+#include "Vec.hpp"
 
 typedef double real;
 
@@ -43,7 +44,7 @@ template<int n, int kx, int ky , int kz>
 struct DerivativeTerm<n,kx,ky,kz,-1> {
   static constexpr int coef = 1 - n;
   template <typename Lset, typename vect>
-  static inline real kernel(const Lset& C, const vect&) {
+      static inline real kernel(const Lset& C, const vect&) {
     return coef * C[Index<kx,ky,kz>::I];
   }
 };
@@ -57,7 +58,7 @@ struct DerivativeSum {
   template <typename Lset, typename vect>
   static inline real loop(const Lset& C, const vect& dist) {
     return DerivativeSum<nx,ny,nz,nx,ny,kz-1,nextflag>::loop(C,dist)
-         + DerivativeTerm<n,nx,ny,kz-1,dim>::kernel(C,dist);
+        + DerivativeTerm<n,nx,ny,kz-1,dim>::kernel(C,dist);
   }
 };
 template<int nx, int ny, int nz, int kx, int ky, int kz>
@@ -76,7 +77,7 @@ struct DerivativeSum<nx,ny,nz,kx,ky,kz,3> {
   template <typename Lset, typename vect>
   static inline real loop(const Lset& C, const vect& dist) {
     return DerivativeSum<nx,ny,nz,nx,ky-1,nz,nextflag>::loop(C,dist)
-         + DerivativeTerm<n,nx,ky-1,nz,dim>::kernel(C,dist);
+        + DerivativeTerm<n,nx,ky-1,nz,dim>::kernel(C,dist);
   }
 };
 template<int nx, int ny, int nz, int kx, int ky, int kz>
@@ -95,7 +96,7 @@ struct DerivativeSum<nx,ny,nz,kx,ky,kz,1> {
   template <typename Lset, typename vect>
   static inline real loop(const Lset& C, const vect& dist) {
     return DerivativeSum<nx,ny,nz,kx-1,ny,nz,nextflag>::loop(C,dist)
-         + DerivativeTerm<n,kx-1,ny,nz,dim>::kernel(C,dist);
+        + DerivativeTerm<n,kx-1,ny,nz,dim>::kernel(C,dist);
   }
 };
 template<int nx, int ny, int nz, int kx, int ky, int kz>
@@ -187,7 +188,7 @@ struct M2MSum {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& C, const Mset& M) {
     return M2MSum<nx,ny,nz,kx,ky,kz-1>::kernel(C,M)
-         + C[Index<nx-kx,ny-ky,nz-kz>::I]*M[Index<kx,ky,kz>::I];
+        + C[Index<nx-kx,ny-ky,nz-kz>::I]*M[Index<kx,ky,kz>::I];
   }
 };
 template<int nx, int ny, int nz, int kx, int ky>
@@ -195,7 +196,7 @@ struct M2MSum<nx,ny,nz,kx,ky,0> {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& C, const Mset& M) {
     return M2MSum<nx,ny,nz,kx,ky-1,nz>::kernel(C,M)
-         + C[Index<nx-kx,ny-ky,nz>::I]*M[Index<kx,ky,0>::I];
+        + C[Index<nx-kx,ny-ky,nz>::I]*M[Index<kx,ky,0>::I];
   }
 };
 template<int nx, int ny, int nz, int kx>
@@ -203,7 +204,7 @@ struct M2MSum<nx,ny,nz,kx,0,0> {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& C, const Mset& M) {
     return M2MSum<nx,ny,nz,kx-1,ny,nz>::kernel(C,M)
-         + C[Index<nx-kx,ny,nz>::I]*M[Index<kx,0,0>::I];
+        + C[Index<nx-kx,ny,nz>::I]*M[Index<kx,0,0>::I];
   }
 };
 template<int nx, int ny, int nz>
@@ -218,7 +219,7 @@ struct M2LSum {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& L, const Mset& M) {
     return M2LSum<nx,ny,nz,kx,ky+1,kz-1>::kernel(L,M)
-         + M[Index<kx,ky,kz>::I] * L[Index<nx+kx,ny+ky,nz+kz>::I];
+        + M[Index<kx,ky,kz>::I] * L[Index<nx+kx,ny+ky,nz+kz>::I];
   }
 };
 template<int nx, int ny, int nz, int kx, int ky>
@@ -226,7 +227,7 @@ struct M2LSum<nx,ny,nz,kx,ky,0> {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& L, const Mset& M) {
     return M2LSum<nx,ny,nz,kx+1,0,ky-1>::kernel(L,M)
-         + M[Index<kx,ky,0>::I] * L[Index<nx+kx,ny+ky,nz>::I];
+        + M[Index<kx,ky,0>::I] * L[Index<nx+kx,ny+ky,nz>::I];
   }
 };
 template<int nx, int ny, int nz, int kx>
@@ -234,7 +235,7 @@ struct M2LSum<nx,ny,nz,kx,0,0> {
   template <typename Lset, typename Mset>
   static inline real kernel(const Lset& L, const Mset& M) {
     return M2LSum<nx,ny,nz,0,0,kx-1>::kernel(L,M)
-         + M[Index<kx,0,0>::I] * L[Index<nx+kx,ny,nz>::I];
+        + M[Index<kx,0,0>::I] * L[Index<nx+kx,ny,nz>::I];
   }
 };
 template<int nx, int ny, int nz>
@@ -250,7 +251,7 @@ struct LocalSum {
   template <typename Lset>
   static inline real kernel(const Lset& C, const Lset& L) {
     return LocalSum<nx,ny,nz,kx,ky+1,kz-1>::kernel(C,L)
-         + C[Index<kx,ky,kz>::I] * L[Index<nx+kx,ny+ky,nz+kz>::I];
+        + C[Index<kx,ky,kz>::I] * L[Index<nx+kx,ny+ky,nz+kz>::I];
   }
 };
 template<int nx, int ny, int nz, int kx, int ky>
@@ -258,7 +259,7 @@ struct LocalSum<nx,ny,nz,kx,ky,0> {
   template <typename Lset>
   static inline real kernel(const Lset& C, const Lset& L) {
     return LocalSum<nx,ny,nz,kx+1,0,ky-1>::kernel(C,L)
-         + C[Index<kx,ky,0>::I] * L[Index<nx+kx,ny+ky,nz>::I];
+        + C[Index<kx,ky,0>::I] * L[Index<nx+kx,ny+ky,nz>::I];
   }
 };
 template<int nx, int ny, int nz, int kx>
@@ -266,7 +267,7 @@ struct LocalSum<nx,ny,nz,kx,0,0> {
   template <typename Lset>
   static inline real kernel(const Lset& C, const Lset& L) {
     return LocalSum<nx,ny,nz,0,0,kx-1>::kernel(C,L)
-         + C[Index<kx,0,0>::I] * L[Index<nx+kx,ny,nz>::I];
+        + C[Index<kx,0,0>::I] * L[Index<nx+kx,ny,nz>::I];
   }
 };
 template<int nx, int ny, int nz>
@@ -401,8 +402,8 @@ inline void getCoef(Lset& C, const vect& dist, real& invR2, const real& invR) {
 }
 
 /*
-template<>
-inline void getCoef<1>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<1>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   C[0] = invR;
   invR2 = -invR2;
   real x = dist[0], y = dist[1], z = dist[2];
@@ -410,10 +411,10 @@ inline void getCoef<1>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[1] = x * invR3;
   C[2] = y * invR3;
   C[3] = z * invR3;
-}
+  }
 
-template<>
-inline void getCoef<2>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<2>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   getCoef<1>(C,dist,invR2,invR);
   real x = dist[0], y = dist[1], z = dist[2];
   real invR3 = invR * invR2;
@@ -426,10 +427,10 @@ inline void getCoef<2>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[7] = y * t + invR3;
   C[8] = z * t;
   C[9] = z * z * invR5 + invR3;
-}
+  }
 
-template<>
-inline void getCoef<3>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<3>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   getCoef<2>(C,dist,invR2,invR);
   real x = dist[0], y = dist[1], z = dist[2];
   real invR3 = invR * invR2;
@@ -448,10 +449,10 @@ inline void getCoef<3>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[18] = y * (t +     invR5);
   C[19] = z * (t + 3 * invR5);
   C[14] = x * y * z * invR7;
-}
+  }
 
-template<>
-inline void getCoef<4>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<4>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   getCoef<3>(C,dist,invR2,invR);
   real x = dist[0], y = dist[1], z = dist[2];
   real invR3 = invR * invR2;
@@ -476,10 +477,10 @@ inline void getCoef<4>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[29] = x * z * (t + 3 * invR7);
   C[33] = y * z * (t + 3 * invR7);
   C[34] = z * z * (t + 6 * invR7) + 3 * invR5;
-}
+  }
 
-template<>
-inline void getCoef<5>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<5>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   getCoef<4>(C,dist,invR2,invR);
   real x = dist[0], y = dist[1], z = dist[2];
   real invR3 = invR * invR2;
@@ -511,10 +512,10 @@ inline void getCoef<5>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[49] = x * z * z * (t +  6 * invR9) +  3 * x * invR7;
   C[54] = y * z * z * (t +  6 * invR9) +  3 * y * invR7;
   C[55] = z * z * z * (t + 10 * invR9) + 15 * z * invR7;
-}
+  }
 
-template<>
-inline void getCoef<6>(Lset& C, const vect& dist, real& invR2, const real& invR) {
+  template<>
+  inline void getCoef<6>(Lset& C, const vect& dist, real& invR2, const real& invR) {
   getCoef<5>(C,dist,invR2,invR);
   real x = dist[0], y = dist[1], z = dist[2];
   real invR3 = invR * invR2;
@@ -554,7 +555,7 @@ inline void getCoef<6>(Lset& C, const vect& dist, real& invR2, const real& invR)
   C[76] = x * z * z * z * (t + 10 * invR11) + 15 * x * z * invR9;
   C[82] = y * z * z * z * (t + 10 * invR11) + 15 * y * z * invR9;
   C[83] = z * z * z * z * (t + 15 * invR11) + 45 * z * z * invR9 + 15 * invR7;
-}
+  }
 */
 
 template<int P, typename Lset, typename Mset>
@@ -566,22 +567,22 @@ inline void sumM2L(Lset& L, const Lset& C, const Mset& M) {
 }
 
 /*
-template<>
-inline void sumM2L<1>(Lset& L, const Lset& C, const Mset&) {
+  template<>
+  inline void sumM2L<1>(Lset& L, const Lset& C, const Mset&) {
   L += C;
-}
+  }
 
-template<>
-inline void sumM2L<2>(Lset& L, const Lset& C, const Mset& M) {
+  template<>
+  inline void sumM2L<2>(Lset& L, const Lset& C, const Mset& M) {
   sumM2L<1>(L,C,M);
   L[0] += M[1]*C[1]+M[2]*C[2]+M[3]*C[3];
   L[1] += M[1]*C[4]+M[2]*C[5]+M[3]*C[6];
   L[2] += M[1]*C[5]+M[2]*C[7]+M[3]*C[8];
   L[3] += M[1]*C[6]+M[2]*C[8]+M[3]*C[9];
-}
+  }
 
-template<>
-inline void sumM2L<3>(Lset& L, const Lset& C, const Mset& M) {
+  template<>
+  inline void sumM2L<3>(Lset& L, const Lset& C, const Mset& M) {
   sumM2L<2>(L,C,M);
   for( int i=4; i<10; ++i ) L[0] += M[i]*C[i];
   L[1] += M[4]*C[10]+M[5]*C[11]+M[6]*C[12]+M[7]*C[13]+M[8]*C[14]+M[9]*C[15];
@@ -593,10 +594,10 @@ inline void sumM2L<3>(Lset& L, const Lset& C, const Mset& M) {
   L[7] += M[1]*C[13]+M[2]*C[16]+M[3]*C[17];
   L[8] += M[1]*C[14]+M[2]*C[17]+M[3]*C[18];
   L[9] += M[1]*C[15]+M[2]*C[18]+M[3]*C[19];
-}
+  }
 
-template<>
-inline void sumM2L<4>(Lset& L, const Lset& C, const Mset& M) {
+  template<>
+  inline void sumM2L<4>(Lset& L, const Lset& C, const Mset& M) {
   sumM2L<3>(L,C,M);
   for( int i=10; i<20; ++i ) L[0] += M[i]*C[i];
   L[1] += M[10]*C[20]+M[11]*C[21]+M[12]*C[22]+M[13]*C[23]+M[14]*C[24]+M[15]*C[25]+M[16]*C[26]+M[17]*C[27]+M[18]*C[28]+M[19]*C[29];
@@ -618,12 +619,12 @@ inline void sumM2L<4>(Lset& L, const Lset& C, const Mset& M) {
   L[17] += M[1]*C[27]+M[2]*C[31]+M[3]*C[32];
   L[18] += M[1]*C[28]+M[2]*C[32]+M[3]*C[33];
   L[19] += M[1]*C[29]+M[2]*C[33]+M[3]*C[34];
-}
+  }
 
-template<>
-inline void sumM2L<5>(Lset& L, const Lset& C, const Mset& M) {
+  template<>
+  inline void sumM2L<5>(Lset& L, const Lset& C, const Mset& M) {
   sumM2L<4>(L,C,M);
- for( int i=20; i<35; ++i ) L[0] += M[i]*C[i];
+  for( int i=20; i<35; ++i ) L[0] += M[i]*C[i];
   L[1] += M[20]*C[35]+M[21]*C[36]+M[22]*C[37]+M[23]*C[38]+M[24]*C[39]+M[25]*C[40]+M[26]*C[41]+M[27]*C[42]+M[28]*C[43]+M[29]*C[44]+M[30]*C[45]+M[31]*C[46]+M[32]*C[47]+M[33]*C[48]+M[34]*C[49];
   L[2] += M[20]*C[36]+M[21]*C[38]+M[22]*C[39]+M[23]*C[41]+M[24]*C[42]+M[25]*C[43]+M[26]*C[45]+M[27]*C[46]+M[28]*C[47]+M[29]*C[48]+M[30]*C[50]+M[31]*C[51]+M[32]*C[52]+M[33]*C[53]+M[34]*C[54];
   L[3] += M[20]*C[37]+M[21]*C[39]+M[22]*C[40]+M[23]*C[42]+M[24]*C[43]+M[25]*C[44]+M[26]*C[46]+M[27]*C[47]+M[28]*C[48]+M[29]*C[49]+M[30]*C[51]+M[31]*C[52]+M[32]*C[53]+M[33]*C[54]+M[34]*C[55];
@@ -658,10 +659,10 @@ inline void sumM2L<5>(Lset& L, const Lset& C, const Mset& M) {
   L[32] += M[1]*C[47]+M[2]*C[52]+M[3]*C[53];
   L[33] += M[1]*C[48]+M[2]*C[53]+M[3]*C[54];
   L[34] += M[1]*C[49]+M[2]*C[54]+M[3]*C[55];
-}
+  }
 
-template<>
-inline void sumM2L<6>(Lset& L, const Lset& C, const Mset& M) {
+  template<>
+  inline void sumM2L<6>(Lset& L, const Lset& C, const Mset& M) {
   sumM2L<5>(L,C,M);
   for( int i=35; i<56; ++i ) L[0] += M[i]*C[i];
   L[1] += M[35]*C[56]+M[36]*C[57]+M[37]*C[58]+M[38]*C[59]+M[39]*C[60]+M[40]*C[61]+M[41]*C[62]+M[42]*C[63]+M[43]*C[64]+M[44]*C[65]+M[45]*C[66]+M[46]*C[67]+M[47]*C[68]+M[48]*C[69]+M[49]*C[70]+M[50]*C[71]+M[51]*C[72]+M[52]*C[73]+M[53]*C[74]+M[54]*C[75]+M[55]*C[76];
@@ -719,7 +720,7 @@ inline void sumM2L<6>(Lset& L, const Lset& C, const Mset& M) {
   L[53] += M[1]*C[74]+M[2]*C[80]+M[3]*C[81];
   L[54] += M[1]*C[75]+M[2]*C[81]+M[3]*C[82];
   L[55] += M[1]*C[76]+M[2]*C[82]+M[3]*C[83];
-}
+  }
 */
 
 template <int P, typename Result, typename Lset, typename Mset>
@@ -742,7 +743,7 @@ class LaplaceCartesian
   //!< Number of Cartesian local terms
   static constexpr int LTERM = (P+1)*(P+2)*(P+3)/6;
 
-public:
+ public:
   //! The dimension of the Kernel
   static constexpr unsigned dimension = 3;
   //! Point type
@@ -763,13 +764,6 @@ public:
   //! Local expansion type
   typedef Vec<LTERM,real> local_type;
 
-  /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type&, double) const {
-  }
-  /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type&, double) const {
-  }
-
   /** Kernel evaluation
    * K(t,s)
    *
@@ -783,30 +777,26 @@ public:
     real R2 = normSq(dist);          //   R^2
     real invR2 = 1.0 / R2;           //   1 / R^2
     if (R2 < 1e-8) invR2 = 0;        //   Exclude self interaction
-    real invR = std::sqrt(invR2);    //   potential
+    real invR = sqrt(invR2);         //   potential
     dist *= invR2 * invR;            //   force
     return kernel_value_type(invR, dist[0], dist[1], dist[2]);
   }
 
   /** Kernel P2M operation
-   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
+   * M += Op(s) * c where M is the multipole and s is the source
    *
-   * @param[in] p_begin,p_end Iterator pair to the points in this operation
-   * @param[in] c_begin Corresponding charge iterator for the points
+   * @param[in] source The source to accumulate into the multipole
+   * @param[in] charge The source's corresponding charge
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
-   * @pre M is the result of init_multipole
    */
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+  void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
-    for ( ; p_begin != p_end; ++p_begin, ++c_begin) {
-      point_type dist = center - *p_begin;
-      local_type C;
-      C[0] = *c_begin;
-      Terms<0,0,P-1>::power(C,dist);
-      for( int i=0; i<MTERM; ++i ) M[i] += C[i];
-    }
+    point_type dist = center - source;
+    multipole_type C;
+    C[0] = charge;
+    Terms<0,0,P-1>::power(C, dist);
+    M += C;
   }
 
   /** Kernel M2M operator
@@ -820,53 +810,50 @@ public:
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
            const point_type& translation) const {
-    local_type C;
+    multipole_type C;
     C[0] = 1;
     Terms<0,0,P-1>::power(C, translation);
-    for( int i=0; i<MTERM; ++i ) Mtarget[i] += C[i] * Msource[0];
-    Upward<0,0,P-1>::M2M(Mtarget,C,Msource);
+    for (int i = 0; i < MTERM; ++i)
+      Mtarget[i] += C[i] * Msource[0];
+    Upward<0,0,P-1>::M2M(Mtarget, C, Msource);
   }
 
   /** Kernel M2L operation
    * L += Op(M)
    *
-   * @param[in] Msource The multpole expansion source
-   * @param[in,out] Ltarget The local expansion target
+   * @param[in] M The multpole expansion source
+   * @param[in,out] L The local expansion target
    * @param[in] translation The vector from source to target
    * @pre translation obeys the multipole-acceptance criteria
    * @pre Msource includes the influence of all points within its box
    */
-  void M2L(const multipole_type& Msource,
-	   local_type& Ltarget,
+  void M2L(const multipole_type& M,
+           local_type& L,
            const point_type& translation) const {
-    real invR2 = 1 / normSq(translation);
-    real invR  = Msource[0] * std::sqrt(invR2);
+    real invR2 = 1.0 / normSq(translation);
+    real invR  = M[0] * sqrt(invR2);
     local_type C;
-    getCoef<P>(C,translation,invR2,invR);
-    sumM2L<P>(Ltarget,C,Msource);
+    getCoef<P>(C, translation, invR2, invR);
+    sumM2L<P>(L, C, M);
   }
 
   /** Kernel M2P operation
-   * r_i += Op(M)
+   * r += Op(t, M) where M is the multipole and r is the result
    *
    * @param[in] M The multpole expansion
    * @param[in] center The center of the box with the multipole expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre M includes the influence of all points within its box
+   * @param[in] target The target to evaluate the multipole at
+   * @param[in,out] result The target's corresponding result to accumulate into
+   * @pre M includes the influence of all sources within its box
    */
-  template <typename PointIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type& center,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
-    for ( ; t_begin != t_end; ++t_begin, ++r_begin) {
-      point_type dist = *t_begin - center;
-      real invR2 = 1 / normSq(dist);
-      real invR  = M[0] * std::sqrt(invR2);
-      local_type C;
-      getCoef<P>(C,dist,invR2,invR);
-      sumM2P<P>(*r_begin, C, M);
-    }
+           const target_type& target, result_type& result) const {
+    point_type dist = target - center;
+    real invR2 = 1.0 / normSq(dist);
+    real invR  = M[0] * sqrt(invR2);
+    local_type C;
+    getCoef<P>(C, dist, invR2, invR);
+    sumM2P<P>(result, C, M);
   }
 
   /** Kernel L2L operator
@@ -886,35 +873,30 @@ public:
     Ltarget += Lsource;
     for (int i = 1; i < LTERM; ++i)
       Ltarget[0] += C[i] * Lsource[i];
-    Downward<P,0,0,P-1>::L2L(Ltarget,C,Lsource);
+    Downward<P,0,0,P-1>::L2L(Ltarget, C, Lsource);
   }
 
-  /** Kernel M2P operation
-   * r_i += Op(L)
+  /** Kernel L2P operation
+   * r += Op(t, L) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre L includes the influence of all points outside its box
+   * @param[in] target The target of this L2P operation
+   * @param[in] result The result to accumulate into
+   * @pre L includes the influence of all sources outside its box
    */
-  template <typename PointIter, typename ResultIter>
   void L2P(const local_type& L, const point_type& center,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
-    for (; t_begin != t_end; ++t_begin, ++r_begin) {
-      point_type dist = *t_begin - center;
-      local_type C;
-      C[0] = 1;
-      Terms<0,0,P>::power(C,dist);
-      result_type& r = *r_begin;
-      r[0] += L[0];
-      r[1] += L[1];
-      r[2] += L[2];
-      r[3] += L[3];
-      for (int i = 1; i < LTERM; ++i)
-      	r[0] += C[i] * L[i];
-      Downward<P,0,0,1>::L2P(r,C,L);
-    }
+           const target_type& target, result_type& result) const {
+    point_type dist = target - center;
+    local_type C;
+    C[0] = 1;
+    Terms<0,0,P>::power(C, dist);
+    result[0] += L[0];
+    result[1] += L[1];
+    result[2] += L[2];
+    result[3] += L[3];
+    for (int i = 1; i < LTERM; ++i)
+      result[0] += C[i] * L[i];
+    Downward<P,0,0,1>::L2P(result, C, L);
   }
 };

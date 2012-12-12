@@ -9,35 +9,30 @@ using namespace std::rel_ops;
 
 
 template <class Iterator,
-          class UnaryFunction>
+          class UnaryFn>
 class transform_iterator
 {
   typedef typename std::iterator_traits<Iterator>::reference it_reference;
 public:
-  typedef typename std::result_of<const UnaryFunction(it_reference)>::type reference;
-  typedef typename std::remove_cv<std::remove_reference<reference>>::type value_type;
+  typedef typename std::result_of<const UnaryFn(it_reference)>::type reference;
+  typedef typename std::decay<reference>::type value_type;
   typedef typename std::add_pointer<value_type>::type pointer;
-
   typedef typename std::iterator_traits<Iterator>::difference_type difference_type;
   typedef typename std::iterator_traits<Iterator>::iterator_category iterator_category;
 
   // CONSTRUCTORS
 
   // Construct an invalid iterator
-  transform_iterator() {}
-  // Construct a valid iterator
-  transform_iterator(const Iterator& x, const UnaryFunction& f)
-      : it_(x), f_(f) {
+  transform_iterator() {
   }
-  // Copy constructor
-  template <class I2, class F2>
-  transform_iterator(const transform_iterator<I2, F2>& t)
-      : it_(t.it_), f_(t.f_) {
+  // Construct a valid iterator
+  transform_iterator(const Iterator& x, const UnaryFn& f)
+      : it_(x), f_(f) {
   }
 
   // ACCESSORS
 
-  const UnaryFunction& functor() const {
+  const UnaryFn& functor() const {
     return f_;
   }
   const Iterator& base() const {
@@ -63,11 +58,11 @@ public:
 
 private:
   Iterator it_;
-  UnaryFunction f_;
+  UnaryFn f_;
 };
 
 
-template <typename IT, class F>
+template <class F, typename IT>
 transform_iterator<IT,F> make_transform_iterator(IT it, F f) {
   return transform_iterator<IT,F>(it, f);
 }

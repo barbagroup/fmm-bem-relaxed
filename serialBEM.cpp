@@ -7,6 +7,7 @@
 #include "LaplaceSphericalBEM.hpp"
 #include "Triangulation.hpp"
 #include "gmres.hpp"
+#include "Preconditioner.hpp"
 
 struct SolverOptions
 {
@@ -105,7 +106,9 @@ int main(int argc, char **argv)
   for (auto& it : panels) it.switch_BC();
 
   // Solve the system using GMRES
-  fmm_gmres(plan, x, b, SolverOptions());
+  // generate the Preconditioner
+  Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
+  fmm_gmres(plan, x, b, SolverOptions(),M);
   //direct_gmres(K, panels, x, b, SolverOptions());
 
   // check errors -- analytical solution for dPhi/dn = 1.

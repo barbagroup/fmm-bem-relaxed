@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <vector>
 #include <cmath>
+#include "Preconditioner.hpp"
 
 /** Very basic matrix type */
 template <typename T>
@@ -153,11 +154,22 @@ void PlaneRotation(Matrix& H, T& cs, T& sn, T& s, int i)
   ApplyPlaneRotation(s[i], s[i+1], cs[i], sn[i]);
 }
 
+//! dispatch non-preconditioned gmres to preconditioned with Identity
 template <typename FMM, typename SolverOptions>
 void fmm_gmres(FMM& fmm,
                std::vector<typename FMM::charge_type>& x,
                std::vector<typename FMM::result_type>& b,
                const SolverOptions& opts)
+{
+  typedef typename FMM::charge_type charge_type;
+  fmm_gmres(fmm,x,b,opts,Preconditioners::Identity());
+}
+
+template <typename FMM, typename SolverOptions, typename Preconditioner>
+void fmm_gmres(FMM& fmm,
+               std::vector<typename FMM::charge_type>& x,
+               std::vector<typename FMM::result_type>& b,
+               const SolverOptions& opts, const Preconditioner& M)
 {
   const int N = x.size();
   const int R = opts.restart;
@@ -177,6 +189,9 @@ void fmm_gmres(FMM& fmm,
   std::vector<double> sn(R);
   // bool converged = false;
 
+  // precondition b
+  M(b,b);
+
   // scale residual by ||b||
   auto normb = norm(b.begin(),b.end());
 
@@ -184,9 +199,10 @@ void fmm_gmres(FMM& fmm,
   do {
     // dot product of A*x -- FMM call
     w = fmm.execute(x); // V(0) = A*x
+    // V(0) = M*V(0) -- preconditioner step if desired
+    M(w,w);
     // V(0) = V(0) - b
     blas::axpy(b,w,-1.);
-    // V(0) = M*V(0) -- preconditioner step if desired
     beta = blas::nrm2(w); // beta = ||V(0)||
     blas::scal(w,-1./beta); // V(0) = -V(0)/beta
     // V(:,0) = V(0) { V(:,0) = w }
@@ -206,7 +222,7 @@ void fmm_gmres(FMM& fmm,
       // perform w = A*x
       std::fill(V0.begin(),V0.end(),0.);
       V0 = fmm.execute(V.column(i));
-      w = V0; // instead of preconditioner step
+      M(V0,w); // instead of preconditioner step
 
       for (int k=0; k<=i; k++) {
         auto V_col = V.column(k);

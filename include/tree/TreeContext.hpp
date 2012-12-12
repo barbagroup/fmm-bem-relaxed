@@ -1,7 +1,63 @@
 #pragma once
 
+/** @class BoxMap
+ * @brief A class to map boxes of a Tree to values. This class requires the
+ * following methods and members from its template parameters:
+ * Tree
+ *   Tree::box_type
+ *     int index() const
+ * Indexable
+ *   Indexable::value_type
+ *   Indexable::value_type& operator[](int)
+ *   const Indexable::value_type& operator[](int) const
+ */
+template <typename Tree, typename Indexable>
+struct BoxMap {
+  typedef typename Indexable::value_type value_type;
+  typedef typename Tree::box_type box_type;
+
+  // Default Constructor
+  BoxMap() {
+  }
+  // Constructor
+  BoxMap(const Indexable& box_value)
+      : box_value_(box_value) {
+  }
+  // RValue constructor for efficiency
+  BoxMap(Indexable&& box_value)
+      : box_value_(std::move(box_value)) {
+  }
+
+  const value_type& operator()(const box_type& box) const {
+    return box_value_[box.index()];
+  }
+  value_type& operator()(const box_type& box) {
+    return box_value_[box.index()];
+  }
+
+ private:
+  Indexable box_value_;
+};
+
+
 #include "TransformIterator.hpp"
 
+/** @class BodyMap
+ * @brief A class to map bodies of a Tree to values via the boxes that
+ * contain them. This class requires the following methods and members from
+ * its template parameters:
+ * Tree
+ *   Tree::body_type
+ *     int number() const   TODO: permute instead
+ *   Tree::body_iterator
+ *   Tree::box_type
+ *     Tree::body_iterator body_begin() const
+ *     Tree::body_iterator body_end() const
+ * Indexable
+ *   Indexable::value_type
+ *   Indexable::value_type& operator[](int)
+ *   const Indexable::value_type& operator[](int) const
+ */
 template <typename Tree, typename Indexable>
 struct BodyMap {
   typedef BodyMap<Tree,Indexable> self_type;
@@ -46,9 +102,6 @@ struct BodyMap {
     return make_transform_iterator<self_type&>(box.body_end(), *this);
   }
 
-  Indexable& data() {
-    return body_value_;
-  }
   self_type& operator=(const Indexable& v) {
     body_value_ = v;
     return *this;
@@ -56,37 +109,10 @@ struct BodyMap {
 
  private:
   Indexable body_value_;
+  // Making sure this isn't copied by the transform_iterator
+  BodyMap(const BodyMap&) {}
+  void operator=(const BodyMap&) {}
 };
 
 
-template <typename Tree, typename Indexable>
-struct BoxMap {
-  typedef typename Indexable::value_type value_type;
-  typedef typename Tree::box_type box_type;
 
-  // Default Constructor
-  BoxMap() {
-  }
-  // Constructor
-  BoxMap(const Indexable& box_value)
-      : box_value_(box_value) {
-  }
-  // RValue constructor for efficiency
-  BoxMap(Indexable&& box_value)
-      : box_value_(std::move(box_value)) {
-  }
-
-  const value_type& operator()(const box_type& box) const {
-    return box_value_[box.index()];
-  }
-  value_type& operator()(const box_type& box) {
-    return box_value_[box.index()];
-  }
-
-  Indexable& data() {
-    return box_value_;
-  }
-
- private:
-  Indexable box_value_;
-};

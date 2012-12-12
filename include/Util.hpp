@@ -46,6 +46,25 @@ class Clock {
 };
 
 
+/** Helper class for type debugging in a static_asset
+ * Usage:
+ * static_assert(AssertValue<
+ *                     std::is_same<Complicated1, Complicated2>
+ *               >::value,
+ *               "Something horrible happened...");
+ * Note the ::value is left off the template parameter to be used in AssertValue
+ * AssertValue will fail instantiation and print out the full type of
+ * the template parameter.
+ */
+template <typename Assertion>
+struct AssertValue
+{
+  static_assert(Assertion::value,
+                "Assertion failed <see below for more information>");
+  static bool const value = Assertion::value;
+};
+
+
 
 /** Bucket sort using pigeonhole sorting
  *
@@ -80,3 +99,5 @@ std::vector<Iterator> bucket_sort(Iterator first, Iterator last,
 
   return bucket_off;
 }
+
+

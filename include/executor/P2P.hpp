@@ -18,7 +18,7 @@ struct P2P
                           BoxContext& bc,
                           const Box& source,
                           const Box& target,
-                          ONE_SIDED)
+                          const ONE_SIDED&)
   {
 #ifdef DEBUG
     printf("P2P: %d to %d\n", source.index(), target.index());
@@ -38,7 +38,7 @@ struct P2P
                           BoxContext& bc,
                           const Box& source,
                           const Box& target,
-                          TWO_SIDED)
+                          const TWO_SIDED&)
   {
 #ifdef DEBUG
     printf("P2P: %d to %d\n", source.index(), target.index());
@@ -46,9 +46,8 @@ struct P2P
 
     Direct::matvec(K,
                    bc.source_begin(source), bc.source_end(source),
-                   bc.charge_begin(source),
+                   bc.charge_begin(source), bc.result_begin(source),
                    bc.target_begin(target), bc.target_end(target),
-                   bc.charge_begin(target),
-                   bc.result_begin(source), bc.result_begin(target));
+                   bc.charge_begin(target), bc.result_begin(target));
   }
 };

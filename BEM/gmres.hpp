@@ -107,6 +107,16 @@ void axpy(std::vector<T> x, std::vector<T>& y, T a) {
 
 }; // end namespace blas
 
+template <typename Iter>
+typename Iter::value_type norm(Iter start, Iter end)
+{
+  typename Iter::value_type sum = 0;
+
+  for ( ; start != end; ++start) sum += (*start) * (*start);
+
+  return std::sqrt(sum);
+}
+
 template <typename T>
 void ApplyPlaneRotation(T& dx, T& dy, T& cs, T& sn)
 {
@@ -167,16 +177,15 @@ void fmm_gmres(FMM& fmm,
   std::vector<double> sn(R);
   // bool converged = false;
 
+  // scale residual by ||b||
+  auto normb = norm(b.begin(),b.end());
+
   // main loop
   do {
     // dot product of A*x -- FMM call
-    // w = fmm.execute(x); // V(0) = A*x
-    // Direct::matvec(k,panels,x,b);
-    w = fmm.execute(x);
-    //printf("V(0) = A*x\n");
+    w = fmm.execute(x); // V(0) = A*x
     // V(0) = V(0) - b
     blas::axpy(b,w,-1.);
-    //printf("V(0) = -V(0) / beta\n");
     // V(0) = M*V(0) -- preconditioner step if desired
     beta = blas::nrm2(w); // beta = ||V(0)||
     blas::scal(w,-1./beta); // V(0) = -V(0)/beta
@@ -185,9 +194,8 @@ void fmm_gmres(FMM& fmm,
     // set S = 0
 
     s[0] = beta;
-    // std::cout << "beta " << beta << std::endl;
     i = -1;
-    resid = s[0];
+    resid = s[0]/normb;
 
 
     // inner loop
@@ -196,14 +204,11 @@ void fmm_gmres(FMM& fmm,
       ++iter;
 
       // perform w = A*x
-      // V0 = fmm.execute(w);
       std::fill(V0.begin(),V0.end(),0.);
-      // Direct::matvec(k,panels,V.column(i),V0);
       V0 = fmm.execute(V.column(i));
       w = V0; // instead of preconditioner step
 
       for (int k=0; k<=i; k++) {
-        // H(k,i) = dotc(w,V(:,k));
         auto V_col = V.column(k);
         H(k,i) = blas::dotc(w,V_col);
         // V(i+1) -= H(k,i)*V(k)
@@ -220,7 +225,7 @@ void fmm_gmres(FMM& fmm,
 
       PlaneRotation(H,cs,sn,s,i);
 
-      resid = s[i+1];
+      resid = s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
       printf("it: %03d, res: %.3e\n",iter,fabs(resid));

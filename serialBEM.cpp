@@ -4,9 +4,8 @@
 
 
 #include "FMM_plan.hpp"
-// #include "LaplaceSphericalBEM2.hpp"
 #include "LaplaceSphericalBEM.hpp"
-#include "triangulation.hpp"
+#include "Triangulation.hpp"
 #include "gmres.hpp"
 
 struct SolverOptions
@@ -28,7 +27,7 @@ void initialiseSphere(std::vector<SourceType>& panels,
 
 int main(int argc, char **argv)
 {
-  int numPanels= 1000, recursions = 4, p = 5;
+  int numPanels= 1000, recursions = 4, p = 5, k = 3;
   FMMOptions opts;
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
@@ -53,6 +52,9 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-k") == 0) {
+      i++;
+      k = atoi(argv[i]);
     } else if (strcmp(argv[i],"-lazy_eval") == 0) {
       opts.lazy_evaluation = true;
     } else if (strcmp(argv[i],"-ncrit") == 0) {
@@ -68,7 +70,7 @@ int main(int argc, char **argv)
 
   // Init the FMM Kernel
   typedef LaplaceSphericalBEM kernel_type;
-  kernel_type K(p);
+  kernel_type K(p,k);
 
   typedef kernel_type::point_type  point_type;
   typedef kernel_type::source_type source_type;
@@ -82,13 +84,6 @@ int main(int argc, char **argv)
   std::vector<charge_type> charges(numPanels);
   initialiseSphere(panels, charges, recursions);
 
-/*
-  std::cout << panels[0].normal << std::endl;
-  std::cout << "\n\n";
-  for (unsigned i=0; i<panels[0].quad_points.size(); i++)
-    std::cout << panels[0].quad_points[i] << std::endl;
-  std::cout << "\n\n" << panels[10].center << std::endl;
-  */
   // run case solving for Phi (instead of dPhi/dn)
   for (auto& it : panels) it.switch_BC();
   charges.resize(panels.size());
@@ -109,19 +104,9 @@ int main(int argc, char **argv)
   // b = plan.execute(charges);
   for (auto& it : panels) it.switch_BC();
 
-  //printf("sizeof b: %d\n",(int)b.size());
-  // for (auto it : b) std::cout << it << std::endl;
-  for (int i=0; i<(int)b.size(); i++) {
-    // std::cout << b[i] << "  " << b2[i] << " : " << panels[i].normal << std::endl;
-    // printf("%.4lg  %.4lg\n",b[i],b2[i]);
-  }
-  // solve the system using GMRES
-  // std::exit(0);
-
+  // Solve the system using GMRES
   fmm_gmres(plan, x, b, SolverOptions());
   //direct_gmres(K, panels, x, b, SolverOptions());
-
-  // for (auto it : x) std::cout << "x: " << it << std::endl;
 
   // check errors -- analytical solution for dPhi/dn = 1.
   double e = 0.;

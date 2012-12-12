@@ -1,23 +1,10 @@
 #pragma once
 
 #include "LaplaceSpherical.hpp"
-#include "semi_analytical.hpp"
+#include "SemiAnalytical.hpp"
+#include "GaussQuadrature.hpp"
 
-
-std::vector<Vec<3,double>> GQ_points_n1 = { Vec<3,double>(1./3,1./3,1./3) };
-std::vector<double>        GQ_weight_n1 = { 1. };
-
-std::vector<Vec<3,double>> GQ_points_n3 = { Vec<3,double>(0.5,0.5,0.),
-                                            Vec<3,double>(0.,0.5,0.5),
-                                            Vec<3,double>(0.5,0.,0.5) };
-std::vector<double>        GQ_weight_n3 = { 1./3, 1./3, 1./3 };
-
-std::vector<Vec<3,double>> GQ_points_n4 = { Vec<3,double>(1./3,1./3,1./3),
-                                            Vec<3,double>(.6,.2,.2),
-                                            Vec<3,double>(.2,.6,.2),
-                                            Vec<3,double>(.2,.2,.6) };
-std::vector<double>        GQ_weight_n4 = { -27./48, 25./48, 25./48, 25./48 };
-
+GaussQuadrature<double> GQ;
 
 class LaplaceSphericalBEM : public LaplaceSpherical
 {
@@ -93,25 +80,19 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       unsigned K = 3;
       quad_points.resize(K);
       // loop over K points performing matvecs
-      auto weights = GQ_points_n3;
+      auto& points = GQ.points(3); // GQ_points_n3;
       for (unsigned i=0; i<K; i++) {
-        double x = vertices[0][0]*weights[i][0]+vertices[1][0]*weights[i][1]+vertices[2][0]*weights[i][2];
-        double y = vertices[0][1]*weights[i][0]+vertices[1][1]*weights[i][1]+vertices[2][1]*weights[i][2];
-        double z = vertices[0][2]*weights[i][0]+vertices[1][2]*weights[i][1]+vertices[2][2]*weights[i][2];
+        double x = vertices[0][0]*points[i][0]+vertices[1][0]*points[i][1]+vertices[2][0]*points[i][2];
+        double y = vertices[0][1]*points[i][0]+vertices[1][1]*points[i][1]+vertices[2][1]*points[i][2];
+        double z = vertices[0][2]*points[i][0]+vertices[1][2]*points[i][1]+vertices[2][2]*points[i][2];
         
         quad_points[i] = point_type(x,y,z);
       }
     }
-
+    // cast to point_type
     operator point_type() const { return center; };
 
-    const double& operator[](const int d) const {
-      return center[d];
-    }
-
-    double& operator[](const int d) {
-      return center[d];
-    }
+    // copy operator
     Panel& operator=(const Panel& p) {
       center = p.center;
       normal = p.normal;
@@ -132,7 +113,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
         AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
         return -dGdn;
       } else {
-        auto gauss_weight = GQ_weight_n3;
+        auto& gauss_weight = GQ.weights(3); // GQ_weight_n3;
         double res=0.;
         for (unsigned i=0; i<quad_points.size(); i++) {
           // auto dx = target-quad_points[i];
@@ -142,6 +123,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
           auto r3 = r2*sqrt(r2);
           // finally accumulate
           res += gauss_weight[i]*Area*(dx[0]*normal[0]+dx[1]*normal[1]+dx[2]*normal[2])/r3;
+          // res -= gauss_weight[i]*Area/r2;
         }
         return res;
       }
@@ -157,7 +139,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
         return G;
       } else {
         // loop over all my quadrature points, accumulating to get \int G
-        auto gauss_weight = GQ_weight_n3;
+        auto& gauss_weight = GQ.weights(3); // GQ_weight_n3;
         double r = 0.;
         for (unsigned i=0; i<quad_points.size(); i++)
           r += gauss_weight[i]*Area/norm(target-quad_points[i]);
@@ -230,7 +212,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    auto& gauss_weight = GQ_weight_n3;
+    auto& gauss_weight = GQ.weights(3); // GQ_weight_n3;
     for (auto i=0u; i<source.quad_points.size(); i++) {
       auto qp = source.quad_points[i];
       point_type dist = static_cast<point_type>(qp) - center;
@@ -241,52 +223,31 @@ class LaplaceSphericalBEM : public LaplaceSpherical
         for( int m=0; m<=n; ++m ) { 
           const int nm  = n * n + n + m;
           const int nms = n * (n + 1) / 2 + m;
-          M[nms] += charge * gauss_weight[i] * source.Area * Ynm[nm];
-        }   
-      }   
+          if (source.BC.type == Panel::POTENTIAL) {
+            // influence of G needed
+            M[nms] += charge * gauss_weight[i] * source.Area * Ynm[nm];
+          } else { 
+            // otherwise influence of dGdn needed
+            complex brh = (double)n/rho*Ynm[nm];
+            complex bal = YnmTheta[nm];
+            complex bbe = -complex(0,1.)*(double)m*Ynm[nm];
+
+            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe;
+            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe;
+            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal;
+
+            auto& normal = source.normal;
+            complex mult_term = charge * gauss_weight[i] * source.Area;
+            M[nms] += mult_term * normal[0] * bxd;
+            M[nms] += mult_term * normal[1] * byd;
+            M[nms] += mult_term * normal[2] * bzd;
+          }
+        }
+      }
       M.RMAX = std::max(M.RMAX, norm(dist));
       M.RCRIT = std::min(M.RCRIT, M.RMAX);
     }
   }
-
-  /** Kernel P2M operation
-   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
-   *
-   * @param[in] p_begin,p_end Iterator pair to the points in this operation
-   * @param[in] c_begin Corresponding charge iterator for the points
-   * @param[in] center The center of the box containing the multipole expansion
-   * @param[in,out] M The multipole expansion to accumulate into
-   * @pre M is the result of init_multipole
-   */
-   /*
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) const {
-    real Rmax = 0;
-    complex Ynm[4*P*P], YnmTheta[4*P*P];
-    auto gauss_weight = GQ_weight_n3;
-    for ( ; p_begin != p_end; ++p_begin, ++c_begin) {
-      // loop over Gauss points here
-      for (auto i=0u; i < (*p_begin).quad_points.size(); i++) {
-        auto gp = (*p_begin).quad_points[i];
-        point_type dist = static_cast<point_type>(gp) - center;
-        real R = norm(dist);
-        if( R > Rmax ) Rmax = R;
-        real rho, alpha, beta;
-        cart2sph(rho,alpha,beta,dist);
-        evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-        for( int n=0; n!=P; ++n ) {
-          for( int m=0; m<=n; ++m ) {
-            const int nm  = n * n + n + m;
-            const int nms = n * (n + 1) / 2 + m;
-            M[nms] += (*c_begin) * gauss_weight[i] * (*p_begin).Area * Ynm[nm];
-          }
-        }
-      }
-    }
-    M.RMAX = Rmax;
-    M.RCRIT = std::min(M.RCRIT, M.RMAX);
-  }*/
 
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source
@@ -353,17 +314,10 @@ class LaplaceSphericalBEM : public LaplaceSpherical
           spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
           spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
           spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * CI) * m;
-        }   
+        }
       }
-      if   ((*t_begin).BC.type == Panel::POTENTIAL) {*r_begin += r_temp; }
-      else                                          *r_begin += spherical[0];
-
-      /*
-      sph2cart(r,theta,phi,spherical,cartesian);
-      (*r_begin)[1] += cartesian[0];
-      (*r_begin)[2] += cartesian[1];
-      (*r_begin)[3] += cartesian[2];
-      */
+      if   ((*t_begin).BC.type == Panel::POTENTIAL) *r_begin += r_temp;
+      else                                          *r_begin -= r_temp;
     }
   }
 
@@ -421,13 +375,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
         }   
       }
       if   ((*t).BC.type == Panel::POTENTIAL) *r_begin += r_temp;
-      else                                    *r_begin += spherical[0];
-      /*
-      sph2cart(r,theta,phi,spherical,cartesian);
-      (*r_begin)[1] += cartesian[0];
-      (*r_begin)[2] += cartesian[1];
-      (*r_begin)[3] += cartesian[2];
-      */
+      else                                    *r_begin -= r_temp;
     }
   }
 };

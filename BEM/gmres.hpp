@@ -185,7 +185,7 @@ void fmm_gmres(FMM& fmm,
     // set S = 0
 
     s[0] = beta;
-    std::cout << "beta " << beta << std::endl;
+    // std::cout << "beta " << beta << std::endl;
     i = -1;
     resid = s[0];
 

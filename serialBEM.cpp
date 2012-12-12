@@ -4,6 +4,7 @@
 
 
 #include "FMM_plan.hpp"
+// #include "LaplaceSphericalBEM2.hpp"
 #include "LaplaceSphericalBEM.hpp"
 #include "triangulation.hpp"
 #include "gmres.hpp"
@@ -80,7 +81,16 @@ int main(int argc, char **argv)
   std::vector<source_type> panels(numPanels);
   std::vector<charge_type> charges(numPanels);
   initialiseSphere(panels, charges, recursions);
-  // for (auto& it : panels) it.switch_BC();
+
+/*
+  std::cout << panels[0].normal << std::endl;
+  std::cout << "\n\n";
+  for (unsigned i=0; i<panels[0].quad_points.size(); i++)
+    std::cout << panels[0].quad_points[i] << std::endl;
+  std::cout << "\n\n" << panels[10].center << std::endl;
+  */
+  // run case solving for Phi (instead of dPhi/dn)
+  for (auto& it : panels) it.switch_BC();
   charges.resize(panels.size());
   charges = std::vector<charge_type>(panels.size(),1.);
 
@@ -93,16 +103,23 @@ int main(int argc, char **argv)
   // generate RHS using direct calculation
   for (auto& it : panels) it.switch_BC();
   std::vector<result_type> b(panels.size(),0.);
-  // b = plan.execute(charges);
+  std::vector<result_type> b2(panels.size(),0.);
+  b2 = plan.execute(charges);
   Direct::matvec(K,panels,charges,b);
+  // b = plan.execute(charges);
   for (auto& it : panels) it.switch_BC();
 
   //printf("sizeof b: %d\n",(int)b.size());
-  //for (auto it : b) std::cout << it << std::endl;
+  // for (auto it : b) std::cout << it << std::endl;
+  for (int i=0; i<(int)b.size(); i++) {
+    // std::cout << b[i] << "  " << b2[i] << " : " << panels[i].normal << std::endl;
+    // printf("%.4lg  %.4lg\n",b[i],b2[i]);
+  }
   // solve the system using GMRES
+  // std::exit(0);
 
-  // fmm_gmres(plan, x, b, SolverOptions());
-  direct_gmres(K, panels, x, b, SolverOptions());
+  fmm_gmres(plan, x, b, SolverOptions());
+  //direct_gmres(K, panels, x, b, SolverOptions());
 
   // for (auto it : x) std::cout << "x: " << it << std::endl;
 

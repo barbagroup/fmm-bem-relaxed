@@ -92,7 +92,7 @@ template <equation E, typename T=double>
 void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
 {
   typedef Vec<3,T> vec3;
-  typedef Mat3<T>   mat3;
+  typedef Mat3<T>  mat3;
 
   vec3 v21 = v2 - v1;
 
@@ -110,9 +110,12 @@ void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
 
   for(int i=0; i<3; i++)
   {
-    rotateToVertLine(0,i) = orthog[i];
-    rotateToVertLine(1,i) = v21u[i];
-    rotateToVertLine(2,i) = unit[i];
+    //rotateToVertLine(0,i) = orthog[i];
+    //rotateToVertLine(1,i) = v21u[i];
+    //rotateToVertLine(2,i) = unit[i];
+    rotateToVertLine(i,0) = orthog[i];
+    rotateToVertLine(i,1) = v21u[i];
+    rotateToVertLine(i,2) = unit[i];
   }
 
   vec3 v1new = rotateToVertLine.multiply(v1);

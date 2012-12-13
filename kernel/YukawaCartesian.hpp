@@ -143,7 +143,7 @@ class YukawaCartesian
    * @param[in] t,s The target and source points to evaluate the kernel
    */
   kernel_value_type operator()(const point_type& t,
-                               const point_type& s) {
+                               const point_type& s) const {
     point_type dist = t - s;
     real r2 = normSq(dist);
     real r  = std::sqrt(r2);
@@ -194,25 +194,19 @@ class YukawaCartesian
   }
 
   /** Kernel P2M operation
-   * M = sum_i Op(p_i) * c_i where M is the multipole and p_i are the points
+   * M += Op(s) * c where M is the multipole and s is the source
    *
-   * @param[in] p_begin,p_end Iterator pair to the points in this operation
-   * @param[in] c_begin Corresponding charge iterator for the points
+   * @param[in] source The source to accumulate into the multipole
+   * @param[in] charge The source's corresponding charge
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
-   * @pre M is the result of init_multipole
    */
-  template <typename PointIter, typename ChargeIter>
-  void P2M(PointIter p_begin, PointIter p_end, ChargeIter c_begin,
+  void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
-    for ( ; p_begin!=p_end; ++p_begin, ++c_begin) {
-      auto dist = center - *p_begin; // dX
-      auto scal = *c_begin;
+    point_type dX = center - source;
 
-      for (unsigned i=0; i<MTERMS; i++)
-      {
-        M[i] += scal * pow(dist[0],I[i]) * pow(dist[1],J[i]) * pow(dist[2],K[i]);
-      }
+    for (unsigned i = 0; i < MTERMS; ++i) {
+      M[i] += charge * pow(dX[0],I[i]) * pow(dX[1],J[i]) * pow(dX[2],K[i]);
     }
   }
 
@@ -259,38 +253,33 @@ class YukawaCartesian
     (void) Msource;
     (void) Ltarget;
     (void) translation;
-    assert(false);
+    //assert(false);
+    std::cout << "Yukawa empty M2L warning" << std::endl;
   }
 
   /** Kernel M2P operation
-   * r_i += Op(M)
+   * r += Op(M, t) where M is the multipole and r is the result
    *
    * @param[in] M The multpole expansion
-   * @param[in] Mcenter The center of the box with the multipole expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre M includes the influence of all points within its box
+   * @param[in] center The center of the box with the multipole expansion
+   * @param[in] target The target to evaluate the multipole at
+   * @param[in,out] result The target's corresponding result to accumulate into
+   * @pre M includes the influence of all sources within its box
    */
-  template <typename PointIter, typename ResultIter>
-  void M2P(const multipole_type& M, const point_type& Mcenter,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const
-  {
-
+  void M2P(const multipole_type& M, const point_type& center,
+           const target_type& target, result_type& result) const {
     std::vector<real> a_aux(MTERMS,0), ax_aux(MTERMS,0), ay_aux(MTERMS,0), az_aux(MTERMS,0);
 
-    for( ; t_begin!=t_end; ++t_begin, ++r_begin) {
-      auto dX = *t_begin - Mcenter;
+    point_type dX = target - center;
 
-      getCoeff(a_aux,ax_aux,ay_aux,az_aux,dX);
+    getCoeff(a_aux,ax_aux,ay_aux,az_aux,dX);
 
-      // loop over tarSize
-      for (unsigned j=0; j<MTERMS; j++) {
-        (*r_begin)[0] +=  a_aux[j]*M[j];
-        (*r_begin)[1] += ax_aux[j]*M[j];
-        (*r_begin)[2] += ay_aux[j]*M[j];
-        (*r_begin)[3] += az_aux[j]*M[j];
-      }
+    // loop over tarSize
+    for (unsigned j=0; j<MTERMS; j++) {
+      result[0] +=  a_aux[j]*M[j];
+      result[1] += ax_aux[j]*M[j];
+      result[2] += ay_aux[j]*M[j];
+      result[3] += az_aux[j]*M[j];
     }
   }
 
@@ -309,29 +298,27 @@ class YukawaCartesian
     (void) Lsource;
     (void) Ltarget;
     (void) translation;
-    assert(false);
+    //assert(false);
+    std::cout << "Yukawa empty L2L warning" << std::endl;
   }
 
   /** Kernel L2P operation
-   * r_i += Op(L)
+   * r += Op(L, t) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
-   * @param[in] Lcenter The center of the box with the local expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre L includes the influence of all points outside its box
+   * @param[in] center The center of the box with the local expansion
+   * @param[in] target The target of this L2P operation
+   * @param[in] result The result to accumulate into
+   * @pre L includes the influence of all sources outside its box
    */
-  template <typename PointIter, typename ResultIter>
-  void L2P(const local_type& L, const point_type& Lcenter,
-           PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const
-  {
+  void L2P(const local_type& L, const point_type& center,
+           const target_type& target, result_type& result) const {
     (void) L;
-    (void) Lcenter;
-    (void) t_begin;
-    (void) t_end;
-    (void) r_begin;
-    assert(false);
+    (void) center;
+    (void) target;
+    (void) result;
+    //assert(false);
+    std::cout << "Yukawa empty L2P warning" << std::endl;
   }
 
  private:

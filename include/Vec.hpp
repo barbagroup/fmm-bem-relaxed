@@ -156,6 +156,9 @@ class SmallVec {
     //assert(i < dimension);
     return a[i];
   }
+  static constexpr unsigned size() {
+    return dimension;
+  }
 
   /** Compute the dot product of this SmallVec with another SmallVec */
   inline friend value_type dot(const SmallVec& a, const SmallVec& b) {

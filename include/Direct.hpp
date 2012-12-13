@@ -191,23 +191,23 @@ class Direct
     // TODO
     // Optimize on random_access_iterator?
 
-    for ( ; p_first != p_last; ++p_first, ++c_first, ++r_first) {
-      const source_type& p = *p_first;
-      const charge_type& c = *c_first;
-      result_type& r       = *r_first;
+    SourceIter pi = p_first;
+    ChargeIter ci = c_first;
+    ResultIter ri = r_first;
+    for ( ; pi != p_last; ++pi, ++ci, ++ri) {
+      const source_type& p = *pi;
+      const charge_type& c = *ci;
+      result_type& r       = *ri;
+
+      // The off-diagonal elements (use the symmetry)
+      SourceIter pj = p_first;
+      ChargeIter cj = c_first;
+      ResultIter rj = r_first;
+      for ( ; pj != pi; ++pj, ++cj, ++rj)
+        Direct::eval(K, p, c, r, *pj, *cj, *rj);
 
       // The diagonal element
       r += K(p, p) * c;
-
-      // The off-diagonal elements (use the symmetry)
-      SourceIter pi = p_first;
-      ++pi;
-      ChargeIter ci = c_first;
-      ++ci;
-      ResultIter ri = r_first;
-      ++ri;
-      for ( ; pi != p_last; ++pi, ++ci, ++ri)
-        Direct::eval(K, p, c, r, *pi, *ci, *ri);
     }
   }
 

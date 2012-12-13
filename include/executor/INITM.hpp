@@ -7,7 +7,7 @@
 #include "KernelTraits.hpp"
 #include <type_traits>
 
-class INITM
+struct INITM
 {
   /** If no init_multipole dispatcher matches */
   template <typename... Args>
@@ -23,8 +23,6 @@ class INITM
        double box_size) {
     K.init_multipole(M, box_size);
   }
-
- public:
 
   template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,

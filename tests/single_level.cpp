@@ -10,7 +10,7 @@
 #include <iostream>
 
 template <typename Kernel>
-void two_level_test(const Kernel& K)
+void single_level_test(const Kernel& K)
 {
   typedef Kernel kernel_type;
   typedef typename kernel_type::point_type point_type;
@@ -40,32 +40,18 @@ void two_level_test(const Kernel& K)
 
   // setup intial multipole expansion
   multipole_type M;
-  point_type M_center(0.05, 0.05, 0.05);
-  INITM::eval(K, M, 0.10);
+  point_type M_center(0.125,0.125,0.125);
+  INITM::eval(K, M, 0.25);
   K.P2M(s, c, M_center, M);
 
-  // perform M2M
-  multipole_type M2;
-  point_type M2_center(0.1, 0.1, 0.1);
-  INITM::eval(K, M2, 0.2);
-  K.M2M(M, M2, M2_center - M_center);
-
   // test M2P
-  K.M2P(M, M2_center, t, rm2p);
+  K.M2P(M, M_center, t, rm2p);
 
   // test M2L, L2P
-  local_type L2;
-  point_type L2_center(0.9, 0.1, 0.1);
-  INITL::eval(K, L2, 0.2);
-  K.M2L(M2, L2, L2_center - M2_center);
-
-  // test L2L
   local_type L;
-  point_type L_center(0.95, 0.05, 0.05);
-  INITL::eval(K, L, 0.1);
-  K.L2L(L2, L, L_center - L2_center);
-
-  // test L2P
+  INITL::eval(K, L, 0.25);
+  point_type L_center(0.875,0.125,0.125);
+  K.M2L(M, L, L_center - M_center);
   K.L2P(L, L_center, t, rfmm);
 
   // check errors
@@ -88,8 +74,7 @@ void two_level_test(const Kernel& K)
             << std::scientific << l2_rel_error(rfmm, rexact) << std::endl;
 }
 
-
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   (void) argc;
   (void) argv;
@@ -98,6 +83,6 @@ int main(int argc, char **argv)
   LaplaceSpherical K(5);
   //YukawaCartesian K(5, 0);
 
-  two_level_test(K);
+  single_level_test(K);
 }
 

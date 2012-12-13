@@ -186,7 +186,6 @@ class LaplaceSpherical
    * @param[in,out] M The multipole expansion to accumulate into
    * @pre M is the result of init_multipole
    */
-  /*
   template <typename SourceIter, typename ChargeIter>
   void P2M(SourceIter p_begin, SourceIter p_end, ChargeIter c_begin,
            const point_type& center, multipole_type& M) const {
@@ -210,7 +209,6 @@ class LaplaceSpherical
     M.RMAX = Rmax;
     M.RCRIT = std::min(M.RCRIT, M.RMAX);
   }
-  */
 
   /** Kernel M2M operator
    * M_t += Op(M_s) where M_t is the target and M_s is the source
@@ -307,46 +305,42 @@ class LaplaceSpherical
   }
 
   /** Kernel M2P operation
-   * r_i += Op(M)
+   * r += Op(M, t) where M is the multipole and r is the result
    *
    * @param[in] M The multpole expansion
    * @param[in] center The center of the box with the multipole expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre M includes the influence of all points within its box
+   * @param[in] target The target to evaluate the multipole at
+   * @param[in,out] result The target's corresponding result to accumulate into
+   * @pre M includes the influence of all sources within its box
    */
-  template <typename TargetIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type& center,
-           TargetIter t_begin, TargetIter t_end,
-           ResultIter r_begin) const {
+           const target_type& target, result_type& result) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
-      point_type dist = *t_begin - center;
-      point_type spherical(0);
-      point_type cartesian(0);
-      real r, theta, phi;
-      cart2sph(r,theta,phi,dist);
-      evalLocal(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
-        int nm  = n * n + n;
-        int nms = n * (n + 1) / 2;
-        (*r_begin)[0] += std::real(M[nms] * Ynm[nm]);
-        spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
-        spherical[1] += std::real(M[nms] * YnmTheta[nm]);
-        for( int m=1; m<=n; ++m ) {
-          nm  = n * n + n + m;
-          nms = n * (n + 1) / 2 + m;
-          (*r_begin)[0] += 2 * std::real(M[nms] * Ynm[nm]);
-          spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
-          spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
-          spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * CI) * m;
-        }
+    point_type dist = target - center;
+    point_type spherical(0);
+    point_type cartesian(0);
+    real r, theta, phi;
+    cart2sph(r,theta,phi,dist);
+    evalLocal(r,theta,phi,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      int nm  = n * n + n;
+      int nms = n * (n + 1) / 2;
+      result[0] += std::real(M[nms] * Ynm[nm]);
+      spherical[0] -= std::real(M[nms] * Ynm[nm]) / r * (n+1);
+      spherical[1] += std::real(M[nms] * YnmTheta[nm]);
+      for( int m=1; m<=n; ++m ) {
+        nm  = n * n + n + m;
+        nms = n * (n + 1) / 2 + m;
+        result[0] += 2 * std::real(M[nms] * Ynm[nm]);
+        spherical[0] -= 2 * std::real(M[nms] *Ynm[nm]) / r * (n+1);
+        spherical[1] += 2 * std::real(M[nms] *YnmTheta[nm]);
+        spherical[2] += 2 * std::real(M[nms] *Ynm[nm] * CI) * m;
       }
-      sph2cart(r,theta,phi,spherical,cartesian);
-      (*r_begin)[1] += cartesian[0];
-      (*r_begin)[2] += cartesian[1];
-      (*r_begin)[3] += cartesian[2];
     }
+    sph2cart(r,theta,phi,spherical,cartesian);
+    result[1] += cartesian[0];
+    result[2] += cartesian[1];
+    result[3] += cartesian[2];
   }
 
   /** Kernel L2L operator
@@ -393,47 +387,42 @@ class LaplaceSpherical
   }
 
   /** Kernel L2P operation
-   * r_i += Op(L)
+   * r += Op(L, t) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   * @pre L includes the influence of all points outside its box
+   * @param[in] target The target of this L2P operation
+   * @param[in] result The result to accumulate into
+   * @pre L includes the influence of all sources outside its box
    */
-  template <typename TargetIter, typename ResultIter>
   void L2P(const local_type& L, const point_type& center,
-           TargetIter t_begin, TargetIter t_end,
-           ResultIter r_begin) const {
+           const target_type& target, result_type& result) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-
-    for (auto t = t_begin; t != t_end; ++t, ++r_begin) {
-      point_type dist = *t - center;
-      point_type spherical(0);
-      point_type cartesian(0);
-      real r, theta, phi;
-      cart2sph(r,theta,phi,dist);
-      evalMultipole(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
-        int nm  = n * n + n;
-        int nms = n * (n + 1) / 2;
-        (*r_begin)[0] += std::real(L[nms] * Ynm[nm]);
-        spherical[0] += std::real(L[nms] * Ynm[nm]) / r * n;
-        spherical[1] += std::real(L[nms] * YnmTheta[nm]);
-        for( int m=1; m<=n; ++m ) {
-          nm  = n * n + n + m;
-          nms = n * (n + 1) / 2 + m;
-          (*r_begin)[0] += 2 * std::real(L[nms] * Ynm[nm]);
-          spherical[0] += 2 * std::real(L[nms] * Ynm[nm]) / r * n;
-          spherical[1] += 2 * std::real(L[nms] * YnmTheta[nm]);
-          spherical[2] += 2 * std::real(L[nms] * Ynm[nm] * CI) * m;
-        }
+    point_type dist = target - center;
+    point_type spherical(0);
+    point_type cartesian(0);
+    real r, theta, phi;
+    cart2sph(r,theta,phi,dist);
+    evalMultipole(r,theta,phi,Ynm,YnmTheta);
+    for( int n=0; n!=P; ++n ) {
+      int nm  = n * n + n;
+      int nms = n * (n + 1) / 2;
+      result[0] += std::real(L[nms] * Ynm[nm]);
+      spherical[0] += std::real(L[nms] * Ynm[nm]) / r * n;
+      spherical[1] += std::real(L[nms] * YnmTheta[nm]);
+      for( int m=1; m<=n; ++m ) {
+        nm  = n * n + n + m;
+        nms = n * (n + 1) / 2 + m;
+        result[0] += 2 * std::real(L[nms] * Ynm[nm]);
+        spherical[0] += 2 * std::real(L[nms] * Ynm[nm]) / r * n;
+        spherical[1] += 2 * std::real(L[nms] * YnmTheta[nm]);
+        spherical[2] += 2 * std::real(L[nms] * Ynm[nm] * CI) * m;
       }
-      sph2cart(r,theta,phi,spherical,cartesian);
-      (*r_begin)[1] += cartesian[0];
-      (*r_begin)[2] += cartesian[1];
-      (*r_begin)[3] += cartesian[2];
     }
+    sph2cart(r,theta,phi,spherical,cartesian);
+    result[1] += cartesian[0];
+    result[2] += cartesian[1];
+    result[3] += cartesian[2];
   }
 
  protected:

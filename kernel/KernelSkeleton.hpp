@@ -113,7 +113,7 @@ class KernelSkeleton
   }
 
   /** Kernel M2P operation
-   * r += Op(t, M) where M is the multipole and r is the result
+   * r += Op(M, t) where M is the multipole and r is the result
    *
    * @param[in] M The multpole expansion
    * @param[in] center The center of the box with the multipole expansion
@@ -163,7 +163,7 @@ class KernelSkeleton
   }
 
   /** Kernel L2P operation
-   * r += Op(t, L) where L is the local expansion and r is the result
+   * r += Op(L, t) where L is the local expansion and r is the result
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion

@@ -52,8 +52,7 @@ EXECS += multi_level
 EXECS += scaling
 EXECS += correctness
 EXECS += dual_correctness
-EXECS += single_body
-EXECS += single_laplacecart
+EXECS += single_level
 
 all: $(EXECS)
 
@@ -70,12 +69,8 @@ correctness: correctness.o
 dual_correctness: dual_correctness.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-single_body: single_body.o
+single_level: single_level.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
-single_laplacecart: single_laplacecart.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
 
 
 # suffix replacement rule for building .o's from .cpp's

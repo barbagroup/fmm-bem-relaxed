@@ -7,7 +7,7 @@
 #include "KernelTraits.hpp"
 #include <type_traits>
 
-class INITL
+struct INITL
 {
   /** If no init_local dispatcher matches */
   template <typename... Args>
@@ -23,8 +23,6 @@ class INITL
        double box_size) {
     K.init_local(L, box_size);
   }
-
- public:
 
   template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,

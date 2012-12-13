@@ -31,11 +31,11 @@ endif
 DEPCFLAGS = -MD -MF $(DEPSDIR)/$*.d -MP
 
 # Other in-code flags
-CFLAGS += 
+CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel -I../BEM
+INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel -I./BEM
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
@@ -62,7 +62,7 @@ serialBEM: serialBEM.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) bem 
+	-$(RM) bem
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

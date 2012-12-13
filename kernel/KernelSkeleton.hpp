@@ -105,7 +105,7 @@ class KernelSkeleton
    * @pre Msource includes the influence of all sources within its box
    */
   void M2M(const multipole_type& source,
-	   multipole_type& target,
+           multipole_type& target,
            const point_type& translation) const {
     (void) source;
     (void) target;
@@ -139,7 +139,7 @@ class KernelSkeleton
    * @pre source includes the influence of all sources within its box
    */
   void M2L(const multipole_type& source,
-	   local_type& target,
+           local_type& target,
            const point_type& translation) const {
     (void) source;
     (void) target;
@@ -213,7 +213,7 @@ class KernelSkeleton
    * @param[in] r_first Iterator to result accumulators corresponding to targets
    */
   template <typename SourceIter, typename ChargeIter,
-	    typename TargetIter, typename ResultIter>
+            typename TargetIter, typename ResultIter>
   void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
            TargetIter t_first, TargetIter t_last, ResultIter r_first) const {
     (void) s_first;
@@ -237,7 +237,7 @@ class KernelSkeleton
    * @param[in] rs_first Iterator to result accumulators corresponding to sources
    */
   template <typename SourceIter, typename ChargeIter,
-	    typename TargetIter, typename ResultIter>
+            typename TargetIter, typename ResultIter>
   void P2P(SourceIter s_first, SourceIter s_last, ChargeIter cs_first,
            TargetIter t_first, TargetIter t_last, ChargeIter ct_first,
            ResultIter rt_first, ResultIter rs_first) const {

@@ -87,6 +87,8 @@ int main(int argc, char **argv)
 
   // run case solving for Phi (instead of dPhi/dn)
   for (auto& it : panels) it.switch_BC();
+
+  // set constant Phi || dPhi/dn for each panel
   charges.resize(panels.size());
   charges = std::vector<charge_type>(panels.size(),1.);
 
@@ -99,10 +101,7 @@ int main(int argc, char **argv)
   // generate RHS using direct calculation
   for (auto& it : panels) it.switch_BC();
   std::vector<result_type> b(panels.size(),0.);
-  std::vector<result_type> b2(panels.size(),0.);
-  b2 = plan.execute(charges);
   Direct::matvec(K,panels,charges,b);
-  // b = plan.execute(charges);
   for (auto& it : panels) it.switch_BC();
 
   // Solve the system using GMRES
@@ -118,6 +117,5 @@ int main(int argc, char **argv)
   for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
   
   printf("error: %.3e\n",sqrt(e/e2));
-
 }
 

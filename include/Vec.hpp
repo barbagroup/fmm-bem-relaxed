@@ -157,6 +157,27 @@ class SmallVec {
     return a[i];
   }
 
+  /** Compute the dot product of this SmallVec with another SmallVec */
+  inline friend value_type dot(const SmallVec& a, const SmallVec& b) {
+    return a.dot(b);
+  }
+  /** Compute cross product of two SmallVecs */
+  inline friend SmallVec cross(const SmallVec& a, const SmallVec& b) {
+    static_assert(SmallVec::dimension == 3, "Cross product only defined for 3D");
+    SmallVec r;
+    r[0] = a[1]*b[2] - a[2]*b[1];
+    r[1] = -(a[0]*b[2] - a[2]*b[0]);
+    r[2] = a[0]*b[1] - a[1]*b[0];
+    return r;
+  }
+  /** Compute the squared L2 norm of this SmallVec */
+  inline friend value_type normSq(const SmallVec& b) {
+    return b.dot(b);
+  }
+  /** Compute the L2 norm of this SmallVec */
+  inline friend value_type norm(const SmallVec& b) {
+    return sqrt(normSq(b));
+  }
   /** Write a SmallVec to an output stream */
   inline friend std::ostream& operator<<(std::ostream& s, const SmallVec& a) {
     for_i s << a[i] << " ";

@@ -13,7 +13,7 @@
 
 class LaplaceSpherical
 {
- private:
+ protected:
   typedef double real;
   typedef std::complex<real> complex;
 
@@ -436,7 +436,7 @@ class LaplaceSpherical
     }
   }
 
- private:
+ protected:
 
   //! Evaluate solid harmonics \f$ r^n Y_{n}^{m} \f$
   void evalMultipole(real rho, real alpha, real beta,

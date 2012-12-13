@@ -35,7 +35,7 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
-  int numBodies = 1000;
+  int numBodies = 1000, p=5;
   bool checkErrors = true;
 
   FMMOptions opts = get_options(argc, argv);
@@ -45,6 +45,9 @@ int main(int argc, char **argv)
     if (strcmp(argv[i],"-N") == 0) {
       i++;
       numBodies = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-p") == 0) {
+      i++;
+      p = atoi(argv[i]);
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     }
@@ -57,7 +60,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef SPH_KERNEL
   typedef LaplaceSpherical kernel_type;
-  kernel_type K(5);
+  kernel_type K(p);
 #endif
 #ifdef CART_KERNEL
   typedef LaplaceCartesian<5> kernel_type;

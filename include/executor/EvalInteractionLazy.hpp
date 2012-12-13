@@ -149,7 +149,6 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-<<<<<<< HEAD
   /** Evaluate long-range interactions
    *  Generate all necessary multipoles */
   void eval_LR_list(Context& bc) const

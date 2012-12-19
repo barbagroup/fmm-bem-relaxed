@@ -62,7 +62,7 @@ serialBEM: serialBEM.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) bem
+	-$(RM) serialBEM
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

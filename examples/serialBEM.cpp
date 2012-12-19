@@ -17,6 +17,22 @@ struct SolverOptions
   SolverOptions() : residual(1e-5), max_iters(50), restart(50) {};
 };
 
+void printHelpAndExit()
+{
+  printf("serialBEM : FMM-BEM for Potential problems\n");
+  printf("\nUsage: ./serialBEM <options>\n\n");
+  printf("Options:\n");
+  printf("-theta <double> : Set MAC theta for treecode evaluators\n");
+  printf("-eval {FMM,TREE} : Choose either FMM or treecode evaluator\n");
+  printf("-p <double> : Number of terms in the Multipole / Local expansions\n");
+  printf("-k {1,3,4,7} : Number of Gauss integration points used per panel\n");
+  printf("-lazy_eval : enable 'lazy' evaluator\n");
+  printf("-ncrit <int> : Maximum # of particles per Octree box\n");
+  printf("-recursions <int> : number of recursive subdivisions to create a sphere - # panels = 2*4^recursions\n");
+  printf("-help : print this message\n");
+  std::exit(0);
+}
+
 template <typename SourceType, typename ChargeType>
 void initialiseSphere(std::vector<SourceType>& panels,
                       std::vector<ChargeType>&  charges,
@@ -34,6 +50,8 @@ int main(int argc, char **argv)
   opts.set_max_per_box(10);
 
   // parse command line args
+  // check if no arguments given
+  if (argc == 1) printHelpAndExit();
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i],"-N") == 0) {
       i++;
@@ -64,8 +82,11 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-recursions") == 0) {
       i++;
       recursions = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-help") == 0) {
+      printHelpAndExit();
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
+      printHelpAndExit();
     }
   }
 

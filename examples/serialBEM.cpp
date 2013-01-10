@@ -7,7 +7,7 @@
 #include "LaplaceSphericalBEM.hpp"
 #include "Triangulation.hpp"
 #include "gmres.hpp"
-#include "Preconditioner.hpp"
+// #include "Preconditioner.hpp"
 
 struct SolverOptions
 {
@@ -15,6 +15,21 @@ struct SolverOptions
   int max_iters, restart;
 
   SolverOptions() : residual(1e-5), max_iters(50), restart(50) {};
+};
+
+struct ProblemOptions
+{
+  typedef enum { PHI_SET, DPHIDN_SET } BoundaryCondition;
+  BoundaryCondition bc_ = PHI_SET;
+  double value_ = 1.;
+  int recursions = 4;
+
+  ProblemOptions() : bc_(PHI_SET), value_(1.) {};
+  ProblemOptions(double value) : bc_(PHI_SET), value_(value) {};
+  ProblemOptions(BoundaryCondition bc, double value) : bc_(bc), value_(value) {};
+
+  double getValue() { return value_; };
+  BoundaryCondition getBC() { return bc_; };
 };
 
 void printHelpAndExit()
@@ -94,17 +109,17 @@ int main(int argc, char **argv)
   typedef LaplaceSphericalBEM kernel_type;
   kernel_type K(p,k);
 
+  // useful typedefs
   typedef kernel_type::point_type  point_type;
   typedef kernel_type::source_type source_type;
   typedef kernel_type::target_type target_type;
   typedef kernel_type::charge_type charge_type;
   typedef kernel_type::result_type result_type;
 
-  
   // Init points and charges
   std::vector<source_type> panels(numPanels);
   std::vector<charge_type> charges(numPanels);
-  initialiseSphere(panels, charges, recursions);
+  initialiseSphere(panels, charges, recursions); //, ProblemOptions());
 
   // run case solving for Phi (instead of dPhi/dn)
   for (auto& it : panels) it.switch_BC();

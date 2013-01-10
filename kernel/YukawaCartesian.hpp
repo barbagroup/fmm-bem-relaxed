@@ -247,6 +247,7 @@ class YukawaCartesian
    * @pre translation obeys the multipole-acceptance criteria
    * @pre Msource includes the influence of all points within its box
    */
+   /*
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
            const point_type& translation) const {
@@ -256,6 +257,7 @@ class YukawaCartesian
     //assert(false);
     std::cout << "Yukawa empty M2L warning" << std::endl;
   }
+  */
 
   /** Kernel M2P operation
    * r += Op(M, t) where M is the multipole and r is the result
@@ -291,6 +293,7 @@ class YukawaCartesian
    * @param[in] translation The vector from source to target
    * @pre Lsource includes the influence of all points outside its box
    */
+   /*
   void L2L(const local_type& Lsource,
            local_type& Ltarget,
            const point_type& translation) const
@@ -301,6 +304,7 @@ class YukawaCartesian
     //assert(false);
     std::cout << "Yukawa empty L2L warning" << std::endl;
   }
+  */
 
   /** Kernel L2P operation
    * r += Op(L, t) where L is the local expansion and r is the result
@@ -311,6 +315,7 @@ class YukawaCartesian
    * @param[in] result The result to accumulate into
    * @pre L includes the influence of all sources outside its box
    */
+  /*
   void L2P(const local_type& L, const point_type& center,
            const target_type& target, result_type& result) const {
     (void) L;
@@ -320,6 +325,7 @@ class YukawaCartesian
     //assert(false);
     std::cout << "Yukawa empty L2P warning" << std::endl;
   }
+  */
 
  private:
   /* No longer needed?

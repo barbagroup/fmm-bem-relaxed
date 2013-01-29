@@ -48,10 +48,10 @@ struct L2P
 
   /** Unwrap the data from BoxContext and dispatch to the L2P evaluator
    */
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
-                          BoxContext& bc,
-                          const Box& box)
+                          Context& bc,
+                          const typename Context::box_type& box)
   {
 #ifdef DEBUG
     printf("L2P: %d\n", box.index());

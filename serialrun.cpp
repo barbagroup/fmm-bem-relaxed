@@ -12,6 +12,7 @@
 //#include <KernelSkeletonMixed.hpp>
 #include <LaplaceCartesian.hpp>
 #include <YukawaCartesian.hpp>
+// #include <YukawaSpherical.hpp>
 
 #include <string.h>
 

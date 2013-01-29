@@ -20,8 +20,9 @@ struct INITL
   typename std::enable_if<ExpansionTraits<Kernel>::has_init_local>::type
   eval(const Kernel& K,
        typename Kernel::local_type& L,
-       double box_size) {
-    K.init_local(L, box_size);
+       typename Kernel::point_type& extents,
+       unsigned level) {
+    K.init_local(L, extents, level);
   }
 
   template <typename Kernel, typename Context>
@@ -33,6 +34,7 @@ struct INITL
     printf("initL: %d\n", b.index());
 #endif
 
-    INITL::eval(K, bc.local_expansion(b), bc.box_size(b));
+    typename Kernel::point_type extents(b.side_length());
+    INITL::eval(K, bc.local_expansion(b), extents, b.level());
   }
 };

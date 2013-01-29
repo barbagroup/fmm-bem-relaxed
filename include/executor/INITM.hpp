@@ -20,8 +20,9 @@ struct INITM
   typename std::enable_if<ExpansionTraits<Kernel>::has_init_multipole>::type
   eval(const Kernel& K,
        typename Kernel::multipole_type& M,
-       double box_size) {
-    K.init_multipole(M, box_size);
+       typename Kernel::point_type& extents,
+       unsigned level) {
+    K.init_multipole(M, extents, level);
   }
 
   template <typename Kernel, typename Context>
@@ -33,6 +34,7 @@ struct INITM
     printf("initM: %d\n", b.index());
 #endif
 
-    INITM::eval(K, bc.multipole_expansion(b), bc.box_size(b));
+    typename Kernel::point_type extents(b.side_length());
+    INITM::eval(K, bc.multipole_expansion(b), extents, (unsigned)b.level());
   }
 };

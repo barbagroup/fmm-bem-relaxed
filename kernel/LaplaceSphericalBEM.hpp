@@ -129,16 +129,18 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, double box_size) const {
+  void init_multipole(multipole_type& M, point_type& extents, unsigned level) const {
+    (void) level;
     M.resize(2);
-    LaplaceSpherical::init_multipole(M[0],box_size);
-    LaplaceSpherical::init_multipole(M[1],box_size);
+    LaplaceSpherical::init_multipole(M[0], extents, level);
+    LaplaceSpherical::init_multipole(M[1], extents, level);
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, double box_size) const {
+  void init_local(local_type& L, point_type& extents, unsigned level) const {
+    (void) level;
     L.resize(2);
-    LaplaceSpherical::init_local(L[0],box_size);
-    LaplaceSpherical::init_local(L[1],box_size);
+    LaplaceSpherical::init_local(L[0], extents, level);
+    LaplaceSpherical::init_local(L[1], extents, level);
   }
   /** perform Gaussian integration over panel to evaluate \int G */
   double eval_G(const source_type source, const point_type target) const {

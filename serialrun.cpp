@@ -20,10 +20,10 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
+// #define SPH_KERNEL
 //#define CART_KERNEL
 // #define YUKAWA_KERNEL
-// #define YUKAWA_SPH
+#define YUKAWA_SPH
 
 // Random number in [0,1)
 inline double drand() {
@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 {
   int numBodies = 1000, p=5;
   bool checkErrors = true;
+  double beta = 0.125;
 
   FMMOptions opts = get_options(argc, argv);
 
@@ -50,6 +51,9 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-beta") == 0) {
+      i++;
+      beta = atof(argv[i]);
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
     }
@@ -70,16 +74,22 @@ int main(int argc, char **argv)
 #endif
 #ifdef YUKAWA_KERNEL
   typedef YukawaCartesian kernel_type;
-  kernel_type K(p,0.5);
+  kernel_type K(p,beta);
 #endif
 #ifdef YUKAWA_SPH
   typedef YukawaSpherical kernel_type;
-  kernel_type K(p+1,0.5);
+  kernel_type K(p,beta);
 #endif
 #ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;
   kernel_type K;
 #endif
+
+  // if not using a Yukawa kernel, quiet warnings
+#if !defined(YUKAWA_KERNEL) && !defined(YUKAWA_SPH)
+  (void) beta;
+#endif
+
   typedef kernel_type::point_type point_type;
   typedef kernel_type::source_type source_type;
   typedef kernel_type::target_type target_type;

@@ -129,7 +129,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type& extents, unsigned level) const {
+  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
     (void) level;
     M.resize(2);
     LaplaceSpherical::init_multipole(M[0], extents, level);

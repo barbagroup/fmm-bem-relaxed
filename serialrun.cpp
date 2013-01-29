@@ -12,7 +12,7 @@
 //#include <KernelSkeletonMixed.hpp>
 #include <LaplaceCartesian.hpp>
 #include <YukawaCartesian.hpp>
-// #include <YukawaSpherical.hpp>
+#include <YukawaSpherical.hpp>
 
 #include <string.h>
 
@@ -22,7 +22,8 @@
 //#define UNIT_KERNEL
 #define SPH_KERNEL
 //#define CART_KERNEL
-//#define YUKAWA_KERNEL
+// #define YUKAWA_KERNEL
+// #define YUKAWA_SPH
 
 // Random number in [0,1)
 inline double drand() {
@@ -69,7 +70,11 @@ int main(int argc, char **argv)
 #endif
 #ifdef YUKAWA_KERNEL
   typedef YukawaCartesian kernel_type;
-  kernel_type K(6,0.5);
+  kernel_type K(p,0.5);
+#endif
+#ifdef YUKAWA_SPH
+  typedef YukawaSpherical kernel_type;
+  kernel_type K(p+1,0.5);
 #endif
 #ifdef UNIT_KERNEL
   typedef UnitKernel kernel_type;
@@ -120,6 +125,17 @@ int main(int argc, char **argv)
     printf("Error (pot) : %.4e\n", sqrt(rdiff[0] / rnorm[0]));
     printf("Error (acc) : %.4e\n", sqrt((rdiff[1]+rdiff[2]+rdiff[3]) /
 					(rnorm[1]+rnorm[2]+rnorm[3])));
+#endif
+#if defined(YUKAWA_SPH)
+    result_type rdiff = 0., rnorm = 0.;
+    for (unsigned k = 0; k < result.size(); ++k) {
+      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
+
+      rdiff = (result[k] - exact[k]) * (result[k] - exact[k]);
+      rnorm = exact[k] * exact[k];
+    }
+
+    printf("Error (pot) : %.4e\n", sqrt(rdiff / rnorm));
 #endif
 #ifdef UNIT_KERNEL
     int wrong_results = 0;

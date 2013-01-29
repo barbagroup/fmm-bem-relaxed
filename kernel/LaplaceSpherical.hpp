@@ -29,7 +29,7 @@ class LaplaceSpherical
   //! Epsilon
   static constexpr real EPS = 1e-6;
   //! Imaginary unit
-  static constexpr complex CI = complex(0,1);
+  const complex CI = complex(0,1);
   //! ODD-Even helper function
   inline int ODDEVEN(int n) const {
     return (((n & 1) == 1) ? -1 : 1);
@@ -108,7 +108,7 @@ class LaplaceSpherical
   }
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type& extents, unsigned level) const {
+  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
     (void) level;
     M.M = std::vector<complex>(P*(P+1)/2, 0);
     M.RMAX = 0;

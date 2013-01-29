@@ -127,7 +127,7 @@ class YukawaCartesian
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type& extents, unsigned level) const {
+  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
     (void) extents;
     (void) level;
     M = std::vector<real>((P+1)*(P+2)*(P+3)/6, 0);

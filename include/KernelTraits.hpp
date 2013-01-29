@@ -119,7 +119,7 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   SFINAE_TEMPLATE(HasInitMultipole,init_multipole);
   static constexpr bool has_init_multipole =
       HasInitMultipole<void,
-                       multipole_type&, point_type&, unsigned>::value;
+                       multipole_type&, point_type, unsigned>::value;
   SFINAE_TEMPLATE(HasInitLocal,init_local);
   static constexpr bool has_init_local =
       HasInitLocal<void,

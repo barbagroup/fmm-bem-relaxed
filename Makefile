@@ -39,7 +39,7 @@ INCLUDES = -I. -I./include -I./include/tree -I./include/executor -I./kernel -I./
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
-LIBS +=
+LIBS += 
 
 ##################
 # The following part of the makefile is generic; it can be used to
@@ -50,7 +50,7 @@ LIBS +=
 # 'make' - default rule
 all: serialrun
 
-serialrun: serialrun.o
+serialrun: serialrun.o 
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 test_tree: test_tree.o

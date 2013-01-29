@@ -57,7 +57,7 @@ class KernelSkeleton
   typedef std::vector<real> local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type& extents, unsigned level) const {
+  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
     (void) M;
     (void) extents;
     (void) level;

@@ -50,10 +50,10 @@ class P2M
 
   /** Unwrap the data from the BoxContext and dispatch to P2M evaluator
    */
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(const Kernel& K,
-                          BoxContext& bc,
-                          const Box& box)
+                          Context& bc,
+                          const typename Context::box_type& box)
   {
 #ifdef DEBUG
     printf("P2M: %d\n", box.index());

@@ -49,11 +49,11 @@ class M2P
 
   /** Unwrap the data from BoxContext and dispatch to the M2P evaluator
    */
-  template <typename Kernel, typename BoxContext, typename Box>
+  template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
-                          BoxContext& bc,
-                          const Box& source,
-                          const Box& target) {
+                          Context& bc,
+                          const typename Context::box_type& source,
+                          const typename Context::box_type& target) {
 #ifdef DEBUG
     printf("M2P: %d to %d\n", source.index(), target.index());
 #endif

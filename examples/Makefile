@@ -48,9 +48,12 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: sphericalBEM
+all: LaplaceBEM YukawaBEM
 
-sphericalBEM: sphericalBEM.o
+LaplaceBEM: LaplaceBEM.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+YukawaBEM: YukawaBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's
@@ -62,7 +65,7 @@ sphericalBEM: sphericalBEM.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) serialBEM
+	-$(RM) LaplaceBEM YukawaBEM 
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

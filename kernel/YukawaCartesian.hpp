@@ -14,7 +14,7 @@
 
 class YukawaCartesian
 {
- private:
+ protected:
   typedef double real;
   typedef std::complex<real> complex;
   typedef std::vector<real> real_vec;
@@ -40,7 +40,7 @@ class YukawaCartesian
   //! indices of multipole terms
   std::vector<unsigned> index;
 
- private:
+ protected:
   //! store all possible index combinations returned from setIndex
   struct IndexCache
   {
@@ -165,6 +165,7 @@ class YukawaCartesian
    * @param[in] t_begin,t_end Iterator pair to the target points
    * @param[in] r_begin Iterator to the result accumulator
    */
+  /*
   template <typename PointIter, typename ChargeIter, typename ResultIter>
   void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
            PointIter t_begin, PointIter t_end, ResultIter r_begin) const
@@ -194,6 +195,7 @@ class YukawaCartesian
       (*r_begin)[3] -= R[3];
     }
   }
+  */
 
   /** Kernel P2M operation
    * M += Op(s) * c where M is the multipole and s is the source
@@ -240,27 +242,6 @@ class YukawaCartesian
     }
   }
 
-  /** Kernel M2L operation
-   * L += Op(M)
-   *
-   * @param[in] Msource The multpole expansion source
-   * @param[in,out] Ltarget The local expansion target
-   * @param[in] translation The vector from source to target
-   * @pre translation obeys the multipole-acceptance criteria
-   * @pre Msource includes the influence of all points within its box
-   */
-   /*
-  void M2L(const multipole_type& Msource,
-                 local_type& Ltarget,
-           const point_type& translation) const {
-    (void) Msource;
-    (void) Ltarget;
-    (void) translation;
-    //assert(false);
-    std::cout << "Yukawa empty M2L warning" << std::endl;
-  }
-  */
-
   /** Kernel M2P operation
    * r += Op(M, t) where M is the multipole and r is the result
    *
@@ -287,59 +268,8 @@ class YukawaCartesian
     }
   }
 
-  /** Kernel L2L operator
-   * L_t += Op(L_s) where L_t is the target and L_s is the source
-   *
-   * @param[in] source The local source at the parent level
-   * @param[in,out] target The local target to accumulate into
-   * @param[in] translation The vector from source to target
-   * @pre Lsource includes the influence of all points outside its box
-   */
-   /*
-  void L2L(const local_type& Lsource,
-           local_type& Ltarget,
-           const point_type& translation) const
-  {
-    (void) Lsource;
-    (void) Ltarget;
-    (void) translation;
-    //assert(false);
-    std::cout << "Yukawa empty L2L warning" << std::endl;
-  }
-  */
 
-  /** Kernel L2P operation
-   * r += Op(L, t) where L is the local expansion and r is the result
-   *
-   * @param[in] L The local expansion
-   * @param[in] center The center of the box with the local expansion
-   * @param[in] target The target of this L2P operation
-   * @param[in] result The result to accumulate into
-   * @pre L includes the influence of all sources outside its box
-   */
-  /*
-  void L2P(const local_type& L, const point_type& center,
-           const target_type& target, result_type& result) const {
-    (void) L;
-    (void) center;
-    (void) target;
-    (void) result;
-    //assert(false);
-    std::cout << "Yukawa empty L2P warning" << std::endl;
-  }
-  */
-
- private:
-  /* No longer needed?
-  static constexpr unsigned fact(unsigned N) const {
-  // WARNING: Overflows when N > 13
-    unsigned f = 1;
-    for (unsigned ii = 1; ii < N+1; ++ii)
-      f *= ii;
-    return f;
-  }
-  */
-
+ protected:
   /** Compute "n choose k" combinatorial
    * @returns n! / (k! (n-k)!)
    */

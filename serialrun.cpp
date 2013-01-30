@@ -22,8 +22,8 @@
 //#define UNIT_KERNEL
 // #define SPH_KERNEL
 //#define CART_KERNEL
-// #define YUKAWA_KERNEL
-#define YUKAWA_SPH
+#define YUKAWA_KERNEL
+// #define YUKAWA_SPH
 
 // Random number in [0,1)
 inline double drand() {

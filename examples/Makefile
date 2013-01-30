@@ -48,9 +48,9 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: serialBEM
+all: sphericalBEM
 
-serialBEM: serialBEM.o
+sphericalBEM: sphericalBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 # suffix replacement rule for building .o's from .cpp's

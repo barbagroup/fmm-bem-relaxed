@@ -101,9 +101,9 @@ class YukawaSpherical
     M2MRotPlus(boost::extents[P+1][P+1][range(-P,P)]),
     M2MRotMinus(boost::extents[P+1][P+1][range(-P,P)]),
     C(4*P*P) {
-    for( int n=0; n!=2*P; ++n ) { 
-      for( int m=-n; m<=n; ++m ) { 
-        int nm = n*n+n+m;  
+    for( int n=0; n!=2*P; ++n ) {
+      for( int m=-n; m<=n; ++m ) {
+        int nm = n*n+n+m;
         int nabsm = abs(m);
         real fnma = 1.0;
         for( int i=1; i<=n-nabsm; ++i ) fnma *= i;
@@ -120,14 +120,16 @@ class YukawaSpherical
   }
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type extent, const unsigned level) const {
+  void init_multipole(multipole_type& M,
+                      const point_type& extent, const unsigned level) const {
     (void) extent;
     M.level = level;
     M.scale = Kappa/pow(2.,level);
     M.M = std::vector<complex>(P*(P+1)/2, 0);
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, const point_type& extent, const unsigned level) const {
+  void init_local(local_type& L,
+                  const point_type& extent, const unsigned level) const {
     L.level = level;
     L.scale = Kappa*extent[0];
     L.M = std::vector<complex>(P*(P+1)/2, 0);
@@ -229,7 +231,7 @@ class YukawaSpherical
     cart2sph(rho,alpha,beta,translation);
 
     ephi[0] = complex(1.,0);
-    
+
     // set ephi[1]
     if (translation[0] >= 0) {
       if (translation[1] >= 0) ephi[1] = complex(arg,-arg); // ifl = 3
@@ -623,18 +625,18 @@ class YukawaSpherical
 
     for (ij = 1; ij<P; ij++) {
 
-      // m' = 0 case using formula (1) 
+      // m' = 0 case using formula (1)
 
       for (im = -ij; im <= -1; im++) {
         D[ij][0][im] = -sqc[ij-im][2]*D[ij-1][0][im+1];
 
         if (im > 1-ij) {
           D[ij][0][im] += sqc[ij+im][2]*D[ij-1][0][im-1];
-        }   
+        }
         D[ij][0][im] *= hsthta;
         if (im > -ij) {
           D[ij][0][im] += D[ij-1][0][im]*ctheta*sqc[ij+im][1]*sqc[ij-im][1];
-        }   
+        }
         D[ij][0][im] /= ij;
       }
 
@@ -648,14 +650,14 @@ class YukawaSpherical
 
         if (im < (ij-1)) {
           D[ij][0][im] += sqc[ij-im][2]*D[ij-1][0][im+1];
-        }   
+        }
         D[ij][0][im] *= hsthta;
         if (im < ij) {
           D[ij][0][im] += D[ij-1][0][im]*ctheta*sqc[ij+im][1]*sqc[ij-im][1];
-        }   
+        }
         D[ij][0][im] /= ij;
       }
-      // 0 < m' <= j case using formula (2) 
+      // 0 < m' <= j case using formula (2)
       for (imp = 1; imp <= ij; imp++) {
         for (im = -ij; im <= -1; im++) {
           D[ij][imp][im] = D[ij-1][imp-1][im+1]*cthtam*sqc[ij-im][2];
@@ -803,7 +805,7 @@ class YukawaSpherical
       b[0] = term1 * (1. + term2 / 3.);
       for (unsigned i=1; i<=nb; i++) {
         term1 = term1 * xscale / (2*i + 1);
-        
+
         if (term1 < enmten) term1 = 0.;
         b[i] = term1 * (1. + term2 / (2*i + 3));
       }
@@ -825,7 +827,7 @@ class YukawaSpherical
       for (unsigned i=0; i<nb+1; i++) {
         b[i] = std::tr1::cyl_bessel_i(alpha+i,x);
       }
-      
+
       // now scale to i_n*scal**(-n).
       for (unsigned i=0; i<=nb; i++) {
         b[i] *= cons;
@@ -834,7 +836,7 @@ class YukawaSpherical
         if (fabs(b[i]) < enmten) cons = 0.;
       }
     }
-  } 
+  }
 
   void Kn(real scale, real x, unsigned nb, real *by) const
   {

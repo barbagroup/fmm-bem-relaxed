@@ -56,14 +56,28 @@ class KernelSkeleton
   //! Local expansion type
   typedef std::vector<real> local_type;
 
-  /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
+  /** Initialize a multipole expansion with the size of a box and level number
+   * (Optional: If not implemented, default constructor for multipole_type used)
+   *
+   * @param[in] M The multipole to be initialized
+   * @param[in] extents The dimensions of the box containing the multipole
+   * @param[in] level The level number of the box. 0: Root box
+   */
+  void init_multipole(multipole_type& M,
+                      const point_type& extents, unsigned level) const {
     (void) M;
     (void) extents;
     (void) level;
   }
-  /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, point_type& extents, unsigned level) const {
+  /** Initialize a local expansion with the size of a box at this level
+   * (Optional: If not implemented, default constructor for local_type used)
+   *
+   * @param[in] M The multipole to be initialized
+   * @param[in] extents The dimensions of the box containing the multipole
+   * @param[in] level The level number of the box. 0: Root box
+   */
+  void init_local(local_type& L,
+                  const point_type& extents, unsigned level) const {
     (void) L;
     (void) extents;
     (void) level;

@@ -85,7 +85,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
         double x = vertices[0][0]*points[i][0]+vertices[1][0]*points[i][1]+vertices[2][0]*points[i][2];
         double y = vertices[0][1]*points[i][0]+vertices[1][1]*points[i][1]+vertices[2][1]*points[i][2];
         double z = vertices[0][2]*points[i][0]+vertices[1][2]*points[i][1]+vertices[2][2]*points[i][2];
-        
+
         quad_points[i] = point_type(x,y,z);
       }
     }
@@ -129,14 +129,16 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
+  void init_multipole(multipole_type& M,
+                      const point_type& extents, unsigned level) const {
     (void) level;
     M.resize(2);
     LaplaceSpherical::init_multipole(M[0], extents, level);
     LaplaceSpherical::init_multipole(M[1], extents, level);
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, point_type& extents, unsigned level) const {
+  void init_local(local_type& L,
+                  const point_type& extents, unsigned level) const {
     (void) level;
     L.resize(2);
     LaplaceSpherical::init_local(L[0], extents, level);
@@ -215,13 +217,13 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     {
       // if I know the potential for source panel, need to multiply by dG/dn for RHS, want G for solve
       return kernel_value_type(eval_G(s, static_cast<point_type>(t)));
-    } 
-    else if (t.BC== Panel::NORMAL_DERIV) 
+    }
+    else if (t.BC== Panel::NORMAL_DERIV)
     {
       // I know d(phi)/dn for this panel, need to multiply by G for RHS, want dG/dn for solve
       return kernel_value_type(eval_dGdn(s, static_cast<point_type>(t)));
     }
-    else 
+    else
     {
       // should never get here
       return 0.;
@@ -248,8 +250,8 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
       evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) { 
-        for( int m=0; m<=n; ++m ) { 
+      for( int n=0; n!=P; ++n ) {
+        for( int m=0; m<=n; ++m ) {
           const int nm  = n * n + n + m;
           const int nms = n * (n + 1) / 2 + m;
           if (source.BC == Panel::POTENTIAL)
@@ -258,7 +260,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
             M[0][nms] += charge * gauss_weight[i] * source.Area * Ynm[nm];
           }
           else
-          { 
+          {
             // otherwise influence of dGdn needed
             complex brh = (double)n/rho*Ynm[nm];
             complex bal = YnmTheta[nm];
@@ -328,20 +330,20 @@ class LaplaceSphericalBEM : public LaplaceSpherical
            PointIter t_begin, PointIter t_end,
            ResultIter r_begin) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
-    
-    for( ; t_begin != t_end ; ++t_begin, ++r_begin ) { 
+
+    for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
       point_type dist = static_cast<point_type>(*t_begin) - center;
       point_type cartesian(0);
       double r0_temp(0), r1_temp(0);
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalLocal(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) { 
+      for( int n=0; n!=P; ++n ) {
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         r0_temp += std::real(M[0][nms] * Ynm[nm]);
         r1_temp += std::real(M[1][nms] * Ynm[nm]);
-        for( int m=1; m<=n; ++m ) { 
+        for( int m=1; m<=n; ++m ) {
           nm  = n * n + n + m;
           nms = n * (n + 1) / 2 + m;
           r0_temp += 2 * std::real(M[0][nms] * Ynm[nm]);
@@ -390,17 +392,17 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalMultipole(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) { 
+      for( int n=0; n!=P; ++n ) {
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         r0_temp += std::real(L[0][nms] * Ynm[nm]);
         r1_temp += std::real(L[1][nms] * Ynm[nm]);
-        for( int m=1; m<=n; ++m ) { 
+        for( int m=1; m<=n; ++m ) {
           nm  = n * n + n + m;
           nms = n * (n + 1) / 2 + m;
           r0_temp += 2 * std::real(L[0][nms] * Ynm[nm]);
           r1_temp += 2 * std::real(L[1][nms] * Ynm[nm]);
-        }   
+        }
       }
       if   ((*t).BC== Panel::POTENTIAL) *r_begin += r0_temp;
       else                              *r_begin -= r1_temp;

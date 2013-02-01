@@ -108,14 +108,16 @@ class LaplaceSpherical
   }
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
+  void init_multipole(multipole_type& M,
+                      const point_type& extents, unsigned level) const {
     (void) level;
     M.M = std::vector<complex>(P*(P+1)/2, 0);
     M.RMAX = 0;
     M.RCRIT = extents[0] / 2;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, point_type& extents, unsigned level) const {
+  void init_local(local_type& L,
+                  const point_type& extents, unsigned level) const {
     (void) extents;  // Quiet warning
     (void) level;
     L = std::vector<complex>(P*(P+1)/2, 0);

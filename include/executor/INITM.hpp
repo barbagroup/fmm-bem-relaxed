@@ -13,7 +13,6 @@ struct INITM
   template <typename... Args>
   inline static void eval(Args...) {
     // Do nothing
-    printf("This is begin called again...\n");
   }
 
   template <typename Kernel>
@@ -21,7 +20,7 @@ struct INITM
   typename std::enable_if<ExpansionTraits<Kernel>::has_init_multipole>::type
   eval(const Kernel& K,
        typename Kernel::multipole_type& M,
-       typename Kernel::point_type extents,
+       const typename Kernel::point_type& extents,
        unsigned level) {
     K.init_multipole(M, extents, level);
   }

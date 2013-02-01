@@ -84,7 +84,7 @@ class YukawaCartesianBEM : public YukawaCartesian
         double x = vertices[0][0]*points[i][0]+vertices[1][0]*points[i][1]+vertices[2][0]*points[i][2];
         double y = vertices[0][1]*points[i][0]+vertices[1][1]*points[i][1]+vertices[2][1]*points[i][2];
         double z = vertices[0][2]*points[i][0]+vertices[1][2]*points[i][1]+vertices[2][2]*points[i][2];
-        
+
         quad_points[i] = point_type(x,y,z);
       }
     }
@@ -128,13 +128,15 @@ class YukawaCartesianBEM : public YukawaCartesian
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M, point_type extents, unsigned level) const {
+  void init_multipole(multipole_type& M,
+                      const point_type& extents, unsigned level) const {
     M.resize(2);
     YukawaCartesian::init_multipole(M[0], extents, level);
     YukawaCartesian::init_multipole(M[1], extents, level);
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L, point_type& extents, unsigned level) const {
+  void init_local(local_type& L,
+                  const point_type& extents, unsigned level) const {
     L.resize(2);
     YukawaCartesian::init_local(L[0], extents, level);
     YukawaCartesian::init_local(L[1], extents, level);
@@ -214,13 +216,13 @@ class YukawaCartesianBEM : public YukawaCartesian
     {
       // if I know the potential for source panel, need to multiply by dG/dn for RHS, want G for solve
       return kernel_value_type(eval_G(s, static_cast<point_type>(t)));
-    } 
-    else if (t.BC== Panel::NORMAL_DERIV) 
+    }
+    else if (t.BC== Panel::NORMAL_DERIV)
     {
       // I know d(phi)/dn for this panel, need to multiply by G for RHS, want dG/dn for solve
       return kernel_value_type(eval_dGdn(s, static_cast<point_type>(t)));
     }
-    else 
+    else
     {
       // should never get here
       return 0.;

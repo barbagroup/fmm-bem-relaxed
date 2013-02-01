@@ -20,7 +20,7 @@ struct INITL
   typename std::enable_if<ExpansionTraits<Kernel>::has_init_local>::type
   eval(const Kernel& K,
        typename Kernel::local_type& L,
-       typename Kernel::point_type& extents,
+       const typename Kernel::point_type& extents,
        unsigned level) {
     K.init_local(L, extents, level);
   }

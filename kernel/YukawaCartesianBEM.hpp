@@ -149,7 +149,7 @@ class YukawaCartesianBEM : public YukawaCartesian
       namespace AI = AnalyticalIntegral;
       double G = 0., dGdn = 0.;
       auto& vertices = source.vertices;
-      AI::SemiAnalytical<AI::YUKAWA>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
+      AI::SemiAnalytical<AI::YUKAWA>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10, Kappa);
       return G;
     }
     else
@@ -178,7 +178,7 @@ class YukawaCartesianBEM : public YukawaCartesian
       // semi-analytical integral
       auto& vertices = source.vertices;
       double G = 0., dGdn = 0.;
-      AI::SemiAnalytical<AI::YUKAWA>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
+      AI::SemiAnalytical<AI::YUKAWA>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10, Kappa);
       return -dGdn;
     } else {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(K);

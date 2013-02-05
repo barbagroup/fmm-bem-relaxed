@@ -16,6 +16,8 @@ inline double drand(double A, double B) {
   return (B-A) * drand() + A;
 }
 
+
+
 int main(int argc, char **argv)
 {
   int numBodies = 1000;

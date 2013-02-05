@@ -9,56 +9,66 @@
 
 //! Timer and Trace logger
 class Logger {
-  std::map<std::string, Clock> event_start_;
-  std::map<std::string, double> event_time_;
 
-  //! Print event name and time to output stream
-  inline static void print(std::ostream& s,
-                           const std::string& event, double time) {
-    s << std::setw(20) << std::left
-      << event << " : " << time << std::endl;
-  }
+  struct EventData {
+    Clock start_time;
+    double total_time;
+    int hit;
+    EventData()
+        : start_time(), total_time(0), hit(0) {
+    }
+    void start() {
+      start_time.start();
+    }
+    friend std::ostream& operator<<(std::ostream& s, const EventData& e) {
+      return s << e.hit << " (calls) * " << e.total_time/e.hit << " (sec/call) = "
+               << e.total_time << " (secs)";
+    }
+  };
+
+  std::map<std::string, EventData> data_;
 
  public:
 
-  //! Print event name and time to output stream
-  inline void print(std::ostream& s,
-                    const std::string& event) {
-    print(s, event, event_time_[event]);
-  }
-
   //! Start a clock for an event
   inline void start(const std::string& event) {
-    event_start_[event].start();
+    data_[event].start();
   }
 
   //! Return the elasped time for given event
   double stop(const std::string& event, bool print_event = false) {
-    Clock event_end;
-    double event_elapsed = event_end - event_start_[event];
+    Clock end_time;      // Stop the clock
+    EventData& event_data = data_[event];
 
     // Accumulate event times in the log
-    event_time_[event] += event_elapsed;
+    double elapsed = end_time - event_data.start_time;
+    event_data.total_time += elapsed;
+    event_data.hit += 1;
 
-    if (print_event) print(std::cout, event);
-    return event_elapsed;
+    if (print_event)
+      std::cout << event_data << std::endl;
+
+    return elapsed;
   }
 
   //! Erase entry in timer
   inline void clear(const std::string& event) {
-    event_time_.erase(event);
+    data_.erase(event);
   }
 
   //! Erase all events in timer
   inline void clear() {
-    event_time_.clear();
+    data_.clear();
   }
+
+  // Get an event's data?
+  //PublicEventData operator[](const std::string& event) { ... }
 
   //! Print all events and timing to an ostream
   friend std::ostream& operator<<(std::ostream& s, const Logger& log) {
-    for (auto it : log.event_time_)
-      print(s, it.first, it.second);
+    for (auto it : log.data_)
+      s << std::setw(20) << std::left << it.first << " : "
+        << it.second << std::endl;
     return s;
   }
 };
-

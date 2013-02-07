@@ -39,6 +39,8 @@ class YukawaCartesian
   std::vector<unsigned> I, J, K;
   //! indices of multipole terms
   std::vector<unsigned> index;
+  //! factorial cache
+  std::vector<double> fact;
 
  protected:
   //! store all possible index combinations returned from setIndex
@@ -106,7 +108,7 @@ class YukawaCartesian
   YukawaCartesian() : YukawaCartesian(2,1.) {};
   //! Constructor
   YukawaCartesian(int p, double kappa)
-      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), index_cache(P) {
+      : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), fact(2*P), index_cache(P) {
     I = std::vector<unsigned>(MTERMS,0);
     J = std::vector<unsigned>(MTERMS,0);
     K = std::vector<unsigned>(MTERMS,0);
@@ -124,6 +126,9 @@ class YukawaCartesian
         }
       }
     }
+
+    fact[0] = 1;
+    for (int i=1; i<2*P; i++) fact[i] = i*fact[i-1];
   };
 
   /** Initialize a multipole expansion with the size of a box at this level */
@@ -159,46 +164,6 @@ class YukawaCartesian
     return kernel_value_type(pot, -dist[0], -dist[1], -dist[2]);
   }
 
-  /** Kernel vectorized non-symmetric P2P operation
-   * r_i += sum_j K(t_i, s_j) * c_j
-   *
-   * @param[in] s_begin,s_end Iterator pair to the source points
-   * @param[in] c_begin Iterator to the source charges
-   * @param[in] t_begin,t_end Iterator pair to the target points
-   * @param[in] r_begin Iterator to the result accumulator
-   */
-  /*
-  template <typename PointIter, typename ChargeIter, typename ResultIter>
-  void P2P(PointIter s_begin, PointIter s_end, ChargeIter c_begin,
-           PointIter t_begin, PointIter t_end, ResultIter r_begin) const
-  {
-    for( ; t_begin!=t_end; ++t_begin, ++r_begin) {
-      result_type R(0);
-
-      ChargeIter c = c_begin;
-      for(auto s = s_begin ; s!=s_end; ++s, ++c) {
-        auto dist = *t_begin - *s;
-        real r2 = normSq(dist);
-        real r  = std::sqrt(r2);
-        real invR2 = 1.0/r2;
-        real invR  = 1.0/r;
-        if( r < 1e-8 ) { invR = 0; invR2 = 0; };
-        real aux = (*c) * exp(-Kappa*r) * invR;
-        R[0] += aux;
-        dist *= aux * (Kappa*r+1) * invR2;
-        R[1] += dist[0];
-        R[2] += dist[1];
-        R[3] += dist[2];
-      }
-
-      (*r_begin)[0] += R[0];
-      (*r_begin)[1] -= R[1];
-      (*r_begin)[2] -= R[2];
-      (*r_begin)[3] -= R[3];
-    }
-  }
-  */
-
   /** Kernel P2M operation
    * M += Op(s) * c where M is the multipole and s is the source
    *
@@ -212,7 +177,9 @@ class YukawaCartesian
     point_type dX = center - source;
 
     for (unsigned i = 0; i < MTERMS; ++i) {
-      M[i] += charge * pow(dX[0],I[i]) * pow(dX[1],J[i]) * pow(dX[2],K[i]);
+      M[i] += charge * pow(dX[0],I[i]) / fact[I[i]]
+                     * pow(dX[1],J[i]) / fact[J[i]]
+                     * pow(dX[2],K[i]) / fact[K[i]];
     }
   }
 
@@ -236,8 +203,10 @@ class YukawaCartesian
         for (unsigned jj=0; jj<J[i]+1; jj++) {
           for (unsigned kk=0; kk<K[i]+1; kk++) {
 
-            unsigned Midx = index_cache(ii,jj,kk); // setIndex(P,ii,jj,kk);
-            Mtarget[i] += Msource[Midx]*comb(I[i],I[Midx])*comb(J[i],J[Midx])*comb(K[i],K[Midx])*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx]);
+            unsigned Midx = index_cache(ii,jj,kk);
+            // Mtarget[i] += Msource[Midx]*comb(I[i],I[Midx])*comb(J[i],J[Midx])*comb(K[i],K[Midx])*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx]);
+            double fact_term = fact[I[i]-ii]*fact[J[i]-jj]*fact[K[i]-kk];
+            Mtarget[i] += Msource[Midx]*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx])/fact_term;
           }
         }
       }
@@ -259,17 +228,123 @@ class YukawaCartesian
 
     point_type dX = target - center;
 
-    getCoeff(a_aux,ax_aux,ay_aux,az_aux,dX);
+    getCoeff(a_aux, ax_aux, ay_aux, az_aux, dX);
 
     // loop over tarSize
     for (unsigned j=0; j<MTERMS; j++) {
-      result[0] +=  a_aux[j]*M[j];
-      result[1] += ax_aux[j]*M[j];
-      result[2] += ay_aux[j]*M[j];
-      result[3] += az_aux[j]*M[j];
+      double fact_term = fact[I[j]]*fact[J[j]]*fact[K[j]];
+
+      result[0] +=  a_aux[j]*M[j]*fact_term;
+      result[1] += ax_aux[j]*M[j]*fact_term;
+      result[2] += ay_aux[j]*M[j]*fact_term;
+      result[3] += az_aux[j]*M[j]*fact_term;
     }
   }
 
+  /** Kernel M2L operation
+   * L += Op(M)
+   *
+   * @param[in] Msource The multpole expansion source
+   * @param[in,out] Ltarget The local expansion target
+   * @param[in] translation The vector from source to target
+   * @pre translation obeys the multipole-acceptance criteria
+   * @pre Msource includes the influence of all points within its box
+   */
+  void M2L(const multipole_type& Msource,
+                 local_type& Ltarget,
+           const point_type& translation) const
+  {
+    std::vector<real> a_aux(MTERMS,0), ax_aux(MTERMS,0), ay_aux(MTERMS,0), az_aux(MTERMS,0);
+
+    getCoeff(a_aux, ax_aux, ay_aux, az_aux, translation);
+
+    for (unsigned i=0; i<MTERMS; i++) {
+      a_aux[i] *= fact[I[i]]*fact[J[i]]*fact[K[i]];
+    }
+
+    for (int ik=0; ik<P+1; ik++) {
+      for (int jk=0; jk<P+1-ik; jk++) {
+        for (int kk=0; kk<P+1-ik-jk; kk++) {
+          // k = (ik, jk, kk)
+          int Lk  = index_cache(ik,jk,kk);
+          //
+          for (int in=0; in<P+1-ik; in++) {
+            // printf("in: %d\n",in);
+            for (int jn=0; jn<P+1-jk; jn++) {
+              for (int kn=0; kn<P+1-kk; kn++) {
+
+                if (in+jn+kn > P) continue;
+                if (in+ik+jn+jk+kn+kk > P) continue;
+                //     n = (in, jn, kn)
+                // (n+k) = (ik+in, jk+jn, kk+kn)
+                // L_k   = \sum_{n=0}^{p-k} a_aux[getIndex(n+k)]*M[getIndex(n)]*fact[(n+k)]
+                //
+                int Mn  = index_cache(in,jn,kn);
+                int npk = index_cache(ik+in,jk+jn,kk+kn);
+
+                Ltarget[Lk] += a_aux[npk] * Msource[Mn]; //  * pow(-1,in+jn+kn);
+              }
+            }
+          } // end inner loop
+        }
+      }
+    } // end outer loop
+  }
+
+  /** Kernel L2L operation
+   * L_t += Op(L_s) where L_t is the target and L_s is the source
+   *
+   * @param[in] source The local source at the parent level
+   * @param[in,out] target The local target to accumulate into
+   * @param[in] translation The vector from source to target
+   * @pre Lsource includes the influence of all points outside its box
+   */
+  void L2L(const local_type& Lsource,
+                 local_type& Ltarget,
+           const point_type& translation) const
+  {
+    for (unsigned i=0; i<MTERMS; i++) {
+      // n = (I[i], J[i], K[i])
+      for (int ii=I[i]; ii<P+1; ii++) {
+        for (int jj=J[i]; jj<P+1-ii; jj++) {
+          for (int kk=K[i]; kk<P+1-ii-jj; kk++) {
+            // k = (ii, jj, kk)
+            int Lk = index_cache(ii,jj,kk);
+
+            double fact_term = fact[ii-I[i]]*fact[jj-J[i]]*fact[kk-K[i]];
+            Ltarget[i] += Lsource[Lk]*pow(translation[0],ii-I[i])*pow(translation[1],jj-J[i])*pow(translation[2],kk-K[i]) / fact_term;
+          }
+        }
+      }
+    }
+  }
+
+  /** Kernel L2P operation
+   * r += Op(L, t) where L is the local expansion and r is the result
+   *
+   * @param[in] L The local expansion
+   * @param[in] center The center of the box with the local expansion
+   * @param[in] target The target of this L2P operation
+   * @param[in] result The result to accumulate into
+   * @pre L includes the influence of all sources outside its box
+   */
+  void L2P(const local_type& L, const point_type& center,
+           const target_type& target, result_type& result) const
+  {
+    auto dx = target-center;
+
+    for (unsigned i=0; i<MTERMS; i++) {
+      // k = (I[i], J[i], K[i])
+      double phi = L[i]*pow(dx[0],I[i])*pow(dx[1],J[i])*pow(dx[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
+      result[0] += phi;
+
+      double inv[3];
+      for (int i=0; i<3; i++) inv[i] = (fabs(dx[i]) < 1e-12) ? 0 : 1. / dx[i];
+      result[1] += phi * I[i] * inv[0];
+      result[2] += phi * J[i] * inv[1];
+      result[3] += phi * K[i] * inv[2];
+    }
+  }
 
  protected:
   /** Compute "n choose k" combinatorial
@@ -293,7 +368,7 @@ class YukawaCartesian
     return result;
   }
 
-  void getCoeff(real_vec& a, real_vec& ax, real_vec& ay, real_vec& az, point_type& dX) const
+  void getCoeff(real_vec& a, real_vec& ax, real_vec& ay, real_vec& az, const point_type& dX) const
   {
     real_vec b(a.size(),0);
     real dx = dX[0], dy = dX[1], dz = dX[2];
@@ -349,8 +424,8 @@ class YukawaCartesian
       a[I] = C * ( -Kappa*(dz*b[Im1z] + b[Im2z]) -(2*i-1)*dz*a[Im1z] - (i-1)*a[Im2z] );
       az[Im1z] = a[I]*i;
     }
-  // One index = 0, one = 1 other >=1
 
+    // One index = 0, one = 1 other >=1
     Cb   = -Kappa/2;
     C    = R2_1/2.;
     I    = index_cache(1,1,0); //setIndex(P,1,1,0);

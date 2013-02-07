@@ -3,7 +3,7 @@
 
 #include "LaplaceCartesian.hpp"
 #include "LaplaceSpherical.hpp"
-#include "YukawaCartesian.hpp"
+#include "YukawaCartesianFMM.hpp"
 
 #include "Math.hpp"
 
@@ -28,7 +28,7 @@ void single_level_test(const Kernel& K)
   charge_type c = 1;
 
   // init target
-  target_type t = target_type(1,0,0);
+  target_type t = target_type(0.9,0,0); // 1,1);
 
   // init results vectors for exact, FMM
   result_type rexact;
@@ -37,20 +37,25 @@ void single_level_test(const Kernel& K)
 
   // test direct
   rexact = K(t,s) * c;
+  // rexact = result_type(rexact[0],0.,0.,0.);
 
   // setup intial multipole expansion
   multipole_type M;
-  point_type M_center(0.125,0.125,0.125);
-  INITM::eval(K, M, 0.25);
+  point_type M_center(0.125,0,0); // 0.125,0.125);
+  INITM::eval(K, M, M_center, 1u);
   K.P2M(s, c, M_center, M);
+
 
   // test M2P
   K.M2P(M, M_center, t, rm2p);
 
   // test M2L, L2P
   local_type L;
-  INITL::eval(K, L, 0.25);
-  point_type L_center(0.875,0.125,0.125);
+  point_type L_center(0.875,0,0); // 0.875,0.875);
+  auto d = L_center - M_center;
+  printf("DIST: (%lg, %lg, %lg : %lg\n",d[0],d[1],d[2],norm(d));
+  // L_center = point_type(t);
+  INITL::eval(K, L, L_center, 1u);
   K.M2L(M, L, L_center - M_center);
   K.L2P(L, L_center, t, rfmm);
 
@@ -80,8 +85,8 @@ int main(int argc, char** argv)
   (void) argv;
 
   //LaplaceCartesian<5> K;
-  LaplaceSpherical K(5);
-  //YukawaCartesian K(5, 0);
+  // LaplaceSpherical K(5);
+  YukawaCartesian K(10, 0.1);
 
   single_level_test(K);
 }

@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+// #define TREECODE_ONLY
+
 template <typename Kernel>
 void two_level_test(const Kernel& K)
 {
@@ -28,7 +30,7 @@ void two_level_test(const Kernel& K)
   charge_type c = 1;
 
   // init target
-  target_type t = target_type(1,0,0);
+  target_type t = target_type(0.98,0.98,0.98);
 
   // init results vectors for exact, FMM
   result_type rexact;
@@ -40,33 +42,36 @@ void two_level_test(const Kernel& K)
 
   // setup intial multipole expansion
   multipole_type M;
-  point_type M_center(0.05, 0.05, 0.05);
-  INITM::eval(K, M, 0.10);
+  const point_type M_center(0.05, 0.05, 0.05);
+  INITM::eval(K, M, M_center, 2u);
   K.P2M(s, c, M_center, M);
 
   // perform M2M
   multipole_type M2;
-  point_type M2_center(0.1, 0.1, 0.1);
-  INITM::eval(K, M2, 0.2);
+  const point_type M2_center(0.1, 0.1, 0.1);
+  INITM::eval(K, M2, M2_center, 1u);
   K.M2M(M, M2, M2_center - M_center);
+  //K.P2M(s,c,M2_center,M2);
 
   // test M2P
-  K.M2P(M, M2_center, t, rm2p);
+  K.M2P(M2, M2_center, t, rm2p);
 
   // test M2L, L2P
+#ifndef TREECODE_ONLY
   local_type L2;
-  point_type L2_center(0.9, 0.1, 0.1);
-  INITL::eval(K, L2, 0.2);
+  point_type L2_center(0.9, 0.9, 0.9);
+  INITL::eval(K, L2, L2_center, 1u);
   K.M2L(M2, L2, L2_center - M2_center);
 
   // test L2L
   local_type L;
-  point_type L_center(0.95, 0.05, 0.05);
-  INITL::eval(K, L, 0.1);
+  point_type L_center(0.95, 0.95, 0.95);
+  INITL::eval(K, L, L_center, 2u);
   K.L2L(L2, L, L_center - L2_center);
 
   // test L2P
-  K.L2P(L, L_center, t, rfmm);
+  K.L2P(L2, L2_center, t, rfmm);
+#endif
 
   // check errors
   std::cout << "rexact = " << rexact << std::endl;
@@ -79,13 +84,14 @@ void two_level_test(const Kernel& K)
             << std::scientific << l2_error(rm2p, rexact) << std::endl;
   std::cout << "M2P L2 rel error: "
             << std::scientific << l2_rel_error(rm2p, rexact) << std::endl;
-
+#ifndef TREECODE_ONLY
   std::cout << "FMM L1 rel error: "
             << std::scientific << l1_rel_error(rfmm, rexact) << std::endl;
   std::cout << "FMM L2 error:     "
             << std::scientific << l2_error(rfmm, rexact) << std::endl;
   std::cout << "FMM L2 rel error: "
             << std::scientific << l2_rel_error(rfmm, rexact) << std::endl;
+#endif
 }
 
 
@@ -95,8 +101,8 @@ int main(int argc, char **argv)
   (void) argv;
 
   //LaplaceCartesian<5> K;
-  LaplaceSpherical K(5);
-  //YukawaCartesian K(5, 0);
+  //LaplaceSpherical K(10);
+  YukawaCartesian K(10, 0.1);
 
   two_level_test(K);
 }

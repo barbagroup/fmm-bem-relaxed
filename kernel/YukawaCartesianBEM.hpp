@@ -243,6 +243,7 @@ class YukawaCartesianBEM : public YukawaCartesian
     auto& I = YukawaCartesian::I;
     auto& J = YukawaCartesian::J;
     auto& K = YukawaCartesian::K;
+    auto& fact = YukawaCartesian::fact;
 
     for (auto j=0u; j<source.quad_points.size(); j++) {
       // quad point specific constants
@@ -252,7 +253,7 @@ class YukawaCartesianBEM : public YukawaCartesian
 
       for (unsigned i=0; i < MTERMS; i++) {
         // Multipole term constants
-        auto C = pow(dX[0],I[i]) * pow(dX[1],J[i]) * pow(dX[2],K[i]);
+        auto C = pow(dX[0],I[i]) * pow(dX[1],J[i]) * pow(dX[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
 
         if (source.BC == Panel::POTENTIAL) {
           // influence of G needed
@@ -302,17 +303,57 @@ class YukawaCartesianBEM : public YukawaCartesian
 
     // potential, d{x,y,z} coefficients
     YukawaCartesian::getCoeff(a_aux,ax_aux,ay_aux,az_aux,dX);
+    auto& I    = YukawaCartesian::I;
+    auto& J    = YukawaCartesian::J;
+    auto& K    = YukawaCartesian::K;
+    auto& fact = YukawaCartesian::fact;
 
     double result_pot = 0.;
     double result_dn  = 0.;
     // loop over tarSize
     for (unsigned j=0; j<MTERMS; j++) {
-      result_pot +=  a_aux[j]*M[0][j];
-      result_dn  +=  a_aux[j]*M[1][j];
+      double fact_term = fact[I[j]]*fact[J[j]]*fact[K[j]];
+      result_pot +=  a_aux[j]*M[0][j]*fact_term;
+      result_dn  +=  a_aux[j]*M[1][j]*fact_term;
     }
 
     if   (target.BC== Panel::POTENTIAL) result += result_pot;
     else                                result -= result_dn;
+  }
+
+  void M2L(const multipole_type& Msource,
+                 local_type& Ltarget,
+           const point_type& translation)
+  {
+    YukawaCartesian::M2L(Msource[0],Ltarget[0],translation);
+    YukawaCartesian::M2L(Msource[1],Ltarget[1],translation);
+  }
+
+  void L2L(const local_type& Lsource,
+                 local_type& Ltarget,
+           const point_type& translation)
+  {
+    YukawaCartesian::L2L(Lsource[0],Ltarget[0],translation);
+    YukawaCartesian::L2L(Lsource[1],Ltarget[1],translation);
+  }
+
+  void L2P(const local_type& L, const point_type& center,
+           const target_type& target, result_type& result)
+  {
+    auto dx = static_cast<point_type>(target) - center;
+    auto& I    = YukawaCartesian::I;
+    auto& J    = YukawaCartesian::J;
+    auto& K    = YukawaCartesian::K;
+    auto& fact = YukawaCartesian::fact;
+
+    for (unsigned i=0; i<MTERMS; i++) {
+      double mult_term = pow(dx[0],I[i])*pow(dx[1],J[i])*pow(dx[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
+      double result_pot = L[0][i]*mult_term;
+      double result_dn  = L[1][i]*mult_term;
+
+      if (target.BC == Panel::POTENTIAL) result += result_pot;
+      else                               result -= result_dn;
+    }
   }
 };
 

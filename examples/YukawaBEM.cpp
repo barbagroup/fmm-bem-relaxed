@@ -117,7 +117,7 @@ int main(int argc, char **argv)
   initialiseSphere(panels, charges, recursions); //, ProblemOptions());
 
   // run case solving for Phi (instead of dPhi/dn)
-  // for (auto& it : panels) it.switch_BC();
+  for (auto& it : panels) it.switch_BC();
 
   // set constant Phi || dPhi/dn for each panel
   charges.resize(panels.size());
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
   double e2 = 0.;
   double an = 1.;
   for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
-  
+
   printf("error: %.3e\n",sqrt(e/e2));
 }
 

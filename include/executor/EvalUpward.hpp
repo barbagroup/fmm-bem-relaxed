@@ -11,7 +11,7 @@
 template <typename Context, bool INITIALIZE_LOCAL>
 struct EvalUpward : public EvaluatorBase<Context>
 {
-	void execute(Context& bc) const {
+	void execute(Context& bc, unsigned p) const {
 		auto& tree = bc.source_tree();
 
 		// For the lowest level up to the highest level
@@ -27,12 +27,12 @@ struct EvalUpward : public EvaluatorBase<Context>
 
 				if (box.is_leaf()) {
 					// If leaf, make P2M calls
-					P2M::eval(bc.kernel(), bc, box);
+					P2M::eval(bc.kernel(), bc, box, p);
 				} else {
 					// If not leaf, then for all the children M2M
 					auto c_end = box.child_end();
 					for (auto cit = box.child_begin(); cit != c_end; ++cit)
-						M2M::eval(bc.kernel(), bc, *cit, box);
+						M2M::eval(bc.kernel(), bc, *cit, box, p);
 				}
 			}
 		}

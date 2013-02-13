@@ -26,8 +26,9 @@ class P2M
        SourceIter s_begin, SourceIter s_end,
        ChargeIter c_begin,
        const typename Kernel::point_type& center,
-       typename Kernel::multipole_type& M) {
-    K.P2M(s_begin, s_end, c_begin, center, M);
+       typename Kernel::multipole_type& M,
+       unsigned p) {
+    K.P2M(s_begin, s_end, c_begin, center, M, p);
   }
 
   /** P2M evaluation.
@@ -41,9 +42,10 @@ class P2M
        SourceIter s_begin, SourceIter s_end,
        ChargeIter c_begin,
        const typename Kernel::point_type& center,
-       typename Kernel::multipole_type& M) {
+       typename Kernel::multipole_type& M,
+       unsigned p) {
     for ( ; s_begin != s_end; ++s_begin, ++c_begin)
-      K.P2M(*s_begin, *c_begin, center, M);
+      K.P2M(*s_begin, *c_begin, center, M, p);
   }
 
  public:
@@ -53,7 +55,8 @@ class P2M
   template <typename Kernel, typename Context>
   inline static void eval(const Kernel& K,
                           Context& bc,
-                          const typename Context::box_type& box)
+                          const typename Context::box_type& box,
+                          unsigned p)
   {
 #ifdef DEBUG
     printf("P2M: %d\n", box.index());
@@ -61,6 +64,6 @@ class P2M
 
     P2M::eval(K,
               bc.source_begin(box), bc.source_end(box), bc.charge_begin(box),
-              bc.center(box), bc.multipole_expansion(box));
+              bc.center(box), bc.multipole_expansion(box), p);
   }
 };

@@ -162,15 +162,18 @@ class LaplaceSpherical
    * @param[in] charge The source's corresponding charge
    * @param[in] center The center of the box containing the multipole expansion
    * @param[in,out] M The multipole expansion to accumulate into
+   * @param[in] Truncation value to use for this call
    */
   void P2M(const source_type& source, const charge_type& charge,
-           const point_type& center, multipole_type& M) const {
+           const point_type& center, multipole_type& M,
+           unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = source - center;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
     evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-    for( int n=0; n!=P; ++n ) {
+    for( int n=0; n!=(int)p; ++n ) {
       for( int m=0; m<=n; ++m ) {
         const int nm  = n * n + n + m;
         const int nms = n * (n + 1) / 2 + m;
@@ -192,7 +195,8 @@ class LaplaceSpherical
    */
   template <typename SourceIter, typename ChargeIter>
   void P2M(SourceIter p_begin, SourceIter p_end, ChargeIter c_begin,
-           const point_type& center, multipole_type& M) const {
+           const point_type& center, multipole_type& M, unsigned p) const {
+    assert((int)p <= P);
     real Rmax = 0;
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     for ( ; p_begin != p_end; ++p_begin, ++c_begin) {
@@ -202,7 +206,7 @@ class LaplaceSpherical
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
       evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
+      for( int n=0; n!=(int)p; ++n ) {
         for( int m=0; m<=n; ++m ) {
           const int nm  = n * n + n + m;
           const int nms = n * (n + 1) / 2 + m;
@@ -220,11 +224,14 @@ class LaplaceSpherical
    * @param[in] source The multipole source at the child level
    * @param[in,out] target The multipole target to accumulate into
    * @param[in] translation The vector from source to target
+   * @param[in] truncation value for this call
    * @pre Msource includes the influence of all points within its box
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) const {
+           const point_type& translation,
+           unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real Rmax = Mtarget.RMAX;
     real R = norm(translation) + Msource.RCRIT;
@@ -232,7 +239,7 @@ class LaplaceSpherical
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,translation);
     evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-    for( int j=0; j!=P; ++j ) {
+    for( int j=0; j!=(int)p; ++j ) {
       for( int k=0; k<=j; ++k ) {
         const int jk = j * j + j + k;
         const int jks = j * (j + 1) / 2 + k;
@@ -275,19 +282,21 @@ class LaplaceSpherical
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) const {
+           const point_type& translation,
+           unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     point_type dist = translation;
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,dist);
     evalLocal(rho,alpha,beta,Ynm,YnmTheta);
-    for( int j=0; j!=P; ++j ) {
+    for( int j=0; j!=(int)p; ++j ) {
       for( int k=0; k<=j; ++k ) {
         const int jk = j * j + j + k;
         const int jks = j * (j + 1) / 2 + k;
         complex L = 0;
-        for( int n=0; n!=P; ++n ) {
+        for( int n=0; n!=(int)p; ++n ) {
           for( int m=-n; m<0; ++m ) {
             const int nm   = n * n + n + m;
             const int nms  = n * (n + 1) / 2 - m;
@@ -318,7 +327,8 @@ class LaplaceSpherical
    * @pre M includes the influence of all sources within its box
    */
   void M2P(const multipole_type& M, const point_type& center,
-           const target_type& target, result_type& result) const {
+           const target_type& target, result_type& result, unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
     point_type spherical(0);
@@ -326,7 +336,7 @@ class LaplaceSpherical
     real r, theta, phi;
     cart2sph(r,theta,phi,dist);
     evalLocal(r,theta,phi,Ynm,YnmTheta);
-    for( int n=0; n!=P; ++n ) {
+    for( int n=0; n!=(int)p; ++n ) {
       int nm  = n * n + n;
       int nms = n * (n + 1) / 2;
       result[0] += std::real(M[nms] * Ynm[nm]);
@@ -357,17 +367,19 @@ class LaplaceSpherical
    */
   void L2L(const local_type& source,
            local_type& target,
-           const point_type& translation) const {
+           const point_type& translation,
+           unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     real rho, alpha, beta;
     cart2sph(rho,alpha,beta,translation);
     evalMultipole(rho,alpha,beta,Ynm,YnmTheta);
-    for( int j=0; j!=P; ++j ) {
+    for( int j=0; j!=(int)p; ++j ) {
       for( int k=0; k<=j; ++k ) {
         const int jk = j * j + j + k;
         const int jks = j * (j + 1) / 2 + k;
         complex L = 0;
-        for( int n=j; n!=P; ++n ) {
+        for( int n=j; n!=(int)p; ++n ) {
           for( int m=j+k-n; m<0; ++m ) {
             const int jnkm = (n - j) * (n - j) + n - j + m - k;
             const int nm   = n * n + n - m;
@@ -400,7 +412,9 @@ class LaplaceSpherical
    * @pre L includes the influence of all sources outside its box
    */
   void L2P(const local_type& L, const point_type& center,
-           const target_type& target, result_type& result) const {
+           const target_type& target, result_type& result,
+           unsigned p) const {
+    assert((int)p <= P);
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
     point_type spherical(0);
@@ -408,7 +422,7 @@ class LaplaceSpherical
     real r, theta, phi;
     cart2sph(r,theta,phi,dist);
     evalMultipole(r,theta,phi,Ynm,YnmTheta);
-    for( int n=0; n!=P; ++n ) {
+    for( int n=0; n!=(int)p; ++n ) {
       int nm  = n * n + n;
       int nms = n * (n + 1) / 2;
       result[0] += std::real(L[nms] * Ynm[nm]);

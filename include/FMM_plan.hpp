@@ -61,9 +61,9 @@ class FMM_plan
 
 	// EXECUTE
 
-	/** Execute this FMM plan
+	/** Execute this FMM plan with truncation of p (p<=P)
 	 */
-	std::vector<result_type> execute(const std::vector<charge_type>& charges)
+	std::vector<result_type> execute(const std::vector<charge_type>& charges, unsigned p)
 	{
 		// Assert that source == target in FMMOptions
 
@@ -73,7 +73,7 @@ class FMM_plan
 		}
 
 		std::vector<result_type> results(charges.size());
-		executor_->execute(charges, results);
+		executor_->execute(charges, results, p);
 
 		// TODO: don't return this, provide accessor
 		return results;

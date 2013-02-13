@@ -103,10 +103,10 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
-                       std::vector<result_type>& results) {
+                       std::vector<result_type>& results, unsigned p) {
     c_ = charges.begin();
     r_ = results.begin();
-    evals_.execute(*this);
+    evals_.execute(*this, p);
   }
 
   bool accept_multipole(const box_type& source, const box_type& target) const {

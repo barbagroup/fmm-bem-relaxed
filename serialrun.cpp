@@ -7,12 +7,12 @@
 #include <FMM_plan.hpp>
 //#include <LaplaceSphericalModified.hpp>
 #include <LaplaceSpherical.hpp>
-#include <UnitKernel.hpp>
-#include <KernelSkeleton.hpp>
+//#include <UnitKernel.hpp>
+//#include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
-#include <LaplaceCartesian.hpp>
-#include <YukawaCartesian.hpp>
-#include <YukawaSpherical.hpp>
+//#include <LaplaceCartesian.hpp>
+//#include <YukawaCartesian.hpp>
+//#include <YukawaSpherical.hpp>
 
 #include <string.h>
 
@@ -20,9 +20,9 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-//#define SPH_KERNEL
+#define SPH_KERNEL
 //#define CART_KERNEL
-#define YUKAWA_KERNEL
+//#define YUKAWA_KERNEL
 //#define YUKAWA_SPH
 
 // Random number in [0,1)
@@ -38,6 +38,7 @@ inline double drand(double A, double B) {
 int main(int argc, char **argv)
 {
   int numBodies = 1000, p=5;
+  unsigned pp = (unsigned)p;
   bool checkErrors = true;
   double beta = 0.125;
 
@@ -56,6 +57,9 @@ int main(int argc, char **argv)
       beta = atof(argv[i]);
     } else if (strcmp(argv[i],"-nocheck") == 0) {
       checkErrors = false;
+    } else if (strcmp(argv[i],"-pp") == 0) {
+      i++;
+      pp = atoi(argv[i]);
     }
   }
 
@@ -113,7 +117,7 @@ int main(int argc, char **argv)
 
   // Execute the FMM
   //fmm_execute(plan, charges, target_points);
-  std::vector<result_type> result = plan.execute(charges);
+  std::vector<result_type> result = plan.execute(charges, pp);
 
   // Check the result
   // TODO: More elegant

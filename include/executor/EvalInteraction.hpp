@@ -17,7 +17,7 @@ class EvalInteraction : public EvaluatorBase<Context>
   typedef std::pair<box_type, box_type> box_pair;
 
  public:
-  void execute(Context& bc) const {
+  void execute(Context& bc, unsigned p) const {
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     std::deque<box_pair> pairQ;
     pairQ.push_back(box_pair(bc.source_tree().root(),
@@ -36,25 +36,25 @@ class EvalInteraction : public EvaluatorBase<Context>
 		      // b2 is not a leaf, Split the second box into children and interact
 		      auto c_end = b2.child_end();
 		      for (auto cit = b2.child_begin(); cit != c_end; ++cit)
-			      interact(bc, b1, *cit, pairQ);
+			      interact(bc, b1, *cit, pairQ, p);
 	      }
       } else if (b2.is_leaf()) {
 	      // b1 is not a leaf, Split the first box into children and interact
 	      auto c_end = b1.child_end();
 	      for (auto cit = b1.child_begin(); cit != c_end; ++cit)
-		      interact(bc, *cit, b2, pairQ);
+		      interact(bc, *cit, b2, pairQ, p);
       } else {
 	      // Neither are leaves, Split the larger into children and interact
 	      if (b1.side_length() > b2.side_length()) {   // TODO: optimize?
 		      // Split the first box into children and interact
 		      auto c_end = b1.child_end();
 		      for (auto cit = b1.child_begin(); cit != c_end; ++cit)
-			      interact(bc, *cit, b2, pairQ);
+			      interact(bc, *cit, b2, pairQ, p);
 	      } else {
 		      // Split the second box into children and interact
 		      auto c_end = b2.child_end();
 		      for (auto cit = b2.child_begin(); cit != c_end; ++cit)
-			      interact(bc, b1, *cit, pairQ);
+			      interact(bc, b1, *cit, pairQ, p);
 	      }
       }
     }
@@ -63,13 +63,13 @@ class EvalInteraction : public EvaluatorBase<Context>
   template <typename BOX, typename Q>
   void interact(Context& bc,
                 const BOX& b1, const BOX& b2,
-                Q& pairQ) const {
+                Q& pairQ, unsigned p) const {
     if (bc.accept_multipole(b1, b2)) {
       // These boxes satisfy the multipole acceptance criteria
       if (IS_FMM)
-	      M2L::eval(bc.kernel(), bc, b1, b2);
+	      M2L::eval(bc.kernel(), bc, b1, b2, p);
       else
-	      M2P::eval(bc.kernel(), bc, b1, b2);
+	      M2P::eval(bc.kernel(), bc, b1, b2, p);
     } else {
       pairQ.push_back(box_pair(b1,b2));
     }

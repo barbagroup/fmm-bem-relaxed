@@ -25,8 +25,8 @@ class M2P
        const typename Kernel::multipole_type& M,
        const typename Kernel::point_type& center,
        TargetIter t_begin, TargetIter t_end,
-       ResultIter r_begin) {
-    K.M2P(M, center, t_begin, t_end, r_begin);
+       ResultIter r_begin, unsigned p) {
+    K.M2P(M, center, t_begin, t_end, r_begin, p);
   }
 
   /** M2P evaluation.
@@ -40,9 +40,9 @@ class M2P
        const typename Kernel::multipole_type& M,
        const typename Kernel::point_type& center,
        TargetIter t_begin, TargetIter t_end,
-       ResultIter r_begin) {
+       ResultIter r_begin, unsigned p) {
     for ( ; t_begin != t_end; ++t_begin, ++r_begin)
-      K.M2P(M, center, *t_begin, *r_begin);
+      K.M2P(M, center, *t_begin, *r_begin, p);
   }
 
  public:
@@ -53,7 +53,8 @@ class M2P
   inline static void eval(Kernel& K,
                           Context& bc,
                           const typename Context::box_type& source,
-                          const typename Context::box_type& target) {
+                          const typename Context::box_type& target,
+                          unsigned p) {
 #ifdef DEBUG
     printf("M2P: %d to %d\n", source.index(), target.index());
 #endif
@@ -61,6 +62,6 @@ class M2P
     M2P::eval(K,
               bc.multipole_expansion(source), bc.center(source),
               bc.target_begin(target), bc.target_end(target),
-              bc.result_begin(target));
+              bc.result_begin(target), p);
   }
 };

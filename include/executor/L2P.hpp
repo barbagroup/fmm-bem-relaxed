@@ -25,8 +25,9 @@ struct L2P
   eval(const Kernel& K,
        const typename Kernel::local_type& L,
        const typename Kernel::point_type& center,
-       TargetIter t_begin, TargetIter t_end, ResultIter r_begin) {
-    K.L2P(L, center, t_begin, t_end, r_begin);
+       TargetIter t_begin, TargetIter t_end, ResultIter r_begin,
+       unsigned p) {
+    K.L2P(L, center, t_begin, t_end, r_begin, p);
   }
 
   /** L2P evaluation.
@@ -39,9 +40,10 @@ struct L2P
   eval(const Kernel& K,
        const typename Kernel::local_type& L,
        const typename Kernel::point_type& center,
-       TargetIter t_begin, TargetIter t_end, ResultIter r_begin) {
+       TargetIter t_begin, TargetIter t_end, ResultIter r_begin,
+       unsigned p) {
     for ( ; t_begin != t_end; ++t_begin, ++r_begin)
-      K.L2P(L, center, *t_begin, *r_begin);
+      K.L2P(L, center, *t_begin, *r_begin, p);
   }
 
  public:
@@ -51,7 +53,7 @@ struct L2P
   template <typename Kernel, typename Context>
   inline static void eval(Kernel& K,
                           Context& bc,
-                          const typename Context::box_type& box)
+                          const typename Context::box_type& box, unsigned p)
   {
 #ifdef DEBUG
     printf("L2P: %d\n", box.index());
@@ -59,6 +61,6 @@ struct L2P
 
     L2P::eval(K,
               bc.local_expansion(box), bc.center(box),
-              bc.target_begin(box), bc.target_end(box), bc.result_begin(box));
+              bc.target_begin(box), bc.target_end(box), bc.result_begin(box), p);
   }
 };

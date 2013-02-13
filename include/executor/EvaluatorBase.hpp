@@ -4,7 +4,7 @@ template <typename Context>
 struct EvaluatorBase {
   typedef Context context_type;
   virtual ~EvaluatorBase() {};
-  virtual void execute(context_type&) const = 0;
+  virtual void execute(context_type&, unsigned p) const = 0;
 };
 
 
@@ -29,8 +29,8 @@ class EvaluatorCollection : public EvaluatorBase<Context>
       evals_.push_back(eval);
   }
 
-  void execute(context_type& context) const {
+  void execute(context_type& context, unsigned p) const {
     for (auto eval : evals_)
-      eval->execute(context);
+      eval->execute(context, p);
   }
 };

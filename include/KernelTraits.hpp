@@ -136,51 +136,51 @@ struct ExpansionTraits : public KernelTraits<Kernel>
   static constexpr bool has_P2M =
       HasP2M<void,
              const source_type&, const charge_type&,
-             const point_type&, multipole_type&>::value;
+             const point_type&, multipole_type&, unsigned>::value;
   static constexpr bool has_vector_P2M =
       HasP2M<void,
              source_iterator, source_iterator, charge_iterator,
-             const point_type&, multipole_type&>::value;
+             const point_type&, multipole_type&, unsigned>::value;
 
   // M2M
   SFINAE_TEMPLATE(HasM2M,M2M);
   static constexpr bool has_M2M =
       HasM2M<void,
-             const multipole_type&, multipole_type&, const point_type&>::value;
+             const multipole_type&, multipole_type&, const point_type&, unsigned>::value;
 
   // M2P
   SFINAE_TEMPLATE(HasM2P,M2P);
   static constexpr bool has_M2P =
       HasM2P<void,
              const multipole_type&, const point_type&,
-             const target_type&, result_type&>::value;
+             const target_type&, result_type&, unsigned>::value;
   static constexpr bool has_vector_M2P =
       HasM2P<void,
              const multipole_type&, const point_type&,
-             target_iterator, target_iterator, result_iterator>::value;
+             target_iterator, target_iterator, result_iterator, unsigned>::value;
 
   // M2L
   SFINAE_TEMPLATE(HasM2L,M2L);
   static constexpr bool has_M2L =
       HasM2L<void,
-             const multipole_type&, local_type&, const point_type&>::value;
+             const multipole_type&, local_type&, const point_type&, unsigned>::value;
 
   // L2L
   SFINAE_TEMPLATE(HasL2L,L2L);
   static constexpr bool has_L2L =
       HasL2L<void,
-             const local_type&, local_type&, const point_type&>::value;
+             const local_type&, local_type&, const point_type&, unsigned>::value;
 
   // L2P
   SFINAE_TEMPLATE(HasL2P,L2P);
   static constexpr bool has_L2P =
       HasL2P<void,
              const local_type&, const point_type&,
-             const target_type&, result_type&>::value;
+             const target_type&, result_type&, unsigned>::value;
   static constexpr bool has_vector_L2P =
       HasL2P<void,
              const local_type&, const point_type&,
-             target_iterator, target_iterator, result_iterator>::value;
+             target_iterator, target_iterator, result_iterator, unsigned>::value;
 
   static constexpr bool is_valid_treecode =
       (has_eval_op || has_vector_P2P_asymm) &&

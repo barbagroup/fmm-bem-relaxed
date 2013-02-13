@@ -14,14 +14,18 @@
 
 #include "Octree.hpp"
 
+#define TEMP
+
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
 {
+#ifndef TEMP
 	if (opts.lazy_evaluation) {
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
 		executor.insert(lazy_eval);
 	} else {
+#endif
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
 		executor.insert(upward);
@@ -29,7 +33,9 @@ void make_evaluators(Executor& executor, Options& opts)
 		executor.insert(inter);
 		auto downward = make_downward(executor, opts);
 		executor.insert(downward);
+#ifndef TEMP
 	}
+#endif
 }
 
 /** Single tree executor construction

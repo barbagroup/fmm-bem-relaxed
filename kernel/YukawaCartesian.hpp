@@ -24,14 +24,6 @@ class YukawaCartesian
   const int P;
   //! Kappa
   const real Kappa;
-  //! Epsilon
-  static constexpr real EPS = 1e-6;
-  //! Imaginary unit
-  const complex CI = complex(0,1);
-  //! ODD-Even helper function
-  inline int ODDEVEN(int n) const {
-    return (((n & 1) == 1) ? -1 : 1);
-  };
   //! number of multipole terms
   unsigned MTERMS;
 
@@ -105,20 +97,21 @@ class YukawaCartesian
   typedef Vec<4,real> result_type;
 
   //! default constructor - use delegating constructor
-  YukawaCartesian() : YukawaCartesian(2,1.) {};
+  YukawaCartesian() : YukawaCartesian(4,0.125) {};
   //! Constructor
-  YukawaCartesian(int p, double kappa)
+  YukawaCartesian(int p, double kappa=0.125)
       : P(p), Kappa(kappa), MTERMS((P+1)*(P+2)*(P+3)/6), fact(2*P), index_cache(P) {
     I = std::vector<unsigned>(MTERMS,0);
     J = std::vector<unsigned>(MTERMS,0);
     K = std::vector<unsigned>(MTERMS,0);
     index = std::vector<unsigned>(MTERMS,0);
 
+    // generate n -> (i,j,k) arrays
     unsigned idx=0;
     for (int ii=0; ii<P+1; ii++) {
       for (int jj=0; jj<P+1-ii; jj++) {
         for (int kk=0; kk<P+1-ii-jj; kk++) {
-          index[idx] = index_cache(ii,jj,kk); // setIndex(P,ii,jj,kk);
+          index[idx] = index_cache(ii,jj,kk);
           I[idx] = ii;
           J[idx] = jj;
           K[idx] = kk;
@@ -127,6 +120,7 @@ class YukawaCartesian
       }
     }
 
+    // generate factorials
     fact[0] = 1;
     for (int i=1; i<2*P; i++) fact[i] = i*fact[i-1];
   };
@@ -177,9 +171,10 @@ class YukawaCartesian
     point_type dX = center - source;
 
     for (unsigned i = 0; i < MTERMS; ++i) {
-      M[i] += charge * pow(dX[0],I[i]) / fact[I[i]]
-                     * pow(dX[1],J[i]) / fact[J[i]]
-                     * pow(dX[2],K[i]) / fact[K[i]];
+      double fact_term = fact[I[i]]*fact[J[i]]*fact[K[i]];
+      M[i] += charge * pow(dX[0],I[i])
+                     * pow(dX[1],J[i])
+                     * pow(dX[2],K[i]) / fact_term;
     }
   }
 
@@ -198,15 +193,15 @@ class YukawaCartesian
     const auto dX = translation;
 
     for (unsigned i=0; i<MTERMS; ++i) {
+      unsigned n[3] = {I[i], J[i], K[i]};
 
-      for (unsigned ii=0; ii<I[i]+1; ii++) {
-        for (unsigned jj=0; jj<J[i]+1; jj++) {
-          for (unsigned kk=0; kk<K[i]+1; kk++) {
+      for (unsigned ii=0; ii<n[0]+1; ii++) {
+        for (unsigned jj=0; jj<n[1]+1; jj++) {
+          for (unsigned kk=0; kk<n[2]+1; kk++) {
 
             unsigned Midx = index_cache(ii,jj,kk);
-            // Mtarget[i] += Msource[Midx]*comb(I[i],I[Midx])*comb(J[i],J[Midx])*comb(K[i],K[Midx])*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx]);
-            double fact_term = fact[I[i]-ii]*fact[J[i]-jj]*fact[K[i]-kk];
-            Mtarget[i] += Msource[Midx]*pow(dX[0],I[i]-I[Midx])*pow(dX[1],J[i]-J[Midx])*pow(dX[2],K[i]-K[Midx])/fact_term;
+            double fact_term = fact[n[0]-ii]*fact[n[1]-jj]*fact[n[2]-kk];
+            Mtarget[i] += Msource[Midx]*pow(dX[0],n[0]- ii)*pow(dX[1],n[1]-jj)*pow(dX[2],n[2]-kk)/fact_term;
           }
         }
       }
@@ -258,6 +253,7 @@ class YukawaCartesian
 
     getCoeff(a_aux, ax_aux, ay_aux, az_aux, translation);
 
+    // get rid of factorial terms from getCoeff
     for (unsigned i=0; i<MTERMS; i++) {
       a_aux[i] *= fact[I[i]]*fact[J[i]]*fact[K[i]];
     }
@@ -277,12 +273,12 @@ class YukawaCartesian
                 if (in+ik+jn+jk+kn+kk > P) continue;
                 //     n = (in, jn, kn)
                 // (n+k) = (ik+in, jk+jn, kk+kn)
-                // L_k   = \sum_{n=0}^{p-k} a_aux[getIndex(n+k)]*M[getIndex(n)]*fact[(n+k)]
+                // L_k   = \sum_{n=0}^{p-k} a_aux[getIndex(n+k)]*M[getIndex(n)]
                 //
                 int Mn  = index_cache(in,jn,kn);
                 int npk = index_cache(ik+in,jk+jn,kk+kn);
 
-                Ltarget[Lk] += a_aux[npk] * Msource[Mn]; //  * pow(-1,in+jn+kn);
+                Ltarget[Lk] += a_aux[npk] * Msource[Mn];
               }
             }
           } // end inner loop
@@ -305,14 +301,15 @@ class YukawaCartesian
   {
     for (unsigned i=0; i<MTERMS; i++) {
       // n = (I[i], J[i], K[i])
+      unsigned n[3] = {I[i],J[i],K[i]};
       for (int ii=I[i]; ii<P+1; ii++) {
         for (int jj=J[i]; jj<P+1-ii; jj++) {
           for (int kk=K[i]; kk<P+1-ii-jj; kk++) {
             // k = (ii, jj, kk)
             int Lk = index_cache(ii,jj,kk);
 
-            double fact_term = fact[ii-I[i]]*fact[jj-J[i]]*fact[kk-K[i]];
-            Ltarget[i] += Lsource[Lk]*pow(translation[0],ii-I[i])*pow(translation[1],jj-J[i])*pow(translation[2],kk-K[i]) / fact_term;
+            double fact_term = fact[ii-n[0]]*fact[jj-n[1]]*fact[kk-n[2]];
+            Ltarget[i] += Lsource[Lk]*pow(translation[0],ii-n[0])*pow(translation[1],jj-n[1])*pow(translation[2],kk-n[2]) / fact_term;
           }
         }
       }
@@ -334,40 +331,23 @@ class YukawaCartesian
     auto dx = target-center;
 
     for (unsigned i=0; i<MTERMS; i++) {
-      // k = (I[i], J[i], K[i])
-      double phi = L[i]*pow(dx[0],I[i])*pow(dx[1],J[i])*pow(dx[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
+      unsigned k[3] = {I[i], J[i], K[i]};
+      // calculate potential
+      double phi = L[i]*pow(dx[0],k[0])*pow(dx[1],k[1])*pow(dx[2],k[2]) / (fact[k[0]]*fact[k[1]]*fact[k[2]]);
       result[0] += phi;
 
       double inv[3];
       for (int i=0; i<3; i++) inv[i] = (fabs(dx[i]) < 1e-12) ? 0 : 1. / dx[i];
-      result[1] += phi * I[i] * inv[0];
-      result[2] += phi * J[i] * inv[1];
-      result[3] += phi * K[i] * inv[2];
+
+      // using potential, calculate derivatives
+      result[1] += phi * k[0] * inv[0];
+      result[2] += phi * k[1] * inv[1];
+      result[3] += phi * k[2] * inv[2];
     }
   }
 
  protected:
-  /** Compute "n choose k" combinatorial
-   * @returns n! / (k! (n-k)!)
-   */
-  unsigned comb(unsigned n, unsigned k) const
-  {
-    // WARNING: Overflows really quickly
-    //return fact(n) / (fact(k)*fact(n-k));
-
-    // Better (and faster) way:
-    if (k > n) return 0;
-    if (2*k > n) k = n-k;
-    if (k == 0) return 1;
-
-    unsigned result = n;
-    for (unsigned i = 2; i <= k; ++i) {
-      result *= (n-i+1);
-      result /= i;
-    }
-    return result;
-  }
-
+  // get coefficients given by d^n / dx^n f(x)
   void getCoeff(real_vec& a, real_vec& ax, real_vec& ay, real_vec& az, const point_type& dX) const
   {
     real_vec b(a.size(),0);

@@ -12,6 +12,15 @@
 #include <cmath>
 #include "Preconditioner.hpp"
 
+struct SolverOptions
+{
+  double residual;
+  int max_iters, restart, max_p;
+  bool variable_p;
+
+  SolverOptions() : residual(1e-5), max_iters(20), restart(50), max_p(5), variable_p(true) {};
+};
+
 /** Very basic matrix type */
 template <typename T>
 class Matrix
@@ -135,7 +144,7 @@ void GeneratePlaneRotation(T& dx, T&dy, T& cs, T& sn)
   }else if (fabs(dy) > fabs(dx)) {
     T tmp = dx / dy;
     sn = T(1.0) / sqrt(T(1.0) + tmp*tmp);
-    cs = tmp*sn;            
+    cs = tmp*sn;
   }else {
     T tmp = dy / dx;
     cs = T(1.0) / sqrt(T(1.0) + tmp*tmp);
@@ -195,10 +204,10 @@ void fmm_gmres(FMM& fmm,
   // scale residual by ||b||
   auto normb = norm(b.begin(),b.end());
 
-  // main loop
+  // outer (restart) loop
   do {
     // dot product of A*x -- FMM call
-    w = fmm.execute(x); // V(0) = A*x
+    w = fmm.execute(x,opts.max_p); // V(0) = A*x
     // V(0) = M*V(0) -- preconditioner step if desired
     M(w,w);
     // V(0) = V(0) - b
@@ -219,9 +228,20 @@ void fmm_gmres(FMM& fmm,
       ++i;
       ++iter;
 
+      // set p for this iteration
+      int p;
+      // metrics from Bouras, Fraysse, 2005
+      double alpha = 1. / std::min(fabs(resid), 1.);
+      double nu = std::min(alpha*opts.residual,1.);
+      int pred_p = (int)ceil(-log(nu));
+
+      // set variable p if desired, default otherwise
+      if (opts.variable_p) p = std::min(opts.max_p, pred_p);
+      else                 p = opts.max_p;
+
       // perform w = A*x
       std::fill(V0.begin(),V0.end(),0.);
-      V0 = fmm.execute(V.column(i));
+      V0 = fmm.execute(V.column(i), p);
       M(V0,w); // instead of preconditioner step
 
       for (int k=0; k<=i; k++) {
@@ -244,7 +264,7 @@ void fmm_gmres(FMM& fmm,
       resid = s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
-      printf("it: %03d, res: %.3e\n",iter,fabs(resid));
+      printf("it: %03d, res: %.3e, fmm_req_err: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),fabs(nu),pred_p);
 
     } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
 

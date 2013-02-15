@@ -167,10 +167,11 @@ class YukawaCartesian
    * @param[in,out] M The multipole expansion to accumulate into
    */
   void P2M(const source_type& source, const charge_type& charge,
-           const point_type& center, multipole_type& M) const {
+           const point_type& center, multipole_type& M, unsigned p) const {
     point_type dX = center - source;
 
-    for (unsigned i = 0; i < MTERMS; ++i) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned i = 0; i < mterms; ++i) {
       double fact_term = fact[I[i]]*fact[J[i]]*fact[K[i]];
       M[i] += charge * pow(dX[0],I[i])
                      * pow(dX[1],J[i])
@@ -188,11 +189,11 @@ class YukawaCartesian
    */
   void M2M(const multipole_type& Msource,
                  multipole_type& Mtarget,
-           const point_type& translation) const {
-    const unsigned MTERMS = (P+1)*(P+2)*(P+3)/6;
+           const point_type& translation, unsigned p) const {
+    const unsigned mterms = (p+1)*(p+2)*(p+3)/6;
     const auto dX = translation;
 
-    for (unsigned i=0; i<MTERMS; ++i) {
+    for (unsigned i=0; i<mterms; ++i) {
       unsigned n[3] = {I[i], J[i], K[i]};
 
       for (unsigned ii=0; ii<n[0]+1; ii++) {
@@ -218,7 +219,7 @@ class YukawaCartesian
    * @pre M includes the influence of all sources within its box
    */
   void M2P(const multipole_type& M, const point_type& center,
-           const target_type& target, result_type& result) const {
+           const target_type& target, result_type& result, unsigned p) const {
     std::vector<real> a_aux(MTERMS,0), ax_aux(MTERMS,0), ay_aux(MTERMS,0), az_aux(MTERMS,0);
 
     point_type dX = target - center;
@@ -226,7 +227,8 @@ class YukawaCartesian
     getCoeff(a_aux, ax_aux, ay_aux, az_aux, dX);
 
     // loop over tarSize
-    for (unsigned j=0; j<MTERMS; j++) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned j=0; j<mterms; j++) {
       double fact_term = fact[I[j]]*fact[J[j]]*fact[K[j]];
 
       result[0] +=  a_aux[j]*M[j]*fact_term;
@@ -247,30 +249,31 @@ class YukawaCartesian
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) const
+           const point_type& translation, unsigned p) const
   {
     std::vector<real> a_aux(MTERMS,0), ax_aux(MTERMS,0), ay_aux(MTERMS,0), az_aux(MTERMS,0);
 
     getCoeff(a_aux, ax_aux, ay_aux, az_aux, translation);
 
     // get rid of factorial terms from getCoeff
-    for (unsigned i=0; i<MTERMS; i++) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned i=0; i<mterms; i++) {
       a_aux[i] *= fact[I[i]]*fact[J[i]]*fact[K[i]];
     }
 
-    for (int ik=0; ik<P+1; ik++) {
-      for (int jk=0; jk<P+1-ik; jk++) {
-        for (int kk=0; kk<P+1-ik-jk; kk++) {
+    for (int ik=0; ik<(int)p+1; ik++) {
+      for (int jk=0; jk<(int)p+1-ik; jk++) {
+        for (int kk=0; kk<(int)p+1-ik-jk; kk++) {
           // k = (ik, jk, kk)
           int Lk  = index_cache(ik,jk,kk);
           //
-          for (int in=0; in<P+1-ik; in++) {
+          for (int in=0; in<(int)p+1-ik; in++) {
             // printf("in: %d\n",in);
-            for (int jn=0; jn<P+1-jk; jn++) {
-              for (int kn=0; kn<P+1-kk; kn++) {
+            for (int jn=0; jn<(int)p+1-jk; jn++) {
+              for (int kn=0; kn<(int)p+1-kk; kn++) {
 
-                if (in+jn+kn > P) continue;
-                if (in+ik+jn+jk+kn+kk > P) continue;
+                if (in+jn+kn > (int)p) continue;
+                if (in+ik+jn+jk+kn+kk > (int)p) continue;
                 //     n = (in, jn, kn)
                 // (n+k) = (ik+in, jk+jn, kk+kn)
                 // L_k   = \sum_{n=0}^{p-k} a_aux[getIndex(n+k)]*M[getIndex(n)]
@@ -297,14 +300,15 @@ class YukawaCartesian
    */
   void L2L(const local_type& Lsource,
                  local_type& Ltarget,
-           const point_type& translation) const
+           const point_type& translation, unsigned p) const
   {
-    for (unsigned i=0; i<MTERMS; i++) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned i=0; i<mterms; i++) {
       // n = (I[i], J[i], K[i])
       unsigned n[3] = {I[i],J[i],K[i]};
-      for (int ii=I[i]; ii<P+1; ii++) {
-        for (int jj=J[i]; jj<P+1-ii; jj++) {
-          for (int kk=K[i]; kk<P+1-ii-jj; kk++) {
+      for (int ii=I[i]; ii<(int)p+1; ii++) {
+        for (int jj=J[i]; jj<(int)p+1-ii; jj++) {
+          for (int kk=K[i]; kk<(int)p+1-ii-jj; kk++) {
             // k = (ii, jj, kk)
             int Lk = index_cache(ii,jj,kk);
 
@@ -326,11 +330,12 @@ class YukawaCartesian
    * @pre L includes the influence of all sources outside its box
    */
   void L2P(const local_type& L, const point_type& center,
-           const target_type& target, result_type& result) const
+           const target_type& target, result_type& result, unsigned p) const
   {
     auto dx = target-center;
 
-    for (unsigned i=0; i<MTERMS; i++) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned i=0; i<mterms; i++) {
       unsigned k[3] = {I[i], J[i], K[i]};
       // calculate potential
       double phi = L[i]*pow(dx[0],k[0])*pow(dx[1],k[1])*pow(dx[2],k[2]) / (fact[k[0]]*fact[k[1]]*fact[k[2]]);

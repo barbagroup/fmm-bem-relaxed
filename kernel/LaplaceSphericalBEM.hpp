@@ -239,7 +239,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
    * @param[in,out] M The multipole expansion to accumulate into
    */
   void P2M(const source_type& source, const charge_type& charge,
-           const point_type& center, multipole_type& M) const {
+           const point_type& center, multipole_type& M, unsigned p) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(3);
@@ -250,7 +250,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
       evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
+      for( int n=0; n!=(int)p; ++n ) {
         for( int m=0; m<=n; ++m ) {
           const int nm  = n * n + n + m;
           const int nms = n * (n + 1) / 2 + m;
@@ -295,9 +295,9 @@ class LaplaceSphericalBEM : public LaplaceSpherical
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) const {
-    LaplaceSpherical::M2M(Msource[0],Mtarget[0],translation);
-    LaplaceSpherical::M2M(Msource[1],Mtarget[1],translation);
+           const point_type& translation, unsigned p) const {
+    LaplaceSpherical::M2M(Msource[0],Mtarget[0],translation,p);
+    LaplaceSpherical::M2M(Msource[1],Mtarget[1],translation,p);
   }
 
   /** Kernel M2L operation
@@ -311,9 +311,9 @@ class LaplaceSphericalBEM : public LaplaceSpherical
    */
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation) const {
-    LaplaceSpherical::M2L(Msource[0],Ltarget[0],translation);
-    LaplaceSpherical::M2L(Msource[1],Ltarget[1],translation);
+           const point_type& translation, unsigned p) const {
+    LaplaceSpherical::M2L(Msource[0],Ltarget[0],translation,p);
+    LaplaceSpherical::M2L(Msource[1],Ltarget[1],translation,p);
   }
 
   /** Kernel M2P operation
@@ -328,7 +328,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   template <typename PointIter, typename ResultIter>
   void M2P(const multipole_type& M, const point_type& center,
            PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
+           ResultIter r_begin, unsigned p) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
@@ -338,7 +338,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalLocal(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
+      for( int n=0; n!=(int)p; ++n ) {
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         r0_temp += std::real(M[0][nms] * Ynm[nm]);
@@ -365,9 +365,10 @@ class LaplaceSphericalBEM : public LaplaceSpherical
    */
   void L2L(const local_type& source,
            local_type& target,
-           const point_type& translation) const {
-    LaplaceSpherical::L2L(source[0],target[0],translation);
-    LaplaceSpherical::L2L(source[1],target[1],translation);
+           const point_type& translation,
+           unsigned p) const {
+    LaplaceSpherical::L2L(source[0],target[0],translation,p);
+    LaplaceSpherical::L2L(source[1],target[1],translation,p);
   }
 
   /** Kernel L2P operation
@@ -382,7 +383,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   template <typename PointIter, typename ResultIter>
   void L2P(const local_type& L, const point_type& center,
            PointIter t_begin, PointIter t_end,
-           ResultIter r_begin) const {
+           ResultIter r_begin, unsigned p) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     for (auto t = t_begin; t != t_end; ++t, ++r_begin) {
@@ -392,7 +393,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalMultipole(r,theta,phi,Ynm,YnmTheta);
-      for( int n=0; n!=P; ++n ) {
+      for( int n=0; n!=(int)p; ++n ) {
         int nm  = n * n + n;
         int nms = n * (n + 1) / 2;
         r0_temp += std::real(L[0][nms] * Ynm[nm]);

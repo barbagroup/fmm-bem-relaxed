@@ -7,15 +7,15 @@
 #include "LaplaceSphericalBEM.hpp"
 #include "Triangulation.hpp"
 #include "gmres.hpp"
-// #include "Preconditioner.hpp"
 
-struct SolverOptions
+#include <sys/time.h>
+
+double get_time()
 {
-  double residual;
-  int max_iters, restart;
-
-  SolverOptions() : residual(1e-5), max_iters(50), restart(50) {};
-};
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (double)(tv.tv_sec + 1e-6*tv.tv_usec);
+}
 
 struct ProblemOptions
 {
@@ -63,6 +63,8 @@ int main(int argc, char **argv)
   FMMOptions opts;
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
+  SolverOptions solver_options;
+  bool second_kind = false;
 
   // parse command line args
   // check if no arguments given
@@ -86,6 +88,7 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
+      solver_options.max_p = p;
     } else if (strcmp(argv[i],"-k") == 0) {
       i++;
       k = atoi(argv[i]);
@@ -97,6 +100,10 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-recursions") == 0) {
       i++;
       recursions = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-second_kind") == 0) {
+      second_kind = true;
+    } else if (strcmp(argv[i],"-fixed_p") == 0) {
+      solver_options.variable_p = false;
     } else if (strcmp(argv[i],"-help") == 0) {
       printHelpAndExit();
     } else {
@@ -104,7 +111,8 @@ int main(int argc, char **argv)
       printHelpAndExit();
     }
   }
-
+  double tic, toc;
+  tic = get_time();
   // Init the FMM Kernel
   typedef LaplaceSphericalBEM kernel_type;
   kernel_type K(p,k);
@@ -122,7 +130,8 @@ int main(int argc, char **argv)
   initialiseSphere(panels, charges, recursions); //, ProblemOptions());
 
   // run case solving for Phi (instead of dPhi/dn)
-  for (auto& it : panels) it.switch_BC();
+  if (second_kind)
+    for (auto& it : panels) it.switch_BC();
 
   // set constant Phi || dPhi/dn for each panel
   charges.resize(panels.size());
@@ -134,24 +143,36 @@ int main(int argc, char **argv)
   // generate the RHS and initial condition
   std::vector<charge_type> x(panels.size(),0.);
 
-  // generate RHS using direct calculation
-  for (auto& it : panels) it.switch_BC();
   std::vector<result_type> b(panels.size(),0.);
-  Direct::matvec(K,panels,charges,b);
-  for (auto& it : panels) it.switch_BC();
+  // generate RHS using temporary FMM plan
+  {
+    for (auto& it : panels) it.switch_BC();
+    FMM_plan<kernel_type> rhs_plan = FMM_plan<kernel_type>(K,panels,opts);
+    b = rhs_plan.execute(charges,p);
+    for (auto& it : panels) it.switch_BC();
+  }
+
+  toc = get_time();
+  double setup_time = toc-tic;
 
   // Solve the system using GMRES
   // generate the Preconditioner
+  tic = get_time();
   Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  fmm_gmres(plan, x, b, SolverOptions(),M);
-  //direct_gmres(K, panels, x, b, SolverOptions());
+  fmm_gmres(plan, x, b, solver_options, M);
+  toc = get_time();
+  double solve_time = toc-tic;
+
+  printf("\nTIMING:\n");
+  printf("\tsetup : %.4es\n",setup_time);
+  printf("\tsolve : %.4es\n",solve_time);
 
   // check errors -- analytical solution for dPhi/dn = 1.
   double e = 0.;
   double e2 = 0.;
   double an = 1.;
   for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
-  
+
   printf("error: %.3e\n",sqrt(e/e2));
 }
 

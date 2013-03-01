@@ -6,16 +6,15 @@
 #include "FMM_plan.hpp"
 #include "LaplaceSphericalBEM.hpp"
 #include "Triangulation.hpp"
-#include "gmres.hpp"
 
-#include <sys/time.h>
+#include "GMRES.hpp"
+#include "fmgmres.hpp"
 
-double get_time()
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return (double)(tv.tv_sec + 1e-6*tv.tv_usec);
-}
+#include "timing.hpp"
+
+enum SolveType { INITIAL_SOLVE = 1,
+                 GMRES_DIAGONAL = 2,
+                 INNER_OUTER = 4 };
 
 struct ProblemOptions
 {
@@ -60,7 +59,7 @@ void initialiseSphere(std::vector<SourceType>& panels,
 int main(int argc, char **argv)
 {
   int numPanels= 1000, recursions = 4, p = 5, k = 3;
-  FMMOptions opts;
+  FMMOptions opts = get_options(argc,argv);
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
   SolverOptions solver_options;
@@ -104,6 +103,9 @@ int main(int argc, char **argv)
       second_kind = true;
     } else if (strcmp(argv[i],"-fixed_p") == 0) {
       solver_options.variable_p = false;
+    } else if (strcmp(argv[i],"-solver_tol") == 0) {
+      i++;
+      solver_options.residual = (double)atof(argv[i]);
     } else if (strcmp(argv[i],"-help") == 0) {
       printHelpAndExit();
     } else {
@@ -159,7 +161,33 @@ int main(int argc, char **argv)
   // generate the Preconditioner
   tic = get_time();
   Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  fmm_gmres(plan, x, b, solver_options, M);
+  SolverOptions inner_options(1e-1,5,2);
+  inner_options.variable_p = true;
+  Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
+
+  // Initial low accuracy solve
+  //
+  /*
+  double tic2, toc2;
+  tic2 = get_time();
+  {
+    printf("Initial solve starting..\n");
+    // initial solve to 1e-2 accuracy, 5 iterations, P = 2
+    SolverOptions initial_solve(1e-3,5,2);
+    // fmm_gmres(plan, x, b, solver_options, M);
+    fmm_gmres(plan, x, b, initial_solve, M);
+    printf("Initial solve finished..\n");
+  }
+  toc2 = get_time();
+  printf("Initial solve took: %.4es\n",toc2-tic2);
+  */
+
+  // Outer GMRES solve with diagonal preconditioner & relaxation
+  // fmm_gmres(plan, x, b, solver_options, M);
+  FGMRESContext<result_type> context(x.size(), solver_options.restart);
+  FGMRES(plan,x,b,solver_options, M, context);
+  // Outer/Inner FGMRES / GMRES (Diagonal)
+  // fmm_fgmres(plan, x, b, solver_options, inner);
   toc = get_time();
   double solve_time = toc-tic;
 

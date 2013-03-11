@@ -187,7 +187,7 @@ class SmallVec {
     return s;
   }
   /** Read a SmallVec from an input stream */
-  inline friend std::istream& operator>>(std::istream& s, const SmallVec& a) {
+  inline friend std::istream& operator>>(std::istream& s, SmallVec& a) {
     for_i s >> a[i];
     return s;
   }

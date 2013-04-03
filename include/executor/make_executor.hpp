@@ -9,12 +9,14 @@
 #include "EvalInteraction.hpp"
 #include "EvalDownward.hpp"
 
+#include "EvalLocal.hpp"
+
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
 
 #include "Octree.hpp"
 
-#define TEMP
+//#define TEMP
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
@@ -24,6 +26,10 @@ void make_evaluators(Executor& executor, Options& opts)
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
 		executor.insert(lazy_eval);
+  } else if (opts.local_evaluation) {
+    // only evaluate local field for preconditioner
+    auto local_eval = make_local_eval(executor, opts);
+    executor.insert(local_eval);
 	} else {
 #endif
 		// Standard evaluators

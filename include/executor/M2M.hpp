@@ -22,9 +22,8 @@ class M2M
   eval(const Kernel& K,
        const typename Kernel::multipole_type& source,
        typename Kernel::multipole_type& target,
-       const typename Kernel::point_type& translation,
-       unsigned p) {
-    K.M2M(source, target, translation, p);
+       const typename Kernel::point_type& translation) {
+    K.M2M(source, target, translation);
   }
 
  public:
@@ -33,8 +32,7 @@ class M2M
   inline static void eval(Kernel& K,
                           Context& bc,
                           const typename Context::box_type& source,
-                          const typename Context::box_type& target,
-                          unsigned p)
+                          const typename Context::box_type& target)
   {
 #ifdef DEBUG
     printf("M2M: %d to %d\n", source.index(), target.index());
@@ -42,6 +40,6 @@ class M2M
 
     M2M::eval(K,
               bc.multipole_expansion(source), bc.multipole_expansion(target),
-              bc.center(target) - bc.center(source), p);
+              bc.center(target) - bc.center(source));
   }
 };

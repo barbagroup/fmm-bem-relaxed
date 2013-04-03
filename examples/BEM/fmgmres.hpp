@@ -16,8 +16,8 @@ class FMGMRES
  private:
   FMM_plan& plan;
   vector_type& rhs;
-  SolverOptions& options;
-  Preconditioner& preconditioner;
+  const SolverOptions& options;
+  const Preconditioner& preconditioner;
   GMRESContext<output_type> context;
 
   /* interface to upload / download input / output vectors
@@ -44,7 +44,7 @@ class FMGMRES
   template <class VecType>
   void operator()(VecType x, VecType& y) const {
     y = x;
-    fmm_gmres(plan, y, rhs, options, preconditioner);
+    GMRES(plan, y, rhs, options, preconditioner);
   }
 
   //! Need plan, RHS vector, Options & preconditioner (optional)

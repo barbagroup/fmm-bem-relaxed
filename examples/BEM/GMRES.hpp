@@ -24,8 +24,20 @@ struct GMRESContext
   Matrix<T> V, H;
 
   //! constructor
-  GMRESContext(const unsigned N, const unsigned R)
-    : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
+  GMRESContext(const unsigned N=0, const unsigned R=50)
+     : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
+  /*
+  {
+    w  = std::vector<T>(N);
+    V0 = std::vector<T>(N);
+    z  = std::vector<T>(N);
+    s  = std::vector<T>(R+1);
+    cs = std::vector<T>(R);
+    sn = std::vector<T>(R);
+    V  = Matrix<T>(N,R+1);
+    H  = Matrix<T>(R+1,R);
+  }
+  */
 };
 
 //! Context for FGMRES temporary vectors
@@ -127,10 +139,14 @@ void GMRES(Matvec& MV,
   // scale residual by ||b||
   auto normb = norm(b.begin(),b.end());
 
+  // reference to the kernel used
+  auto& K = MV.kernel();
+
   // outer (restart) loop
   do {
     // dot product of A*x -- FMM call
-    context.w = MV.execute(x,opts.max_p); // V(0) = A*x
+    std::fill(context.w.begin(),context.w.end(),0);
+    context.w = MV.execute(x); // V(0) = A*x
     // V(0) = V(0) - b
     blas::axpy(b,context.w,-1.);
     beta = blas::nrm2(context.w); // beta = ||V(0)||
@@ -151,11 +167,12 @@ void GMRES(Matvec& MV,
 
       // set p for this iteration
       int p = opts.predict_p(fabs(resid));
+      K.set_p(p);
 
       // perform w = A*x
       std::fill(context.V0.begin(),context.V0.end(),0.);
       M(context.V.column(i),context.z);
-      context.w = MV.execute(context.z, p);
+      context.w = MV.execute(context.z);
 
       for (int k=0; k<=i; k++) {
         auto V_col = context.V.column(k);
@@ -202,6 +219,18 @@ void GMRES(Matvec& MV,
   printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }
 
+//! pass with preconditioner but no context
+template <typename Matvec, typename Preconditioner>
+void FGMRES(Matvec& MV,
+            std::vector<typename Matvec::charge_type>& x,
+            std::vector<typename Matvec::result_type>& b,
+            const SolverOptions& opts, const Preconditioner& M)
+{
+  typedef typename Matvec::result_type result_type;
+  FGMRESContext<result_type> context(x.size(), opts.restart);
+  FGMRES(MV,x,b,opts,M,context);
+}
+
 template <typename Matvec, typename Preconditioner, typename SolverContext>
 void FGMRES(Matvec& MV,
             std::vector<typename Matvec::charge_type>& x,
@@ -224,10 +253,12 @@ void FGMRES(Matvec& MV,
   // scale residual by ||b||
   auto normb = norm(b.begin(),b.end());
 
+  auto& K = MV.kernel();
+
   // outer (restart) loop
   do {
     // dot product of A*x -- FMM call
-    context.w = MV.execute(x,opts.max_p); // V(0) = A*x
+    context.w = MV.execute(x); // V(0) = A*x
     // V(0) = V(0) - b
     blas::axpy(b,context.w,-1.);
     beta = blas::nrm2(context.w); // beta = ||V(0)||
@@ -248,12 +279,13 @@ void FGMRES(Matvec& MV,
 
       // set p for this iteration
       int p = opts.predict_p(fabs(resid));
+      K.set_p(p);
 
       // perform w = A*x
       std::fill(context.V0.begin(),context.V0.end(),0.);
       M(context.V.column(i),context.z);
       context.Z.set_column(i,context.z);
-      context.w = MV.execute(context.z, p);
+      context.w = MV.execute(context.z);
 
       for (int k=0; k<=i; k++) {
         auto V_col = context.V.column(k);

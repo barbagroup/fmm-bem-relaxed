@@ -4,6 +4,7 @@
 
 
 #include "FMM_plan.hpp"
+#include "DirectMatvec.hpp"
 #include "LaplaceSphericalBEM.hpp"
 #include "Triangulation.hpp"
 
@@ -60,10 +61,12 @@ int main(int argc, char **argv)
 {
   int numPanels= 1000, recursions = 4, p = 5, k = 3;
   FMMOptions opts = get_options(argc,argv);
-  opts.set_mac_theta(0.5);    // Multipole acceptance criteria
-  opts.set_max_per_box(10);
+  // opts.set_max_per_box(10);
   SolverOptions solver_options;
   bool second_kind = false;
+
+  // use lazy evaluator by default
+  // opts.lazy_evaluation = true;
 
   // parse command line args
   // check if no arguments given
@@ -72,18 +75,6 @@ int main(int argc, char **argv)
     if (strcmp(argv[i],"-N") == 0) {
       i++;
       numPanels = atoi(argv[i]);
-    } else if (strcmp(argv[i],"-theta") == 0) {
-      i++;
-      opts.set_mac_theta((double)atof(argv[i]));
-    } else if (strcmp(argv[i],"-eval") == 0) {
-      i++;
-      if (strcmp(argv[i],"FMM") == 0) {
-        opts.evaluator = FMMOptions::FMM;
-      } else if (strcmp(argv[i],"TREE") == 0) {
-        opts.evaluator = FMMOptions::TREECODE;
-      } else {
-        printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
-      }
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
@@ -91,11 +82,6 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-k") == 0) {
       i++;
       k = atoi(argv[i]);
-    } else if (strcmp(argv[i],"-lazy_eval") == 0) {
-      opts.lazy_evaluation = true;
-    } else if (strcmp(argv[i],"-ncrit") == 0) {
-      i++;
-      opts.set_max_per_box((unsigned)atoi(argv[i]));
     } else if (strcmp(argv[i],"-recursions") == 0) {
       i++;
       recursions = atoi(argv[i]);
@@ -110,7 +96,7 @@ int main(int argc, char **argv)
       printHelpAndExit();
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
-      printHelpAndExit();
+      // printHelpAndExit();
     }
   }
   double tic, toc;
@@ -150,7 +136,7 @@ int main(int argc, char **argv)
   {
     for (auto& it : panels) it.switch_BC();
     FMM_plan<kernel_type> rhs_plan = FMM_plan<kernel_type>(K,panels,opts);
-    b = rhs_plan.execute(charges,p);
+    b = rhs_plan.execute(charges);
     for (auto& it : panels) it.switch_BC();
   }
 
@@ -161,7 +147,7 @@ int main(int argc, char **argv)
   // generate the Preconditioner
   tic = get_time();
   Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  SolverOptions inner_options(1e-1,5,2);
+  SolverOptions inner_options(1e-2,5,3);
   inner_options.variable_p = true;
   Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
 
@@ -173,9 +159,9 @@ int main(int argc, char **argv)
   {
     printf("Initial solve starting..\n");
     // initial solve to 1e-2 accuracy, 5 iterations, P = 2
-    SolverOptions initial_solve(1e-3,5,2);
+    SolverOptions initial_solve(5e-3,50,3);
     // fmm_gmres(plan, x, b, solver_options, M);
-    fmm_gmres(plan, x, b, initial_solve, M);
+    GMRES(plan, x, b, initial_solve, M);
     printf("Initial solve finished..\n");
   }
   toc2 = get_time();
@@ -183,11 +169,14 @@ int main(int argc, char **argv)
   */
 
   // Outer GMRES solve with diagonal preconditioner & relaxation
-  // fmm_gmres(plan, x, b, solver_options, M);
+  solver_options.residual = 1e-5;
   FGMRESContext<result_type> context(x.size(), solver_options.restart);
+
+  // DirectMV<kernel_type> MV(K, panels, panels);
   FGMRES(plan,x,b,solver_options, M, context);
+  // GMRES(MV,x,b,solver_options, M, context);
+  //FGMRES(plan,x,b,solver_options, inner, context); // , context);
   // Outer/Inner FGMRES / GMRES (Diagonal)
-  // fmm_fgmres(plan, x, b, solver_options, inner);
   toc = get_time();
   double solve_time = toc-tic;
 

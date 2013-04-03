@@ -8,7 +8,7 @@
 template <typename Context>
 struct EvalDownward : public EvaluatorBase<Context>
 {
-  void execute(Context& bc, unsigned p) const {
+  void execute(Context& bc) const {
     auto& tree = bc.target_tree();
 
     // For the highest level down to the lowest level
@@ -21,12 +21,12 @@ struct EvalDownward : public EvaluatorBase<Context>
         // Initialize box data
         if (box.is_leaf()) {
           // If leaf, make L2P calls
-          L2P::eval(bc.kernel(), bc, box, p);
+          L2P::eval(bc.kernel(), bc, box);
         } else {
           // If not leaf, then for all the children L2L
           auto c_end = box.child_end();
           for (auto cit = box.child_begin(); cit != c_end; ++cit)
-            L2L::eval(bc.kernel(), bc, box, *cit, p);
+            L2L::eval(bc.kernel(), bc, box, *cit);
         }
       }
     }

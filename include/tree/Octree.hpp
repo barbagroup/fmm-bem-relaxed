@@ -711,6 +711,11 @@ class Octree
   Box root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
+  /** Return a box given it's index */
+  const Box get_box(const unsigned idx) const {
+    assert(idx < box_data_.size());
+    return Box(idx, const_cast<tree_type*>(this));
+  }
   /** Return an iterator to the first body in this tree */
   body_iterator body_begin() const {
     return body_iterator(0, const_cast<tree_type*>(this));

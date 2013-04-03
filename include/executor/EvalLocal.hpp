@@ -2,14 +2,15 @@
 
 #include "EvaluatorBase.hpp"
 
-#include "M2L.hpp"
-#include "M2P.hpp"
 #include "P2P.hpp"
 
 #include <deque>
 
-template <typename Context, bool IS_FMM>
-class EvalInteraction : public EvaluatorBase<Context>
+/**
+ * Only evaluate local (direct) portion of the tree
+ */
+template <typename Context>
+class EvalLocal: public EvaluatorBase<Context>
 {
   //! type of box
   typedef typename Context::box_type box_type;
@@ -64,27 +65,16 @@ class EvalInteraction : public EvaluatorBase<Context>
   void interact(Context& bc,
                 const BOX& b1, const BOX& b2,
                 Q& pairQ) const {
-    if (bc.accept_multipole(b1, b2)) {
-      // These boxes satisfy the multipole acceptance criteria
-      if (IS_FMM)
-	      M2L::eval(bc.kernel(), bc, b1, b2);
-      else
-	      M2P::eval(bc.kernel(), bc, b1, b2);
-    } else {
+    // ignore accepted multipoles
+    if (!bc.accept_multipole(b1, b2)) {
       pairQ.push_back(box_pair(b1,b2));
     }
   }
 };
 
 
-
-
 template <typename Context, typename Options>
-EvaluatorBase<Context>* make_interact(Context&, Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM) {
-    return new EvalInteraction<Context, true>();
-  } else if (opts.evaluator == FMMOptions::TREECODE) {
-    return new EvalInteraction<Context, false>();
-  }
-  return nullptr;
+EvaluatorBase<Context>* make_local_eval(Context&, Options& opts) {
+  (void) opts;
+  return new EvalLocal<Context>();
 }

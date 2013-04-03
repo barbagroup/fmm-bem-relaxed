@@ -5,6 +5,9 @@
 
 #include "TreeContext.hpp"
 
+#include "INITM.hpp"
+#include "INITL.hpp"
+
 #include <type_traits>
 
 /** @class Executor
@@ -83,6 +86,9 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
+  //! Store whether we have a treecode or not
+  bool isTreecode;
+
  public:
   //! Constructor
   template <typename SourceIter, typename Options>
@@ -95,7 +101,8 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
         L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
                                    0 : source_tree_.boxes())),
         s_(std::vector<source_type>(first, last)),
-        acceptMultipole(opts.MAC()) {
+        acceptMultipole(opts.MAC()),
+        isTreecode(opts.evaluator == FMMOptions::TREECODE ? true : false) {
   }
 
   void insert(EvaluatorBase<self_type>* eval) {
@@ -103,10 +110,10 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   }
 
   virtual void execute(const std::vector<charge_type>& charges,
-                       std::vector<result_type>& results, unsigned p) {
+                       std::vector<result_type>& results) {
     c_ = charges.begin();
     r_ = results.begin();
-    evals_.execute(*this, p);
+    evals_.execute(*this);
   }
 
   bool accept_multipole(const box_type& source, const box_type& target) const {
@@ -122,6 +129,21 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   }
   tree_type& target_tree() {
     return source_tree_;
+  }
+
+  //! Re-initialise all expansions. Needed for use with lazy evaluators in BEM / GMRES
+  void reset_expansions() {
+    if (!isTreecode) printf("resetting L\n");
+    for (auto it = this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
+      INITM::eval(this->kernel(), *this, *it);
+      if (!isTreecode) {
+        INITL::eval(this->kernel(), *this, *it);
+      }
+    }
+  }
+
+  typename tree_type::Box get_box(int idx) const {
+    return source_tree_.get_box(idx);
   }
 
   // Accessors to make this Executor into a BoxContext

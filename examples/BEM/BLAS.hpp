@@ -9,26 +9,28 @@ template <typename T>
 class Matrix
 {
  private:
-  unsigned rows_, cols_;
+  int rows_, cols_;
   // 1D storage, column-major
-  // std::vector<T> vals_;
-  T *vals_;
+  std::vector<T> vals_;
+  // T *vals_;
 
  public:
   Matrix() : rows_(0), cols_(0), vals_(0) {};
   Matrix(int r, int c) : rows_(r), cols_(c) {
     // vals_.resize(rows_*cols_);
-    // vals_ = std::vector<T>(rows_*cols_);
-    vals_ = new T[rows_*cols_];
+    vals_ = std::vector<T>(rows_*cols_);
+    // vals_ = new T[rows_*cols_];
   };
   Matrix(const Matrix& M) : rows_(M.rows_), cols_(M.cols_), vals_(M.vals_) {};
 
-  unsigned rows() { return rows_; };
-  unsigned cols() { return cols_; };
+  //~Matrix() { delete [] vals_; };
+
+  int rows() { return rows_; };
+  int cols() { return cols_; };
 
   std::vector<T> column(int c) {
     std::vector<T> r(rows_,0);
-    for (unsigned i=0; i<rows_; i++) {
+    for (int i=0; i<rows_; i++) {
       r[i] = vals_[c*rows_+i];
     }
     return r;

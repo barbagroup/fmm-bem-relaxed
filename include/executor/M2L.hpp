@@ -22,9 +22,8 @@ class M2L
   eval(const Kernel& K,
        const typename Kernel::multipole_type& source,
        typename Kernel::local_type& target,
-       const typename Kernel::point_type& translation,
-       unsigned p) {
-    K.M2L(source, target, translation, p);
+       const typename Kernel::point_type& translation) {
+    K.M2L(source, target, translation);
   }
 
  public:
@@ -33,8 +32,7 @@ class M2L
   inline static void eval(Kernel& K,
                           Context& bc,
                           const typename Context::box_type& source,
-                          const typename Context::box_type& target,
-                          unsigned p)
+                          const typename Context::box_type& target)
   {
 #ifdef DEBUG
     printf("M2L: %d to %d\n", source.index(), target.index());
@@ -42,6 +40,6 @@ class M2L
 
     M2L::eval(K,
               bc.multipole_expansion(source), bc.local_expansion(target),
-              bc.center(target) - bc.center(source), p);
+              bc.center(target) - bc.center(source));
   }
 };

@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include "Vec.hpp"
+#include <fstream>
 
 template <typename vector>
 void normalise(vector& v)
@@ -91,7 +92,7 @@ void divide_all(std::vector<triangle>& triangles)
   // take a copy of the triangles array & size
   auto triangles_copy = triangles;
   auto num_initial_triangles = triangles_copy.size();
-  
+
   // resize output
   triangles.resize(num_initial_triangles*4);
 
@@ -123,6 +124,19 @@ void create_unit_sphere(std::vector<PanelType>& panels, unsigned recursions = 2)
   auto pit = panels.begin();
   for (auto it=triangles.begin(); it!=triangles.end(); ++it, ++pit) {
     *pit = PanelType(it->v0_,it->v1_,it->v2_);
+  }
+
+  // save the triangulation to test.vert, test.face
+  std::ofstream face("test.face");
+  std::ofstream vert("test.vert");
+
+  int vnum = 1;
+  for (auto it=triangles.begin(); it!=triangles.end();++it) {
+    vert << it->v0_ << std::endl;
+    vert << it->v1_ << std::endl;
+    vert << it->v2_ << std::endl;
+    face << vnum << ' ' << vnum+1 << ' ' << vnum+2 << std::endl;
+    vnum+=3;
   }
 }
 

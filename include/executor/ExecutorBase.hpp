@@ -18,6 +18,5 @@ struct ExecutorBase {
   // TODO: improve?
   /** Virtual execute */
   virtual void execute(const std::vector<charge_type>& charges,
-                       std::vector<result_type>& results,
-                       unsigned p) = 0;
+                       std::vector<result_type>& results) = 0;
 };

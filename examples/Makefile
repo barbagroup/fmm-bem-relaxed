@@ -20,6 +20,8 @@ OBJC := gcc
 endif
 LINK := $(CXX)
 
+# DEBUG = 1
+
 # define any compile-time flags
 CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra #-ffast-math
 ifeq ($(DEBUG),1)
@@ -53,8 +55,14 @@ all: LaplaceBEM YukawaBEM
 LaplaceBEM: LaplaceBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+LaplaceBEM_time: LaplaceBEM_time.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 YukawaBEM: YukawaBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+reader_test: reader_test.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^ -lGL -lGLU -lglut
 
 # suffix replacement rule for building .o's from .cpp's
 #   $<: the name of the prereq of the rule (a .cpp file)
@@ -65,7 +73,7 @@ YukawaBEM: YukawaBEM.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) LaplaceBEM YukawaBEM 
+	-$(RM) LaplaceBEM YukawaBEM reader_test
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

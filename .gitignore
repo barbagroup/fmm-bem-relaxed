@@ -2,6 +2,7 @@
 # make and build files
 *.o
 .deps
+*.swp
 examples/LaplaceBEM
 examples/sphericalBEM
 examples/YukawaBEM

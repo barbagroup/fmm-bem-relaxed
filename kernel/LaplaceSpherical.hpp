@@ -27,7 +27,7 @@ class LaplaceSpherical
   std::vector<complex> Cnm;
 
   //! Epsilon
-  static constexpr real EPS = 1e-6;
+  static constexpr real EPS = 1e-12;
   //! Imaginary unit
   const complex CI = complex(0,1);
   //! ODD-Even helper function

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <vector>
+
 template <typename Context>
 struct EvaluatorBase {
   typedef Context context_type;
+
   virtual ~EvaluatorBase() {};
   virtual void execute(context_type&) const = 0;
 };

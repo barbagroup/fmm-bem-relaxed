@@ -3,8 +3,9 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "TreeContext.hpp"
+#include "include/tree/TreeContext.hpp"
 
+#include <functional>
 #include <type_traits>
 
 /** @class Executor

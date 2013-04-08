@@ -12,16 +12,17 @@
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
 
-#include "Octree.hpp"
+#include "include/tree/Octree.hpp"
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
 {
-	if (opts.lazy_evaluation) {
+	//if (opts.lazy_evaluation) {
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
 		executor.insert(lazy_eval);
-	} else {
+    /*
+  } else {
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
 		executor.insert(upward);
@@ -30,6 +31,7 @@ void make_evaluators(Executor& executor, Options& opts)
 		auto downward = make_downward(executor, opts);
 		executor.insert(downward);
 	}
+    */
 }
 
 /** Single tree executor construction

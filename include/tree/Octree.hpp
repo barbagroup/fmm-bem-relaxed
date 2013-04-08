@@ -1,7 +1,8 @@
 #pragma once
 
 #include "BoundingBox.hpp"
-#include "Util.hpp"
+
+#include "util/Util.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -497,32 +498,27 @@ class Octree
 
   Octree() {};
 
-  /** Return the Bounding Box that this Octree encompasses
-   */
+  /** Return the Bounding Box that this Octree encompasses */
   BoundingBox<point_type> bounding_box() const {
     return coder_.bounding_box();
   }
 
-  /** The number of points contained in this tree
-   */
+  /** The number of points contained in this tree */
   inline unsigned size() const {
     return point_.size();
   }
 
-  /** The number of points contained in this tree
-   */
+  /** The number of points contained in this tree */
   inline unsigned bodies() const {
     return size();
   }
 
-  /** The number of boxes contained in this tree
-   */
+  /** The number of boxes contained in this tree */
   inline unsigned boxes() const {
     return box_data_.size();
   }
 
-  /** The maximum level of any box in this tree
-   */
+  /** The maximum level of any box in this tree */
   inline unsigned levels() const {
     return level_offset_.size() - 1;
   }

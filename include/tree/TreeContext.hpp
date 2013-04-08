@@ -40,7 +40,7 @@ struct BoxMap {
 };
 
 
-#include "TransformIterator.hpp"
+#include "util/transform_iterator.hpp"
 
 /** @class BodyMap
  * @brief A class to map bodies of a Tree to values via the boxes that

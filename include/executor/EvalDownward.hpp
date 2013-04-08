@@ -36,8 +36,7 @@ struct EvalDownward : public EvaluatorBase<Context>
 
 template <typename Context, typename Options>
 EvaluatorBase<Context>* make_downward(Context&, Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM) {
+  if (opts.evaluator == FMMOptions::FMM)
     return new EvalDownward<Context>();
-  }
   return nullptr;
 }

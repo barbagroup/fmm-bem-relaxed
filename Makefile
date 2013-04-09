@@ -36,7 +36,9 @@ CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I./include -I./kernel
+INCLUDES = -I. -I$(FMMW_DIR)/include -I$(FMMW_DIR)/kernel
+# External libraries defined in Makefile.inc
+INCLUDES += -I$(GSL_DIR) -I$(FFTW_DIR)
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options

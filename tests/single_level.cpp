@@ -3,7 +3,6 @@
 
 #include "LaplaceCartesian.hpp"
 #include "LaplaceSpherical.hpp"
-#include "YukawaCartesianFMM.hpp"
 
 #include "Math.hpp"
 
@@ -85,8 +84,7 @@ int main(int argc, char** argv)
   (void) argv;
 
   //LaplaceCartesian<5> K;
-  // LaplaceSpherical K(5);
-  YukawaCartesian K(10, 0.1);
+  LaplaceSpherical K(5);
 
   single_level_test(K);
 }

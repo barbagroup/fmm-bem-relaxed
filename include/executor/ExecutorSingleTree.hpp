@@ -3,10 +3,11 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "include/tree/TreeContext.hpp"
+#include "tree/TreeContext.hpp"
 
 #include <functional>
 #include <type_traits>
+#include <functional>
 
 /** @class Executor
  * @brief A very general Executor class. This provides a context to any tree

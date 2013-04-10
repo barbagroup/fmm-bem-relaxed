@@ -133,7 +133,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
 
   //! Re-initialise all expansions. Needed for use with lazy evaluators in BEM / GMRES
   void reset_expansions() {
-    if (!isTreecode) printf("resetting L\n");
     for (auto it = this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
       INITM::eval(this->kernel(), *this, *it);
       if (!isTreecode) {

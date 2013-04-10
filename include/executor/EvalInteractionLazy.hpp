@@ -25,7 +25,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   typedef std::pair<box_type, box_type> box_pair;
   typedef std::pair<int, int> int_pair;
   //! List for P2P interactions    TODO: could further compress these...
-  mutable std::vector<int_pair> P2P_list;
+  mutable std::vector<std::vector<int>> P2P_lists;
   //! List for P2M calls
   mutable std::vector<int> P2M_list;
   //! List for M2M calls
@@ -56,6 +56,10 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 	 */
 	EvalInteractionLazy(Context& bc) : mat_entries(bc.source_tree().bodies()) {
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
+    // initialise P2P lists
+    auto num_leaves = bc.source_tree().boxes();
+    P2P_lists.resize(num_leaves);
+
     std::deque<box_pair> pairQ;
     pairQ.push_back(box_pair(bc.source_tree().root(),
                              bc.target_tree().root()));
@@ -68,8 +72,9 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
       if (b1.is_leaf()) {
 	      if (b2.is_leaf()) {
 		      // Both are leaves, P2P
-		      P2P_list.push_back(std::make_pair(b2.index(),b1.index()));
-          mat_entries[b1.index()] += b2.num_children();
+		      // P2P_list.push_back(std::make_pair(b2.index(),b1.index()));
+          // printf("P2P pushing: %d x %d\n",(int)b2.index(), (int)b1.index());
+		      P2P_lists[b1.index()].push_back(b2.index());
 	      } else {
 		      // Split the second box into children and interact
 		      auto c_end = b2.child_end();
@@ -126,7 +131,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     // Evaluate L2P operations
     eval_L2P_list(bc);
     // Evaluate queued P2P interactions
-    eval_P2P_list(bc);
+    eval_P2P_lists(bc);
   }
 
  private:
@@ -213,12 +218,16 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  void eval_P2P_list(Context& bc) const
+  void eval_P2P_lists(Context& bc) const
   {
-    #pragma omp parallel for
-    for (unsigned i=0; i<P2P_list.size(); i++) {
+    unsigned j;
+    #pragma omp parallel for private(j)
+    for (unsigned i=0; i<P2P_lists.size(); i++) {
       // evaluate this pair using P2P
-      P2P::eval(bc.kernel(), bc, bc.get_box(P2P_list[i].first), bc.get_box(P2P_list[i].second), P2P::ONE_SIDED());
+      for (j=0; j<P2P_lists[i].size(); j++) {
+        // P2P::eval(bc.kernel(), bc, bc.get_box(i), bc.get_box(P2P_lists[i][j]), P2P::ONE_SIDED());
+        P2P::eval(bc.kernel(), bc, bc.get_box(P2P_lists[i][j]), bc.get_box(i), P2P::ONE_SIDED());
+      }
     }
   }
 

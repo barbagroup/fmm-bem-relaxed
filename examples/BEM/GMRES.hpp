@@ -26,8 +26,9 @@ struct GMRESContext
   //! constructor
   GMRESContext(const unsigned N=0, const unsigned R=50)
      : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
-  /*
+/*
   {
+    printf("R: %d\n",R);
     w  = std::vector<T>(N);
     V0 = std::vector<T>(N);
     z  = std::vector<T>(N);
@@ -37,7 +38,7 @@ struct GMRESContext
     V  = Matrix<T>(N,R+1);
     H  = Matrix<T>(R+1,R);
   }
-  */
+*/
 };
 
 //! Context for FGMRES temporary vectors
@@ -224,7 +225,7 @@ template <typename Matvec, typename Preconditioner>
 void FGMRES(Matvec& MV,
             std::vector<typename Matvec::charge_type>& x,
             std::vector<typename Matvec::result_type>& b,
-            const SolverOptions& opts, const Preconditioner& M)
+            const SolverOptions& opts, Preconditioner& M)
 {
   typedef typename Matvec::result_type result_type;
   FGMRESContext<result_type> context(x.size(), opts.restart);
@@ -235,7 +236,7 @@ template <typename Matvec, typename Preconditioner, typename SolverContext>
 void FGMRES(Matvec& MV,
             std::vector<typename Matvec::charge_type>& x,
             std::vector<typename Matvec::result_type>& b,
-            const SolverOptions& opts, const Preconditioner& M,
+            const SolverOptions& opts, Preconditioner& M,
             SolverContext& context)
 {
   typedef typename Matvec::charge_type charge_type;

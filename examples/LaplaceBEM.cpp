@@ -10,12 +10,16 @@
 
 #include "GMRES.hpp"
 #include "fmgmres.hpp"
+#include "LocalPC.hpp"
 
 #include "timing.hpp"
 
 enum SolveType { INITIAL_SOLVE = 1,
                  GMRES_DIAGONAL = 2,
                  INNER_OUTER = 4 };
+
+enum SOLVERS { SOLVE_GMRES, SOLVE_FGMRES } ;
+enum PRECONDITIONERS { IDENTITY, DIAGONAL, LOCAL };
 
 struct ProblemOptions
 {
@@ -65,6 +69,10 @@ int main(int argc, char **argv)
   SolverOptions solver_options;
   bool second_kind = false;
 
+  // solve / PC settings
+  SOLVERS solver = SOLVE_GMRES;
+  PRECONDITIONERS pc = IDENTITY;
+
   // use lazy evaluator by default
   // opts.lazy_evaluation = true;
 
@@ -92,6 +100,13 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-solver_tol") == 0) {
       i++;
       solver_options.residual = (double)atof(argv[i]);
+    } else if (strcmp(argv[i],"-gmres") == 0) {
+      solver = SOLVE_GMRES;
+    } else if (strcmp(argv[i],"-local") == 0) {
+      solver = SOLVE_FGMRES;
+      pc = LOCAL;
+    } else if (strcmp(argv[i],"-diagonal") == 0) {
+      pc = DIAGONAL;
     } else if (strcmp(argv[i],"-help") == 0) {
       printHelpAndExit();
     } else {
@@ -99,6 +114,8 @@ int main(int argc, char **argv)
       // printHelpAndExit();
     }
   }
+
+  // opts.sparse_local = true;
   double tic, toc;
   tic = get_time();
   // Init the FMM Kernel
@@ -147,9 +164,13 @@ int main(int argc, char **argv)
   // generate the Preconditioner
   tic = get_time();
   Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  SolverOptions inner_options(1e-2,5,3);
+  //M.print();
+  SolverOptions inner_options(1e-2,1,2);
   inner_options.variable_p = true;
-  Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
+  // Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
+
+  // Local preconditioner
+  Preconditioners::LocalInnerSolver<FMM_plan<kernel_type>, Preconditioners::Diagonal<charge_type>> local(K, panels, b);
 
   // Initial low accuracy solve
   //
@@ -172,10 +193,29 @@ int main(int argc, char **argv)
   solver_options.residual = 1e-5;
   FGMRESContext<result_type> context(x.size(), solver_options.restart);
 
-  // DirectMV<kernel_type> MV(K, panels, panels);
-  FGMRES(plan,x,b,solver_options, M, context);
+  if (solver == SOLVE_GMRES && pc == IDENTITY){
+    printf("Solver: GMRES\nPreconditioner: Identity\n");
+    // straight GMRES, no preconditioner
+    // DirectMV<kernel_type> MV(K, panels, panels);
+    GMRES(plan,x,b,solver_options);
+  }
+  else if (solver == SOLVE_GMRES && pc == DIAGONAL) {
+    printf("Solver: GMRES\nPreconditioner: Diagonal\n");
+    // GMRES, diagonal preconditioner
+    GMRES(plan,x,b,solver_options, M, context);
+  }
+  else if (solver == SOLVE_FGMRES && pc == LOCAL) {
+    printf("Solver: FGMRES\nPreconditioner: Local solve\n");
+    // FGMRES, Local inner solver
+    FGMRES(plan,x,b,solver_options, local, context);
+  }
+  else {
+    printf("[E] no valid solver / preconditioner option chosen\n");
+    exit(0);
+  }
+
   // GMRES(MV,x,b,solver_options, M, context);
-  //FGMRES(plan,x,b,solver_options, inner, context); // , context);
+  // FGMRES(plan,x,b,solver_options, inner, context); // , context);
   // Outer/Inner FGMRES / GMRES (Diagonal)
   toc = get_time();
   double solve_time = toc-tic;

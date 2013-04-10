@@ -10,28 +10,32 @@
 #include "EvalDownward.hpp"
 
 #include "EvalLocal.hpp"
+#include "EvalLocalSparse.hpp"
 
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
 
 #include "Octree.hpp"
 
-//#define TEMP
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
 {
-#ifndef TEMP
 	if (opts.lazy_evaluation) {
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
 		executor.insert(lazy_eval);
   } else if (opts.local_evaluation) {
     // only evaluate local field for preconditioner
-    auto local_eval = make_local_eval(executor, opts);
-    executor.insert(local_eval);
+    if (opts.sparse_local) {
+      auto sparse_eval = make_sparse_local_eval(executor, opts);
+      executor.insert(sparse_eval);
+    }
+    else {
+      auto local_eval = make_local_eval(executor, opts);
+      executor.insert(local_eval);
+    }
 	} else {
-#endif
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
 		executor.insert(upward);

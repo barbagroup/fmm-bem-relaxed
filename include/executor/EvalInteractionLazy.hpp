@@ -106,11 +106,11 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 
     /* print out the # of P2P interactions & estimated sparse matrix size */
     /*
-    int mat_elements = std::accumulate(mat_entries.begin(),mat_entries.end(),0);
-    double elements_row = (double)mat_elements / mat_entries.size();
-    int mat_size = mat_elements*(sizeof(double)+sizeof(int)) + (mat_entries.size()+1)*sizeof(int);
-    double mat_storage = (double)mat_size / 1024. / 1024.;
-    printf("Sparse matrix entries: %d (%.3lg): %.4eMB\n",mat_elements,elements_row,mat_storage);
+      int mat_elements = std::accumulate(mat_entries.begin(),mat_entries.end(),0);
+      double elements_row = (double)mat_elements / mat_entries.size();
+      int mat_size = mat_elements*(sizeof(double)+sizeof(int)) + (mat_entries.size()+1)*sizeof(int);
+      double mat_storage = (double)mat_size / 1024. / 1024.;
+      printf("Sparse matrix entries: %d (%.3lg): %.4eMB\n",mat_elements,elements_row,mat_storage);
     */
 	}
 
@@ -119,7 +119,14 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 	 */
   void execute(Context& bc) const {
     // Reset/Initialise all multipole & local expansions
-    bc.reset_expansions();
+    auto it_end = bc.source_tree().box_end();
+    for (auto it = bc.source_tree().box_begin(); it != it_end; ++it)
+      INITM::eval(bc.kernel(), bc, *it);
+    if (IS_FMM) {
+      auto it_end = bc.target_tree().box_end();
+      for (auto it = bc.target_tree().box_begin(); it != it_end; ++it)
+        INITL::eval(bc.kernel(), bc, *it);
+    }
     // Generate all Multipole coefficients
     eval_P2M_list(bc);
     // Evaluate all M2M operations
@@ -250,7 +257,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 
   void eval_LR_list(Context& bc) const
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (unsigned i=0; i<LR_list.size(); i++) {
       if (IS_FMM) {
         M2L::eval(bc.kernel(), bc,
@@ -275,7 +282,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 
   void eval_L2P_list(Context& bc) const
   {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (unsigned i=0; i<L2P_list.size(); i++) {
       L2P::eval(bc.kernel(), bc, bc.target_tree().box(L2P_list[i]));
     }

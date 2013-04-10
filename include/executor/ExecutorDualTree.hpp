@@ -136,17 +136,6 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     return source_tree_;
   }
 
-  // Re-initialise all expansions
-  void reset_expansions()
-  {
-    for (auto it=this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
-      INITM::eval(this->kernel(), *this, *it);
-      if (!isTreecode) {
-        INITL::eval(this->kernel(), *this, *it);
-      }
-    }
-  }
-
   // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& box) {
     return M_(box);

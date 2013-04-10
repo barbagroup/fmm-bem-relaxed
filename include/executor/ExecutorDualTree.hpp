@@ -88,6 +88,9 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
+  //! is treecode evaluator being used
+  bool isTreecode;
+
  public:
   //! Constructor
   template <typename SourceIter, typename TargetIter, typename Options>
@@ -103,7 +106,8 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
                                    0 : source_tree_.boxes())),
         s_(std::vector<source_type>(sfirst, slast)),
     t_(std::vector<target_type>(tfirst, tlast)),
-    acceptMultipole(opts.MAC()) {
+    acceptMultipole(opts.MAC()),
+    isTreecode(opts.evaluator == FMMOptions::TREECODE ? true : false) {
   }
 
   void insert(EvaluatorBase<self_type>* eval) {
@@ -130,6 +134,25 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   }
   tree_type& target_tree() {
     return source_tree_;
+  }
+
+  // Re-initialise all expansions
+  void reset_expansions()
+  {
+    for (auto it=this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
+      INITM::eval(this->kernel(), *this, *it);
+      if (!isTreecode) {
+        INITL::eval(this->kernel(), *this, *it);
+      }
+    }
+  }
+
+  typename tree_type::Box get_source_box(int idx) const {
+    return source_tree_.get_box(idx);
+  }
+
+  typename tree_type::Box get_target_box(int idx) const {
+    return target_tree_.get_box(idx);
   }
 
   // Accessors to make this Executor into a BoxContext

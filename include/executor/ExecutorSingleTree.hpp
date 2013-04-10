@@ -142,7 +142,10 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
     }
   }
 
-  typename tree_type::Box get_box(int idx) const {
+  typename tree_type::Box get_source_box(int idx) const {
+    return source_tree_.get_box(idx);
+  }
+  typename tree_type::Box get_target_box(int idx) const {
     return source_tree_.get_box(idx);
   }
 

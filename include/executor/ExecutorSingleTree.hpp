@@ -4,6 +4,8 @@
 #include "EvaluatorBase.hpp"
 
 #include "tree/TreeContext.hpp"
+#include "executor/INITM.hpp"
+#include "executor/INITL.hpp"
 
 #include <type_traits>
 #include <functional>
@@ -84,6 +86,9 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
+  //! Whether we're using a treecode or not
+  bool isTreecode;
+
  public:
   //! Constructor
   template <typename SourceIter, typename Options>
@@ -96,7 +101,8 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
         L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
                                    0 : source_tree_.boxes())),
         s_(std::vector<source_type>(first, last)),
-        acceptMultipole(opts.MAC()) {
+        acceptMultipole(opts.MAC()),
+        isTreecode(opts.evaluator == FMMOptions::TREECODE ? true : false) {
   }
 
   void insert(EvaluatorBase<self_type>* eval) {
@@ -123,6 +129,24 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   }
   tree_type& target_tree() {
     return source_tree_;
+  }
+
+  //! Re-initialise all expansions
+  void reset_expansions()
+  {
+    for (auto it=this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
+      INITM::eval(this->kernel(), *this, *it);
+      if (!isTreecode) {
+        INITL::eval(this->kernel(), *this, *it);
+      }
+    }
+  }
+
+  typename tree_type::Box get_source_box(int idx) const {
+    return source_tree_.get_box(idx);
+  }
+  typename tree_type::Box get_target_box(int idx) const {
+    return source_tree_.get_box(idx);
   }
 
   // Accessors to make this Executor into a BoxContext

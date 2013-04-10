@@ -193,12 +193,12 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   {
     for (auto it=LR_list.begin(); it!=LR_list.end(); ++it) {
       // resolve all needed multipole expansions from lower levels of the tree
-      resolve_multipole(bc, bc.get_box(it->first));
+      resolve_multipole(bc, bc.get_source_box(it->first));
 
       // if using an FMM, mark this Local expansion as initialised and propagate down the tree
       if (IS_FMM && !initialised_L.count(it->second)) {
         initialised_L.insert(it->second);
-        propagate_local(bc, bc.get_box(it->second));
+        propagate_local(bc, bc.get_target_box(it->second));
       }
     }
   }
@@ -226,7 +226,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
       // evaluate this pair using P2P
       for (j=0; j<P2P_lists[i].size(); j++) {
         // P2P::eval(bc.kernel(), bc, bc.get_box(i), bc.get_box(P2P_lists[i][j]), P2P::ONE_SIDED());
-        P2P::eval(bc.kernel(), bc, bc.get_box(P2P_lists[i][j]), bc.get_box(i), P2P::ONE_SIDED());
+        P2P::eval(bc.kernel(), bc, bc.get_source_box(P2P_lists[i][j]), bc.get_target_box(i), P2P::ONE_SIDED());
       }
     }
   }
@@ -235,14 +235,14 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   {
     #pragma omp parallel for
     for (unsigned i=0; i<P2M_list.size(); i++) {
-      P2M::eval(bc.kernel(), bc, bc.get_box(P2M_list[i]));
+      P2M::eval(bc.kernel(), bc, bc.get_source_box(P2M_list[i]));
     }
   }
 
   void eval_M2M_list(Context& bc) const
   {
     for (unsigned i=0; i<M2M_list.size(); i++) {
-      M2M::eval(bc.kernel(), bc, bc.get_box(M2M_list[i].first), bc.get_box(M2M_list[i].second));
+      M2M::eval(bc.kernel(), bc, bc.get_source_box(M2M_list[i].first), bc.get_source_box(M2M_list[i].second));
     }
   }
 
@@ -251,9 +251,9 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     #pragma omp parallel for
     for (unsigned i=0; i<LR_list.size(); i++) {
       if (IS_FMM) {
-        M2L::eval(bc.kernel(), bc, bc.get_box(LR_list[i].first), bc.get_box(LR_list[i].second));
+        M2L::eval(bc.kernel(), bc, bc.get_source_box(LR_list[i].first), bc.get_target_box(LR_list[i].second));
       } else {
-        M2P::eval(bc.kernel(), bc, bc.get_box(LR_list[i].first), bc.get_box(LR_list[i].second));
+        M2P::eval(bc.kernel(), bc, bc.get_source_box(LR_list[i].first), bc.get_target_box(LR_list[i].second));
       }
     }
   }
@@ -261,7 +261,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   void eval_L2L_list(Context& bc) const
   {
     for (unsigned i=0; i<L2L_list.size(); i++) {
-      L2L::eval(bc.kernel(), bc, bc.get_box(L2L_list[i].first), bc.get_box(L2L_list[i].second));
+      L2L::eval(bc.kernel(), bc, bc.get_target_box(L2L_list[i].first), bc.get_target_box(L2L_list[i].second));
     }
   }
 
@@ -269,7 +269,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   {
     #pragma omp parallel for
     for (unsigned i=0; i<L2P_list.size(); i++) {
-      L2P::eval(bc.kernel(), bc, bc.get_box(L2P_list[i]));
+      L2P::eval(bc.kernel(), bc, bc.get_target_box(L2P_list[i]));
     }
   }
 };

@@ -142,13 +142,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
     }
   }
 
-  typename tree_type::Box get_source_box(int idx) const {
-    return source_tree_.get_box(idx);
-  }
-  typename tree_type::Box get_target_box(int idx) const {
-    return source_tree_.get_box(idx);
-  }
-
   // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& box) {
     return M_(box);

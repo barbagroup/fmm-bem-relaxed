@@ -313,7 +313,8 @@ class Octree
   // A tree-aligned box
   struct Box {
     /** Construct an invalid Box */
-    Box() : idx_(0), tree_(nullptr) {
+    Box()
+        : idx_(0), tree_(nullptr) {
     }
 
     unsigned index() const {
@@ -749,8 +750,8 @@ class Octree
   Box root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
-  /** return a box given it's index */
-  const Box get_box(const unsigned idx) const {
+  /** Return a box given it's index */
+  Box box(const unsigned idx) const {
     assert(idx < box_data_.size());
     return Box(idx, const_cast<tree_type*>(this));
   }

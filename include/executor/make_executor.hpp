@@ -12,7 +12,7 @@
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
 
-#include "Octree.hpp"
+#include "tree/Octree.hpp"
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)

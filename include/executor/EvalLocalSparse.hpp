@@ -5,7 +5,6 @@
 #include "SparseMatrix.hpp"
 #include <deque>
 
-#include "timing.hpp"
 
 /**
  * Only evaluate local (direct) portion of the tree

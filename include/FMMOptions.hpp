@@ -10,6 +10,8 @@ class FMMOptions
 {
 public:
 	bool lazy_evaluation; // use lazy evaluation of multipole / local expansions / translations?
+  bool local_evaluation; // use only local evaluation (for preconditioners)
+  bool sparse_local; // only local eval using sparse matrix
 
 	//! Evaluation type
 	enum EvalType {FMM, TREECODE};
@@ -36,6 +38,8 @@ public:
 
 	FMMOptions()
 		: lazy_evaluation(false),
+      local_evaluation(false),
+      sparse_local(false),
 		  evaluator(FMM),
 		  MAC_(DefaultMAC(0.5)),
 		  NCRIT_(126),

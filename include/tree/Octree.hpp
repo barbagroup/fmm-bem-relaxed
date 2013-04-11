@@ -747,11 +747,11 @@ class Octree
 #endif
 
   /** Return the root box of this tree */
-  Box root() const {
+  box_type root() const {
     return Box(0, const_cast<tree_type*>(this));
   }
   /** Return a box given it's index */
-  Box box(const unsigned idx) const {
+  box_type box(const unsigned idx) const {
     assert(idx < box_data_.size());
     return Box(idx, const_cast<tree_type*>(this));
   }

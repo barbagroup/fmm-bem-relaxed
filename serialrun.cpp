@@ -13,6 +13,7 @@
 //#include <LaplaceCartesian.hpp>
 //#include <YukawaCartesian.hpp>
 //#include <YukawaSpherical.hpp>
+#include "StokesSpherical.hpp"
 
 #include <string.h>
 
@@ -20,10 +21,11 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
+//#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 //#define YUKAWA_SPH
+#define STOKES_SPH
 
 // Random number in [0,1)
 inline double drand() {
@@ -84,7 +86,10 @@ int main(int argc, char **argv)
   typedef UnitKernel kernel_type;
   kernel_type K;
 #endif
-
+#ifdef STOKES_SPH
+  typedef StokesSpherical kernel_type;
+  kernel_type K(p);
+#endif
   // if not using a Yukawa kernel, quiet warnings
 #if !defined(YUKAWA_KERNEL) && !defined(YUKAWA_SPH)
   (void) beta;
@@ -104,8 +109,13 @@ int main(int argc, char **argv)
   //std::vector<point_type> target_points = points;
 
   std::vector<charge_type> charges(numBodies);
-  for (int k = 0; k < numBodies; ++k)
+  for (int k = 0; k < numBodies; ++k) {
+#if defined(STOKES_SPH)
+    charges[k] = charge_type(1,1,1); // charge_type(drand(),drand(),drand());
+#else
     charges[k] = drand();
+#endif
+  }
 
   // Build the FMM
   //fmm_plan plan = fmm_plan(K, bodies, opts);
@@ -132,7 +142,8 @@ int main(int argc, char **argv)
     }
 
     // Compute the result with a direct matrix-vector multiplication
-    Direct::matvec(K, points, charges, sample_targets, exact);
+    Direct::matvec(K, points.begin(), points.end(), charges.begin(),
+                   sample_targets.begin(), sample_targets.end(), exact.begin());
 
 #if defined(SPH_KERNEL) || defined(CART_KERNEL) || defined(YUKAWA_KERNEL)
     result_type rdiff, rnorm;
@@ -141,8 +152,8 @@ int main(int argc, char **argv)
       auto fmm_val   = result[sample_map[k]];
       // printf("[%03d] exact: %lg, FMM: %lg\n", k, exact_val[0], fmm_val[0]);
 
-      rdiff = (fmm_val - exact_val) * (fmm_val - exact_val);
-      rnorm = exact_val * exact_val;
+      rdiff += (fmm_val - exact_val) * (fmm_val - exact_val);
+      rnorm += exact_val * exact_val;
     }
 
     printf("Error (pot) : %.4e\n", sqrt(rdiff[0] / rnorm[0]));
@@ -161,6 +172,20 @@ int main(int argc, char **argv)
     }
 
     printf("Error (pot) : %.4e\n", sqrt(rdiff / rnorm));
+#endif
+#if defined(STOKES_SPH)
+    result_type rdiff = result_type(0.), rnorm = result_type(0.);
+    for (unsigned k = 0; k < exact.size(); ++k) {
+      auto exact_val = exact[k];
+      auto fmm_val = result[sample_map[k]];
+
+      for (unsigned i=0; i < 3; i++) {
+        rdiff[i] += (fmm_val[i]-exact_val[i])*(fmm_val[i]-exact_val[i]);
+        rnorm[i] += exact_val[i]*exact_val[i];
+      }
+    }
+    auto div = rdiff/rnorm;
+    printf("Error (u) : %.4e, (v) : %.4e, (w) : %.4e\n",sqrt(div[0]),sqrt(div[1]),sqrt(div[2]));
 #endif
 #ifdef UNIT_KERNEL
     int wrong_results = 0;

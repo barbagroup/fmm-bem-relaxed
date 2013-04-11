@@ -60,7 +60,7 @@ void single_level_test(const Kernel& K)
   local_type L;
   point_type L_center(0.875,0,0); // 0.875,0.875);
   auto d = L_center - M_center;
-  printf("DIST: (%lg, %lg, %lg : %lg\n",d[0],d[1],d[2],norm(d));
+  printf("DIST: (%lg, %lg, %lg) : %lg\n",d[0],d[1],d[2],norm(d));
   // L_center = point_type(t);
   INITL::eval(K, L, L_center, 1u);
   K.M2L(M, L, L_center - M_center);

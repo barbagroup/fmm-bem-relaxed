@@ -53,6 +53,7 @@ class StokesSpherical : public LaplaceSpherical
    * K(t,s)
    * this is kind of useless -- I need to define a P2P anyway, as charge * KVT doesn't work for this app...
    */
+  /*
   kernel_value_type operator()(const target_type& t, const source_type& s) const {
     // do shit here
     (void) t;
@@ -64,36 +65,44 @@ class StokesSpherical : public LaplaceSpherical
     // real invR = std::sqrt(invR2);
     return kernel_value_type(0,0,0);
   }
+  */
 
   template <typename SourceIter, typename ChargeIter,
             typename TargetIter, typename ResultIter>
   void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
            TargetIter t_first, TargetIter t_last, ResultIter r_first) const {
     // do crap here
-    printf("StokesSpherical::P2P (vectorised)\n");
-    for ( ; t_first != t_last; ++t_first, ++r_first) {
-      for ( ; s_first != s_last; ++s_first, ++c_first) {
+    auto ti = t_first;
+    auto ri = r_first;
+
+    for ( ; ti != t_last; ++ti, ++ri) {
+      auto si = s_first;
+      auto ci = c_first;
+      for ( ; si != s_last; ++si, ++ci) {
         // interact target, source & charge here
-        point_type dist = *t_first - *s_first;
+        point_type dist = *ti - *si;
         auto r2 = normSq(dist);
         real R1 = r2;
         real R2 = R1;
         real invR = 1. / R1;
-        if (invR < 1e-8) invR = 0;
+        if (r2 < 1e-8) invR = 0;
 
         //auto invR2 = 1./r2;
         //if (invR2 < 1e-8) invR2 = 0;
         //auto invR = std::sqrt(invR2);
         auto H = std::sqrt(invR) * invR; // 1 / R^3
 
-        auto c = *c_first;
-        auto fdx = dist[0]*c[0] + dist[1]*c[1] + dist[2]*c[2];
+        //auto c = *c_first;
+        auto fdx = dist[0]*(*ci)[0] + dist[1]*(*ci)[1] + dist[2]*(*ci)[2];
 
-        auto& r = *r_first;
+        // auto& r = *r_first;
 
-        r[0] += H * (c[0] * R2 + fdx * dist[0]);
-        r[1] += H * (c[1] * R2 + fdx * dist[1]);
-        r[2] += H * (c[2] * R2 + fdx * dist[2]);
+        //r[0] += 1.; // H * (c[0] * R2 + fdx * dist[0]);
+        //r[1] += 1.; // H * (c[1] * R2 + fdx * dist[1]);
+        //r[2] += 1.; // H * (c[2] * R2 + fdx * dist[2]);
+        (*ri)[0] +=  H * ((*ci)[0] * R2 + fdx * dist[0]);
+        (*ri)[1] +=  H * ((*ci)[1] * R2 + fdx * dist[1]);
+        (*ri)[2] +=  H * ((*ci)[2] * R2 + fdx * dist[2]);
       }
     }
   }

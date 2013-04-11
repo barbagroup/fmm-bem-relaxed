@@ -233,12 +233,92 @@ class StokesSpherical : public LaplaceSpherical
     }
   }
 
+ /** Kernel L2P operation
+   * r += Op(L, t) where L is the local expansion and r is the result
+   *
+   * @param[in] L The local expansion
+   * @param[in] center The center of the box with the local expansion
+   * @param[in] target The target of this L2P operation
+   * @param[in] result The result to accumulate into
+   * @pre L includes the influence of all sources outside its box
+   */
   void L2P(const local_type& L, const point_type& center,
            const target_type& target, result_type& result) const {
-    (void) L;
-    (void) center;
-    (void) target;
-    (void) result;
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    point_type dist = target - center;
+    point_type gradient[4]; //   = {0.,0.,0.,0.};
+    gradient[0] = 0.;
+    gradient[1] = 0.;
+    gradient[2] = 0.;
+    gradient[3] = 0.;
+    point_type cartesian(0);
+
+    real r, theta, phi;
+    cart2sph(r,theta,phi,dist);
+    evalMultipole(r,theta,phi,Ynm,YnmTheta);
+
+    for( int n=0; n!=P; ++n ) {
+      int nm  = n * n + n;
+      int nms = n * (n + 1) / 2;
+      result[0] += std::real(L[0][nms] * Ynm[nm]);
+      result[1] += std::real(L[1][nms] * Ynm[nm]);
+      result[2] += std::real(L[2][nms] * Ynm[nm]);
+
+      real factor = 1. / r * n;
+      gradient[0][0] += std::real(L[0][nms] * Ynm[nm]) * factor;
+      gradient[0][1] += std::real(L[0][nms] * YnmTheta[nm]);
+
+      gradient[1][0] += std::real(L[1][nms] * Ynm[nm]) * factor;
+      gradient[1][1] += std::real(L[1][nms] * YnmTheta[nm]);
+
+      gradient[2][0] += std::real(L[2][nms] * Ynm[nm]) * factor;
+      gradient[2][1] += std::real(L[2][nms] * YnmTheta[nm]);
+
+      gradient[3][0] += std::real(L[3][nms] * Ynm[nm]) * factor;
+      gradient[3][1] += std::real(L[3][nms] * YnmTheta[nm]);
+
+      for( int m=1; m<=n; ++m ) {
+        nm  = n * n + n + m;
+        nms = n * (n + 1) / 2 + m;
+        result[0] += 2 * std::real(L[0][nms] * Ynm[nm]);
+        result[1] += 2 * std::real(L[1][nms] * Ynm[nm]);
+        result[2] += 2 * std::real(L[2][nms] * Ynm[nm]);
+
+        gradient[0][0] += 2 * std::real(L[0][nms] * Ynm[nm]) * factor;
+        gradient[0][1] += 2 * std::real(L[0][nms] * YnmTheta[nm]);
+        gradient[0][2] += 2 * std::real(L[0][nms] * Ynm[nm] * CI) * m;
+
+        gradient[1][0] += 2 * std::real(L[1][nms] * Ynm[nm]) * factor;
+        gradient[1][1] += 2 * std::real(L[1][nms] * YnmTheta[nm]);
+        gradient[1][2] += 2 * std::real(L[1][nms] * Ynm[nm] * CI) * m;
+
+        gradient[2][0] += 2 * std::real(L[2][nms] * Ynm[nm]) * factor;
+        gradient[2][1] += 2 * std::real(L[2][nms] * YnmTheta[nm]);
+        gradient[2][2] += 2 * std::real(L[2][nms] * Ynm[nm] * CI) * m;
+
+        gradient[3][0] += 2 * std::real(L[3][nms] * Ynm[nm]) * factor;
+        gradient[3][1] += 2 * std::real(L[3][nms] * YnmTheta[nm]);
+        gradient[3][2] += 2 * std::real(L[3][nms] * Ynm[nm] * CI) * m;
+      }
+    }
+    sph2cart(r,theta,phi,gradient[0],cartesian);
+    cartesian *= -target[0];
+    gradient[0] = cartesian;
+
+    sph2cart(r,theta,phi,gradient[1],cartesian);
+    cartesian *= -target[1];
+    gradient[1] = cartesian;
+
+    sph2cart(r,theta,phi,gradient[2],cartesian);
+    cartesian *= -target[2];
+    gradient[2] = cartesian;
+
+    sph2cart(r,theta,phi,gradient[3],cartesian);
+    gradient[3] = cartesian;
+
+    result[0] += (gradient[0][0]+gradient[1][0]+gradient[2][0]+gradient[3][0]);
+    result[1] += (gradient[0][1]+gradient[1][1]+gradient[2][1]+gradient[3][1]);
+    result[2] += (gradient[0][2]+gradient[1][2]+gradient[2][2]+gradient[3][2]);
   }
 
 }; // end class StokesSpherical

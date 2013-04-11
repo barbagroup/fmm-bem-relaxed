@@ -4,6 +4,8 @@
 #include "LaplaceCartesian.hpp"
 #include "LaplaceSpherical.hpp"
 
+#include "StokesSpherical.hpp"
+
 #include "Math.hpp"
 
 #include <iostream>
@@ -21,32 +23,38 @@ void single_level_test(const Kernel& K)
   typedef typename kernel_type::local_type local_type;
 
   // init source
-  source_type s = source_type(0,0,0);
+  std::vector<source_type> s(1);
+  s[0] = source_type(0,0,0);
 
   // init charge
-  charge_type c = 1;
+  std::vector<charge_type> c(1);
+  c[0] = charge_type(1,2,3);
 
   // init target
-  target_type t = target_type(0.9,0,0); // 1,1);
+  std::vector<target_type> t(1);
+  t[0] = target_type(0.9,0,0);
+  // target_type t = target_type(0.9,0,0); // 1,1);
 
   // init results vectors for exact, FMM
-  result_type rexact;
+  std::vector<result_type> rexact(1);
+  // result_type rexact;
   result_type rm2p;
   result_type rfmm;
 
   // test direct
-  rexact = K(t,s) * c;
+  // rexact = K(t,s) * c;
+  K.P2P(s.begin(),s.end(),c.begin(),t.begin(),t.end(),rexact.begin());
   // rexact = result_type(rexact[0],0.,0.,0.);
 
   // setup intial multipole expansion
   multipole_type M;
   point_type M_center(0.125,0,0); // 0.125,0.125);
   INITM::eval(K, M, M_center, 1u);
-  K.P2M(s, c, M_center, M);
+  K.P2M(s[0], c[0], M_center, M);
 
 
   // test M2P
-  K.M2P(M, M_center, t, rm2p);
+  K.M2P(M, M_center, t[0], rm2p);
 
   // test M2L, L2P
   local_type L;
@@ -56,13 +64,14 @@ void single_level_test(const Kernel& K)
   // L_center = point_type(t);
   INITL::eval(K, L, L_center, 1u);
   K.M2L(M, L, L_center - M_center);
-  K.L2P(L, L_center, t, rfmm);
+  K.L2P(L, L_center, t[0], rfmm);
 
   // check errors
-  std::cout << "rexact = " << rexact << std::endl;
+  std::cout << "rexact = " << rexact[0] << std::endl;
   std::cout << "rm2p = " << rm2p << std::endl;
   std::cout << "rfmm = " << rfmm << std::endl;
 
+  /*
   std::cout << "M2P L1 rel error: "
             << std::scientific << l1_rel_error(rm2p, rexact) << std::endl;
   std::cout << "M2P L2 error:     "
@@ -76,6 +85,7 @@ void single_level_test(const Kernel& K)
             << std::scientific << l2_error(rfmm, rexact) << std::endl;
   std::cout << "FMM L2 rel error: "
             << std::scientific << l2_rel_error(rfmm, rexact) << std::endl;
+  */
 }
 
 int main(int argc, char** argv)
@@ -84,7 +94,8 @@ int main(int argc, char** argv)
   (void) argv;
 
   //LaplaceCartesian<5> K;
-  LaplaceSpherical K(5);
+  // LaplaceSpherical K(5);
+  StokesSpherical K(5);
 
   single_level_test(K);
 }

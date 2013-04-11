@@ -9,10 +9,14 @@
 #include "EvalInteraction.hpp"
 #include "EvalDownward.hpp"
 
+#include "EvalLocal.hpp"
+#include "EvalLocalSparse.hpp"
+
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
 
 #include "tree/Octree.hpp"
+
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
@@ -21,6 +25,16 @@ void make_evaluators(Executor& executor, Options& opts)
 		// Custom lazy evaluator
 		auto lazy_eval = make_lazy_eval(executor, opts);
 		executor.insert(lazy_eval);
+  } else if (opts.local_evaluation) {
+    // only evaluate local field for preconditioner
+    if (opts.sparse_local) {
+      auto sparse_eval = make_sparse_local_eval(executor, opts);
+      executor.insert(sparse_eval);
+    }
+    else {
+      auto local_eval = make_local_eval(executor, opts);
+      executor.insert(local_eval);
+    }
 	} else {
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
@@ -29,7 +43,9 @@ void make_evaluators(Executor& executor, Options& opts)
 		executor.insert(inter);
 		auto downward = make_downward(executor, opts);
 		executor.insert(downward);
+#ifndef TEMP
 	}
+#endif
 }
 
 /** Single tree executor construction

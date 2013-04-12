@@ -262,13 +262,13 @@ class LaplaceSphericalBEM : public LaplaceSpherical
           else
           {
             // otherwise influence of dGdn needed
-            complex brh = (double)n/rho*Ynm[nm];
-            complex bal = YnmTheta[nm];
-            complex bbe = -complex(0,1.)*(double)m*Ynm[nm];
+            complex brh = (double)n/rho*Ynm[nm]; // d(rho)
+            complex bal = YnmTheta[nm];          // d(alpha)
+            complex bbe = -complex(0,1.)*(double)m*Ynm[nm]; // d(beta)
 
-            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe;
-            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe;
-            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal;
+            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe; // dx
+            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
+            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
 
             auto& normal = source.normal;
             complex mult_term = charge * gauss_weight[i] * source.Area;

@@ -67,6 +67,7 @@ class StokesSpherical : public LaplaceSpherical
   }
   */
 
+#ifndef STRESSLET
   template <typename SourceIter, typename ChargeIter,
             typename TargetIter, typename ResultIter>
   void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
@@ -92,21 +93,63 @@ class StokesSpherical : public LaplaceSpherical
         //auto invR = std::sqrt(invR2);
         auto H = std::sqrt(invR) * invR; // 1 / R^3
 
-        //auto c = *c_first;
-        auto fdx = dist[0]*(*ci)[0] + dist[1]*(*ci)[1] + dist[2]*(*ci)[2];
+        auto& f = *c_first;
+        auto fdx = dist[0]*f[0] + dist[1]*f[1] + dist[2]*f[2];
 
         // auto& r = *r_first;
 
         //r[0] += 1.; // H * (c[0] * R2 + fdx * dist[0]);
         //r[1] += 1.; // H * (c[1] * R2 + fdx * dist[1]);
         //r[2] += 1.; // H * (c[2] * R2 + fdx * dist[2]);
-        (*ri)[0] +=  H * ((*ci)[0] * R2 + fdx * dist[0]);
-        (*ri)[1] +=  H * ((*ci)[1] * R2 + fdx * dist[1]);
-        (*ri)[2] +=  H * ((*ci)[2] * R2 + fdx * dist[2]);
+        (*ri)[0] +=  H * (f[0] * R2 + fdx * dist[0]);
+        (*ri)[1] +=  H * (f[1] * R2 + fdx * dist[1]);
+        (*ri)[2] +=  H * (f[2] * R2 + fdx * dist[2]);
       }
     }
   }
+#else
+  template <typename SourceIter, typename ChargeIter,
+            typename TargetIter, typename ResultIter>
+  void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
+           TargetIter t_first, TargetIter t_last, ResultIter r_first) const {
+    // do crap here
+    auto ti = t_first;
+    auto ri = r_first;
 
+    for ( ; ti != t_last; ++ti, ++ri) {
+      auto si = s_first;
+      auto ci = c_first;
+      for ( ; si != s_last; ++si, ++ci) {
+        // interact target, source & charge here
+        point_type dist = *ti - *si;
+        auto r2 = normSq(dist);
+        real R1 = r2;
+        real R2 = R1;
+        real invR = 1. / R1;
+        if (r2 < 1e-8) invR = 0;
+
+        auto dxdotn = dist[0]*normal[0] + dist[1]*normal[1] + dist[2]*normal[2];
+
+        //auto invR2 = 1./r2;
+        //if (invR2 < 1e-8) invR2 = 0;
+        //auto invR = std::sqrt(invR2);
+        auto H = std::sqrt(invR) * invR; // 1 / R^3
+        H *= dxdotn * invR;  // (dx . n) / r^5
+
+        auto dx0 = dist[0], dx1 = dist[1], dx2 = dist[2];
+        auto& g = *c_first;
+
+        (*ri)[0] += H * (dx0*dx0*g0 + dx0*dx1*g1 + dx0*dx2*g2);
+        (*ri)[1] += H * (dx0*dx1*g0 + dx1*dx1*g1 + dx1*dx2*g2);
+        (*ri)[2] += H * (dx0*dx2*g0 + dx1*dx2*g1 + dx2*dx2*g2);
+      }
+    }
+  }
+#endif
+
+  /**
+   * Create expansions for S_ij / F_i (Tornberg & Greengard
+   */
   void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
@@ -132,6 +175,49 @@ class StokesSpherical : public LaplaceSpherical
     }
   }
 
+  /**
+   * Create expansions for D_ij / G_i (Tornberg & Greengard
+   */
+/*
+  void D2M(const source_type& source, const charge_type& charge,
+           const point_type& center, multipole_type& M) const {
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+    // modifications needed here
+    point_type dist = static_cast<point_type>(source) - center;
+    real rho, alpha, beta;
+    cart2sph(rho,alpha,beta,dist);
+    evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+
+    auto g0 = charge[0], g1 = charge[1], g2 = charge[2];
+    auto fdotx = f0*source[0] + f1*source[1] + f2*source[2];
+
+    for (int n=0; n!=P; ++n) {
+      for (int m=0; m<=n; ++m) {
+        const int nm  = n * (n + 1) + m;
+        const int nms = n * (n + 1) / 2 + m;
+
+        complex brh = (double)n/rho*Ynm[nm]; // d(rho)
+        complex bal = YnmTheta[nm];          // d(alpha)
+        complex bbe = -complex(0,1.)*(double)m*Ynm[nm]; // d(beta)
+
+        complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe; // dx
+        complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
+        complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
+
+        // which order should these be in?
+        auto rdotn = bxd*normal[0] + byd*normal[1] + bzd*normal[2];
+        auto rdotg = bxd*g[0] + byd*g[1] + bzd*g[2];
+        M[0][nms] += (rdotn * g[0] + rdotg * normal[0]);
+        M[1][nms] += (rdotn * g[1] + rdotg * normal[1]);
+        M[2][nms] += (rdotn * g[2] + rdotg * normal[2]);
+
+        auto xdotg = source[0]*g[0] + source[1]*g[1] + source[2]*g[2];
+        auto ndotx = normal[0]*source[0] + normal[1]*source[1] + normal[2]*source[2];
+        M[3][nms] += rdotn * xdotg + rdotg * ndotx;
+      }
+    }
+  }
+*/
   void M2M(const multipole_type& Msource,
                  multipole_type& Mtarget, const point_type& translation) const {
     for (unsigned i=0; i<4; i++) {

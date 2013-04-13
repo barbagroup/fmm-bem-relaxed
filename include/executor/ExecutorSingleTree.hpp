@@ -167,24 +167,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
     return source_tree_;
   }
 
-  //! Re-initialise all expansions
-  void reset_expansions()
-  {
-    for (auto it=this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
-      INITM::eval(this->kernel(), *this, *it);
-      if (!isTreecode) {
-        INITL::eval(this->kernel(), *this, *it);
-      }
-    }
-  }
-
-  typename tree_type::Box get_source_box(int idx) const {
-    return source_tree_.get_box(idx);
-  }
-  typename tree_type::Box get_target_box(int idx) const {
-    return source_tree_.get_box(idx);
-  }
-
   // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& box) {
     return M_[box.index()];

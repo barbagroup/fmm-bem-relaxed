@@ -72,6 +72,12 @@ dual_correctness: dual_correctness.o
 single_level: single_level.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+single_level_stresslet: single_level_stresslet.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+multi_level_stresslet: multi_level_stresslet.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 
 # suffix replacement rule for building .o's from .cpp's
 #   $<: the name of the prereq of the rule (a .cpp file)

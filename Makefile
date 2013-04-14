@@ -56,6 +56,9 @@ all: serialrun
 serialrun: serialrun.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+serialrun_stresslet: serialrun_stresslet.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 test_tree: test_tree.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 

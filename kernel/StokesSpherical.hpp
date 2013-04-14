@@ -29,17 +29,17 @@ class StokesSpherical : public LaplaceSpherical
   typedef Vec<3, real> result_type;
 
   //! multipole type
-  //typedef Vec<4, LaplaceSpherical::multipole_type> multipole_type;
   typedef std::vector<LaplaceSpherical::multipole_type> multipole_type;
   //! local type
-  //typedef Vec<4, LaplaceSpherical::local_type> local_type;
   typedef std::vector<LaplaceSpherical::local_type> local_type;
 
   //! default (delegating) constructor
   StokesSpherical() : StokesSpherical(5) {};
   //! Constructor
   StokesSpherical(int p) : LaplaceSpherical(p) {
+#ifdef STRESSLET
     std::cout << "Stresslet calculation" << std::endl;
+#endif
   };
 
   /** Initialize a multipole expansion */
@@ -101,7 +101,7 @@ class StokesSpherical : public LaplaceSpherical
         //auto invR = std::sqrt(invR2);
         auto H = std::sqrt(invR) * invR; // 1 / R^3
 
-        auto& f = *c_first;
+        auto& f = *ci;
         auto fdx = dist[0]*f[0] + dist[1]*f[1] + dist[2]*f[2];
 
         // auto& r = *r_first;
@@ -145,7 +145,7 @@ class StokesSpherical : public LaplaceSpherical
         H *= dxdotn * invR;  // (dx . n) / r^5
 
         auto dx0 = dist[0], dx1 = dist[1], dx2 = dist[2];
-        auto& g = *c_first;
+        auto& g = *ci;
 
         (*ri)[0] += H * (dx0*dx0*g[0] + dx0*dx1*g[1] + dx0*dx2*g[2]);
         (*ri)[1] += H * (dx0*dx1*g[0] + dx1*dx1*g[1] + dx1*dx2*g[2]);
@@ -261,9 +261,9 @@ class StokesSpherical : public LaplaceSpherical
     for( int n=0; n!=P; ++n ) {
       int nm  = n * n + n;
       int nms = n * (n + 1) / 2;
-      result[0] += std::real(M[0][nms] * Ynm[nm]);
-      result[1] += std::real(M[1][nms] * Ynm[nm]);
-      result[2] += std::real(M[2][nms] * Ynm[nm]);
+      result[0] += 1./6*std::real(M[0][nms] * Ynm[nm]);
+      result[1] += 1./6*std::real(M[1][nms] * Ynm[nm]);
+      result[2] += 1./6*std::real(M[2][nms] * Ynm[nm]);
 
       real factor = 1. / r * (n+1);
 
@@ -282,9 +282,9 @@ class StokesSpherical : public LaplaceSpherical
       for( int m=1; m<=n; ++m ) {
         nm  = n * n + n + m;
         nms = n * (n + 1) / 2 + m;
-        result[0] += 2 * std::real(M[0][nms] * Ynm[nm]);
-        result[1] += 2 * std::real(M[1][nms] * Ynm[nm]);
-        result[2] += 2 * std::real(M[2][nms] * Ynm[nm]);
+        result[0] += 2 / 6. * std::real(M[0][nms] * Ynm[nm]);
+        result[1] += 2 / 6. * std::real(M[1][nms] * Ynm[nm]);
+        result[2] += 2 / 6. * std::real(M[2][nms] * Ynm[nm]);
 
         gradient[0][0] -= 2 * std::real(M[0][nms] *Ynm[nm]) * factor;
         gradient[0][1] += 2 * std::real(M[0][nms] *YnmTheta[nm]);
@@ -318,9 +318,9 @@ class StokesSpherical : public LaplaceSpherical
     sph2cart(r,theta,phi,gradient[3],cartesian);
     gradient[3] = cartesian;
 
-    result[0] += (gradient[0][0]+gradient[1][0]+gradient[2][0]+gradient[3][0]);
-    result[1] += (gradient[0][1]+gradient[1][1]+gradient[2][1]+gradient[3][1]);
-    result[2] += (gradient[0][2]+gradient[1][2]+gradient[2][2]+gradient[3][2]);
+    result[0] += 1./6*(gradient[0][0]+gradient[1][0]+gradient[2][0]+gradient[3][0]);
+    result[1] += 1./6*(gradient[0][1]+gradient[1][1]+gradient[2][1]+gradient[3][1]);
+    result[2] += 1./6*(gradient[0][2]+gradient[1][2]+gradient[2][2]+gradient[3][2]);
   }
 
   void M2L(const multipole_type& Msource,
@@ -364,9 +364,9 @@ class StokesSpherical : public LaplaceSpherical
     for( int n=0; n!=P; ++n ) {
       int nm  = n * n + n;
       int nms = n * (n + 1) / 2;
-      result[0] += std::real(L[0][nms] * Ynm[nm]);
-      result[1] += std::real(L[1][nms] * Ynm[nm]);
-      result[2] += std::real(L[2][nms] * Ynm[nm]);
+      result[0] += 1./6*std::real(L[0][nms] * Ynm[nm]);
+      result[1] += 1./6*std::real(L[1][nms] * Ynm[nm]);
+      result[2] += 1./6*std::real(L[2][nms] * Ynm[nm]);
 
       real factor = 1. / r * n;
       gradient[0][0] += std::real(L[0][nms] * Ynm[nm]) * factor;
@@ -384,9 +384,9 @@ class StokesSpherical : public LaplaceSpherical
       for( int m=1; m<=n; ++m ) {
         nm  = n * n + n + m;
         nms = n * (n + 1) / 2 + m;
-        result[0] += 2 * std::real(L[0][nms] * Ynm[nm]);
-        result[1] += 2 * std::real(L[1][nms] * Ynm[nm]);
-        result[2] += 2 * std::real(L[2][nms] * Ynm[nm]);
+        result[0] += 2 / 6. * std::real(L[0][nms] * Ynm[nm]);
+        result[1] += 2 / 6. * std::real(L[1][nms] * Ynm[nm]);
+        result[2] += 2 / 6. * std::real(L[2][nms] * Ynm[nm]);
 
         gradient[0][0] += 2 * std::real(L[0][nms] * Ynm[nm]) * factor;
         gradient[0][1] += 2 * std::real(L[0][nms] * YnmTheta[nm]);
@@ -420,9 +420,9 @@ class StokesSpherical : public LaplaceSpherical
     sph2cart(r,theta,phi,gradient[3],cartesian);
     gradient[3] = cartesian;
 
-    result[0] += (gradient[0][0]+gradient[1][0]+gradient[2][0]+gradient[3][0]);
-    result[1] += (gradient[0][1]+gradient[1][1]+gradient[2][1]+gradient[3][1]);
-    result[2] += (gradient[0][2]+gradient[1][2]+gradient[2][2]+gradient[3][2]);
+    result[0] += 1./6*(gradient[0][0]+gradient[1][0]+gradient[2][0]+gradient[3][0]);
+    result[1] += 1./6*(gradient[0][1]+gradient[1][1]+gradient[2][1]+gradient[3][1]);
+    result[2] += 1./6*(gradient[0][2]+gradient[1][2]+gradient[2][2]+gradient[3][2]);
   }
 
 }; // end class StokesSpherical

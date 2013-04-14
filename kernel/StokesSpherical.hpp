@@ -5,6 +5,7 @@
  */
 
 #include "LaplaceSpherical.hpp"
+#include <iostream>
 
 class StokesSpherical : public LaplaceSpherical
 {
@@ -15,10 +16,11 @@ class StokesSpherical : public LaplaceSpherical
   typedef LaplaceSpherical::source_type source_type;
   //! target type
   typedef LaplaceSpherical::target_type target_type;
-  //! charge type - { f1, f2, f3 }
 #ifdef STRESSLET
+  //! charge type - { g1, g2, g3, n1, n2, n3 }
   typedef Vec<6, LaplaceSpherical::charge_type> charge_type;
 #else
+  //! charge type - { f1, f2, f3 }
   typedef Vec<3, LaplaceSpherical::charge_type> charge_type;
 #endif
   //! return of kernel evaluation
@@ -36,7 +38,9 @@ class StokesSpherical : public LaplaceSpherical
   //! default (delegating) constructor
   StokesSpherical() : StokesSpherical(5) {};
   //! Constructor
-  StokesSpherical(int p) : LaplaceSpherical(p) {};
+  StokesSpherical(int p) : LaplaceSpherical(p) {
+    std::cout << "Stresslet calculation" << std::endl;
+  };
 
   /** Initialize a multipole expansion */
   void init_multipole(multipole_type& M, const point_type& extents, unsigned level) const {
@@ -128,7 +132,7 @@ class StokesSpherical : public LaplaceSpherical
         point_type dist = *ti - *si;
         auto r2 = normSq(dist);
         real R1 = r2;
-        real R2 = R1;
+        // real R2 = R1;
         real invR = 1. / R1;
         if (r2 < 1e-8) invR = 0;
 
@@ -194,7 +198,7 @@ class StokesSpherical : public LaplaceSpherical
 
     auto g0 = charge[0], g1 = charge[1], g2 = charge[2];
     auto n0 = charge[3], n1 = charge[4], n2 = charge[5];
-    auto fdotx = g0*source[0] + g1*source[1] + g2*source[2];
+    // auto fdotx = g0*source[0] + g1*source[1] + g2*source[2];
 
     for (int n=0; n!=P; ++n) {
       for (int m=0; m<=n; ++m) {

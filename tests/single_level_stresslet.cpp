@@ -2,7 +2,6 @@
 #include "INITL.hpp"
 
 #define STRESSLET
-
 #include "StokesSpherical.hpp"
 
 #include "Math.hpp"

@@ -34,7 +34,6 @@ struct INITM
     printf("initM: %d\n", b.index());
 #endif
 
-    typename Kernel::point_type extents(b.side_length());
-    INITM::eval(K, bc.multipole_expansion(b), extents, (unsigned)b.level());
+    INITM::eval(K, bc.multipole_expansion(b), b.extents(), b.level());
   }
 };

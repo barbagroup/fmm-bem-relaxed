@@ -3,13 +3,16 @@
 #include "BoundingBox.hpp"
 
 #include <vector>
+#include <algorithm>
+
 #include <iostream>
 #include <iomanip>
 
-#include <assert.h>
-
 #include <boost/iterator/iterator_adaptor.hpp>
 using boost::iterator_adaptor;
+
+#include <assert.h>
+
 
 /** Bucket sort using pigeonhole sorting
  *
@@ -67,21 +70,21 @@ class Octree
       result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
     // TODO: improve
-    auto dim = result.dimensions();
-    auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
-    result |= result.min() + point_type(maxdim) * (1 + 1e-6);
+    point_type dim = result.dimensions();
+    auto maxdim = *std::max_element(dim.begin(), dim.end());
+    point_type a = result.min() + maxdim * (1 + 1e-6);
+    result |= a;
     //std::cout << "Bounding Box: " << result << "\n";
     return result;
   }
 
   // The Coder this tree is based on
-  class MortonCoder {
-   public:
+  struct MortonCoder {
     // Using a 32-bit unsigned int for the code_type
     // means we can only resolve 10 3D levels
     typedef unsigned code_type;
 
-    /** The number of bits per dimension [octree subdivisions]. #cells = 8^L. */
+    /** The number of bits per dimension. #cells = 8^L. */
     static constexpr unsigned levels = 10;
     /** The number of cells per side of the bounding box (2^L). */
     static constexpr code_type cells_per_side = code_type(1) << levels;
@@ -95,20 +98,16 @@ class Octree
       assert(!bb.empty());
     }
 
-    MortonCoder() {};
-
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
-      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
+      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_*cells_per_side));
     }
 
     /** Return the bounding box of the cell with Morton code @a c.
      * @pre c < end_code */
     BoundingBox<point_type> cell(code_type c) const {
       assert(c < end_code);
-      point_type p = deinterleave(c);
-      p *= cell_size_;
-      p += pmin_;
+      point_type p = pmin_ + deinterleave(c) * cell_size_;
       return BoundingBox<point_type>(p, p + cell_size_);
     }
 
@@ -181,7 +180,6 @@ class Octree
                         value_type(compact_bits(c >> 2)));
     }
   };
-
   // Code type
   typedef typename MortonCoder::code_type code_type;
 
@@ -329,6 +327,9 @@ class Octree
     }
     double side_length() const {
       return tree_->coder_.bounding_box().dimensions()[0] / (1 << level());
+    }
+    point_type extents() const {
+      return tree_->coder_.bounding_box().dimensions() / (1 << level());
     }
     double radius() const {
       return side_length() / 2.0;
@@ -748,3 +749,11 @@ class Octree
   Octree(const Octree& other_tree) {};
   void operator=(const Octree& other_tree) {};
 };
+
+/** Annoying C++ */
+template <typename Point>
+constexpr unsigned Octree<Point>::MortonCoder::levels;
+template <typename Point>
+constexpr typename Octree<Point>::MortonCoder::code_type Octree<Point>::MortonCoder::cells_per_side;
+template <typename Point>
+constexpr typename Octree<Point>::MortonCoder::code_type Octree<Point>::MortonCoder::end_code;

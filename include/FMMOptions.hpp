@@ -1,9 +1,9 @@
 #pragma once
-
 /**
  * Storage class for all FMM options
  */
 
+#include "Vec.hpp"
 
 /** Class to define compile-time and run-time FMM options */
 class FMMOptions
@@ -24,8 +24,9 @@ public:
 
 		template <typename BOX>
 		bool operator()(const BOX& b1, const BOX& b2) const {
-			double r0_norm = norm(b1.center() - b2.center());
-			return r0_norm * theta_ > b1.radius() + b2.radius();
+			double r0_normSq = normSq(b1.center() - b2.center());
+      double rhs = (b1.radius() + b2.radius()) / theta_;
+			return r0_normSq > rhs*rhs;
 		}
 	};
 

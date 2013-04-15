@@ -38,8 +38,10 @@ struct L2L
     printf("M2M: %d to %d\n", source.index(), target.index());
 #endif
 
+    typename Kernel::point_type r = bc.center(target) - bc.center(source);
     L2L::eval(K,
-              bc.local_expansion(source), bc.local_expansion(target),
-              bc.center(target) - bc.center(source));
+              bc.local_expansion(source),
+              bc.local_expansion(target),
+              r);
   }
 };

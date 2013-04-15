@@ -426,65 +426,37 @@ class Octree
     box_iterator(unsigned idx, tree_type* tree)
         : box_iterator::iterator_adaptor(idx), tree_(tree) {
     }
-    box_iterator(Box b)
+    box_iterator(const Box& b)
         : box_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
     friend class Octree;
   };
 
   /** @struct Tree::body_iterator
-   * @brief Iterator class for Bodies in the tree
-   * TODO: Use a Mutator to condense/clarify code
+   * @brief Random access iterator class for Bodies in the tree
    */
-  struct body_iterator {
-    // These type definitions help us use STL's iterator_traits.
-    /** Element type. */
-    typedef Body value_type;
-    /** Type of pointers to elements. */
-    typedef Body* pointer;
-    /** Type of references to elements. */
-    typedef Body& reference;
-    /** Iterator category. */
-    typedef std::input_iterator_tag iterator_category;
-    /** Iterator difference */
-    typedef std::ptrdiff_t difference_type;
-    /** Construct an invalid iterator */
-    body_iterator() : idx_(0), tree_(nullptr) {
+  struct body_iterator
+      : public iterator_adaptor<body_iterator,                   // Derived
+                                unsigned,                        // BaseType
+                                Body,                            // Value
+                                std::random_access_iterator_tag, // IterCategory
+                                Body,                            // Reference
+                                std::ptrdiff_t>                  // DiffType
+  {
+    /* Construct an invalid body_iterator */
+    body_iterator()
+        : body_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-
-    body_iterator& operator++() {
-      ++idx_;
-      return *this;
+    Body dereference() const {
+      return Body(this->base_reference(), tree_);
     }
-    body_iterator& operator--() {
-      --idx_;
-      return *this;
-    }
-    body_iterator& operator+(int n) {
-      idx_ += n;
-      return *this;
-    }
-    body_iterator& operator-(int n) {
-      idx_ -= n;
-      return *this;
-    }
-    Body operator*() const {
-      return Body(idx_, tree_);
-    }
-    Body* operator->() const {
-      placeholder_ = operator*();
-      return &placeholder_;
-    }
-    bool operator==(const body_iterator& it) const {
-      return tree_ == it.tree_ && idx_ == it.idx_;
-    }
-
    private:
-    unsigned idx_;
     tree_type* tree_;
-    mutable Body placeholder_;
     body_iterator(unsigned idx, tree_type* tree)
-        :idx_(idx), tree_(tree) {
+        : body_iterator::iterator_adaptor(idx), tree_(tree) {
+    }
+    body_iterator(const Body& b)
+        : body_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
     friend class Octree;
   };

@@ -6,12 +6,10 @@
 #include <iostream>
 #include <iomanip>
 
-
 #include <assert.h>
 
-// Automatically derive !=, <=, >, and >= from a class's == and <
-using namespace std::rel_ops;
-
+#include <boost/iterator/iterator_adaptor.hpp>
+using boost::iterator_adaptor;
 
 /** Bucket sort using pigeonhole sorting
  *
@@ -406,61 +404,30 @@ class Octree
   };
 
   /** @struct Tree::box_iterator
-   * @brief Iterator class for Boxes in the tree
-   * TODO: Use a Mutator to condense/clarify code
+   * @brief Random access iterator for Boxes in the tree
    */
-  struct box_iterator {
-    // These type definitions help us use STL's iterator_traits.
-    /** Element type. */
-    typedef Box value_type;
-    /** Type of pointers to elements. */
-    typedef Box* pointer;
-    /** Type of references to elements. */
-    typedef Box& reference;
-    /** Iterator category. */
-    typedef std::input_iterator_tag iterator_category;
-    /** Iterator difference */
-    typedef std::ptrdiff_t difference_type;
+  struct box_iterator
+      : public iterator_adaptor<box_iterator,                    // Derived
+                                unsigned,                        // BaseType
+                                Box,                             // Value
+                                std::random_access_iterator_tag, // IterCategory
+                                Box,                             // Reference
+                                std::ptrdiff_t>                  // DiffType
+  {
     /** Construct an invalid box_iterator */
-    box_iterator() : idx_(0), tree_(nullptr) {
+    box_iterator()
+        : box_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-
-    box_iterator& operator--() {
-      --idx_;
-      return *this;
+    Box dereference() const {
+      return Box(this->base_reference(), tree_);
     }
-    box_iterator& operator++() {
-      ++idx_;
-      return *this;
-    }
-    box_iterator& operator+(int n) {
-      idx_ += n;
-      return *this;
-    }
-    box_iterator& operator-(int n) {
-      idx_ -= n;
-      return *this;
-    }
-    Box operator*() const {
-      return Box(idx_, tree_);
-    }
-    Box* operator->() const {
-      placeholder_ = operator*();
-      return &placeholder_;
-    }
-    bool operator==(const box_iterator& it) const {
-      return tree_ == it.tree_ && idx_ == it.idx_;
-    }
-
    private:
-    unsigned idx_;
     tree_type* tree_;
-    mutable Box placeholder_;
     box_iterator(unsigned idx, tree_type* tree)
-        : idx_(idx), tree_(tree) {
+        : box_iterator::iterator_adaptor(idx), tree_(tree) {
     }
     box_iterator(Box b)
-        : idx_(b.idx_), tree_(b.tree_) {
+        : box_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
     friend class Octree;
   };
@@ -842,8 +809,3 @@ class Octree
   Octree(const Octree& other_tree) {};
   void operator=(const Octree& other_tree) {};
 };
-
-
-
-
-

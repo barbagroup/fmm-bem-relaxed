@@ -137,6 +137,40 @@ operator+(const ublas::vector_expression<E1>& e1,
   return expression_type(e1(), e2);
 }
 
+/** Scalar subtraction */
+template <class T1, class E2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<T1,typename E2::value_type>,
+  typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_minus<T1, typename E2::value_type>
+    >::result_type
+  >::type
+operator-(const T1& e1,
+          const ublas::vector_expression<E2>& e2) {
+  typedef typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_minus<T1, typename E2::value_type>
+    >::expression_type expression_type;
+  return expression_type(e1, e2());
+}
+
+/** Scalar subtraction */
+template <class E1, class T2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<typename E1::value_type,T2>,
+  typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_minus<typename E1::value_type,T2>
+    >::result_type
+  >::type
+operator-(const ublas::vector_expression<E1>& e1,
+          const T2& e2) {
+  typedef typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_minus<typename E1::value_type,T2>
+    >::expression_type expression_type;
+  return expression_type(e1(), e2);
+}
+
 /** Elementwise division */
 template <class E1, class E2>
 BOOST_UBLAS_INLINE

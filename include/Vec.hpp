@@ -1,60 +1,96 @@
 #pragma once
 /** @file Vec.hpp
- * @brief A wrapper class to provide simple vector operations for
- * primitive types and classes that only require op[].
+ * @brief A custom constant size vector class based on a Boost uBlas vector.
+ *
+ * This provides convenient constructors to initialize coordinates,
+ * imports common operators such as norms and inner products, and implements
+ * additional expression templates such as scalar addition/subtration and
+ * elementwise multiplication/division.
  */
 
 #include <boost/numeric/ublas/vector.hpp>
 namespace ublas = boost::numeric::ublas;
+
+#include <type_traits>
+
 
 template <unsigned N, typename T>
 class Vec
     : public ublas::vector<T, ublas::bounded_array<T,N>>
 {
   typedef ublas::vector<T, ublas::bounded_array<T,N>> super_type;
+
+  /** Template unrolling for assigning an argument pack to this->data() */
+  template <unsigned I>
+  inline void insert() {}
+  template <unsigned I, typename A, typename ...Rest>
+  inline void insert(const A& a, Rest... r) {
+    this->data()[I] = a;
+    insert<I+1>(r...);
+  }
+
+  /** Template for determining if *all* types in a pack
+   * are convertible to type @a To */
+  template <typename To, typename ...>
+  struct all_convertible;
+  template <typename To>
+  struct all_convertible<To>
+      : std::true_type {};
+  template <typename To, typename From, typename ...Rest>
+  struct all_convertible<To, From, Rest...>
+      : std::integral_constant<bool,
+                               std::is_convertible<From,To>::value &&
+                               all_convertible<To,Rest...>::value> {};
 public:
   static constexpr unsigned dimension = N;
 
   /** Constructors */
   Vec()
-      : super_type(N,T()) {
-  }
+      : super_type(N,T()) {}
+  Vec(const Vec& v)
+      : super_type(v) {}
+  template <class A>
+  Vec(const ublas::vector<T,A>& v)
+      : super_type (v) {}
+  template <class E>
+  Vec(const ublas::vector_expression<E>& e)
+      : super_type(e) {}
+
+  /** Construct with value for all coordinates */
   explicit Vec(const T& t)
       : super_type(N,t) {
   }
-  explicit Vec(const T& t0, const T& t1)
+  /** Construct with values for each coordinate */
+  template <typename ...Arg,
+            typename std::enable_if<sizeof...(Arg) == N,int>::type=0,
+            typename std::enable_if<all_convertible<T,Arg...>::value,int>::type=0>
+  explicit Vec(Arg ...args)
       : super_type(N) {
-    static_assert(N == 2, "Vec<2,T> constructor parameter number mismatch!");
-    this->data()[0] = t0;
-    this->data()[1] = t1;
-  }
-  explicit Vec(const T& t0, const T& t1, const T& t2)
-      : super_type(N) {
-    static_assert(N == 3, "Vec<3,T> constructor parameter number mismatch!");
-    this->data()[0] = t0;
-    this->data()[1] = t1;
-    this->data()[2] = t2;
-  }
-  explicit Vec(const T& t0, const T& t1, const T& t2, const T& t3)
-      : super_type(N) {
-    static_assert(N == 4, "Vec<4,T> constructor parameter number mismatch!");
-    this->data()[0] = t0;
-    this->data()[1] = t1;
-    this->data()[2] = t2;
-    this->data()[3] = t3;
-  }
-  template <class E>
-  Vec(const ublas::vector_expression<E>& e)
-      : super_type(e) {
+    insert<0>(args...);
   }
 
   /** Assignment operators */
-  inline Vec& operator=(const super_type& v) {
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const Vec& v) {
+    super_type::operator=(v);
+    return *this;
+  }
+  template <class A>
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector<T,A>& v) {
     super_type::operator=(v);
     return *this;
   }
   template <class E>
-  inline Vec& operator=(const ublas::vector_expression<E>& v) {
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector_expression<E>& v) {
+    super_type::operator=(v);
+    return *this;
+  }
+  /** Container assignment without temporary */
+  template <class C>
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector_container<C>& v) {
     super_type::operator=(v);
     return *this;
   }
@@ -63,6 +99,32 @@ public:
 // OPERATORS
 #include <algorithm>
 #include <iostream>
+
+/** Equality comparison (weak) */
+template <unsigned N, typename T>
+BOOST_UBLAS_INLINE
+bool operator==(const Vec<N,T>& a,
+                const Vec<N,T>& b) {
+  return std::equal(a.begin(), a.end(), b.begin());
+}
+/** Send to output stream */
+template <unsigned N, typename T>
+std::ostream& operator<<(std::ostream& s,
+                         const Vec<N,T>& v) {
+  s << "(";
+  std::copy(v.begin(), v.end(), std::ostream_iterator<T>(s, ", "));
+  return s << "\b\b)";
+}
+/** Inner product */
+using ublas::inner_prod;
+/** L1 norm */
+using ublas::norm_1;
+/** L2 norm */
+using ublas::norm_2;
+/** L_inf norm */
+using ublas::norm_inf;
+
+// TEMP: BACKWARD COMPATABILITY
 
 /** Compute the dot product */
 template <typename E1, typename E2>
@@ -83,20 +145,7 @@ inline auto norm(const ublas::vector_expression<E>& a)
     -> decltype(ublas::norm_2(a)) {
   return ublas::norm_2(a);
 }
-/** Equality comparison */
-template <typename T, typename A>
-inline bool operator==(const ublas::vector<T,A>& a,
-                       const ublas::vector<T,A>& b) {
-  return std::equal(a.begin(), a.end(), b.begin());
-}
-/** Send to output stream */
-template <unsigned N, typename T>
-std::ostream& operator<<(std::ostream& s,
-                         const Vec<N,T>& v) {
-  s << "(";
-  std::copy(v.begin(), v.end(), std::ostream_iterator<double>(s, ", "));
-  return s << "\b\b)";
-}
+
 
 /////////////////////////////////
 // Vector Expression Operators //

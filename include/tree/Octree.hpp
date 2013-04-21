@@ -11,7 +11,7 @@
 #include <boost/iterator/iterator_adaptor.hpp>
 using boost::iterator_adaptor;
 
-#include <assert.h>
+#include <cassert>
 
 
 /** Bucket sort using pigeonhole sorting

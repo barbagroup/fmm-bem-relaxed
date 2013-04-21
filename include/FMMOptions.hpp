@@ -17,7 +17,6 @@ public:
 	enum EvalType {FMM, TREECODE};
 	EvalType evaluator;
 
-
 	struct DefaultMAC {
 		double theta_;
 		DefaultMAC(double theta) : theta_(theta) {}
@@ -68,16 +67,14 @@ public:
 };
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /** Get the FMMOptions from command line arguments
  */
 FMMOptions get_options(int argc, char** argv) {
-	FMMOptions opts;
-	opts.set_mac_theta(0.5);    // Default multipole acceptance criteria
-	opts.set_max_per_box(64);   // Default NCRIT
+	FMMOptions opts = FMMOptions();
 
 	// parse command line args
 	for (int i = 1; i < argc; ++i) {

@@ -7,22 +7,22 @@
 #include <FMM_plan.hpp>
 //#include <LaplaceSphericalModified.hpp>
 #include <LaplaceSpherical.hpp>
-#include <UnitKernel.hpp>
-#include <KernelSkeleton.hpp>
+//#include <UnitKernel.hpp>
+//#include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
-#include <LaplaceCartesian.hpp>
-#include <YukawaCartesian.hpp>
-#include <YukawaSpherical.hpp>
+//#include <LaplaceCartesian.hpp>
+//#include <YukawaCartesian.hpp>
+//#include <YukawaSpherical.hpp>
 
-#include <string.h>
+#include <cstring>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-//#define SPH_KERNEL
+#define SPH_KERNEL
 //#define CART_KERNEL
-#define YUKAWA_KERNEL
+//#define YUKAWA_KERNEL
 //#define YUKAWA_SPH
 
 // Random number in [0,1)
@@ -37,6 +37,9 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
+  //std::vector<std::string> args(argv+1, argv+argc);
+  //std::cout << args[0] << '\n' << args[1] << '\n' << args[2] << std::endl;
+
   int numBodies = 1000, p=5;
   bool checkErrors = true;
   double beta = 0.125;
@@ -118,18 +121,31 @@ int main(int argc, char **argv)
   // Check the result
   // TODO: More elegant
   if (checkErrors) {
-    std::vector<result_type> exact(numBodies);
+    // choose a number of samples to use
+    int numSamples = std::min(numBodies, 1000);
+    std::vector<int> sample_map(numSamples);
+    std::vector<point_type> sample_targets(numSamples);
+    std::vector<result_type> exact(numSamples);
+
+    // sample the space (needs to be done better)
+    for (int i=0; i<numSamples; i++) {
+      int sample = i >> 15 % numBodies;
+      sample_map[i] = sample;
+      sample_targets[i] = points[sample];
+    }
 
     // Compute the result with a direct matrix-vector multiplication
-    Direct::matvec(K, points, charges, exact);
+    Direct::matvec(K, points, charges, sample_targets, exact);
 
 #if defined(SPH_KERNEL) || defined(CART_KERNEL) || defined(YUKAWA_KERNEL)
     result_type rdiff, rnorm;
-    for (unsigned k = 0; k < result.size(); ++k) {
-      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k][0], result[k][0]);
+    for (unsigned k = 0; k < exact.size(); ++k) {
+      auto exact_val = exact[k];
+      auto fmm_val   = result[sample_map[k]];
+      // printf("[%03d] exact: %lg, FMM: %lg\n", k, exact_val[0], fmm_val[0]);
 
-      rdiff = (result[k] - exact[k]) * (result[k] - exact[k]);
-      rnorm = exact[k] * exact[k];
+      rdiff = (fmm_val - exact_val) * (fmm_val - exact_val);
+      rnorm = exact_val * exact_val;
     }
 
     printf("Error (pot) : %.4e\n", sqrt(rdiff[0] / rnorm[0]));
@@ -138,21 +154,26 @@ int main(int argc, char **argv)
 #endif
 #if defined(YUKAWA_SPH)
     result_type rdiff = 0., rnorm = 0.;
-    for (unsigned k = 0; k < result.size(); ++k) {
-      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
+    for (unsigned k = 0; k < exact.size(); ++k) {
+      // printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
+      auto exact_val = exact[k];
+      auto fmm_val   = result[sample_map[k]];
 
-      rdiff = (result[k] - exact[k]) * (result[k] - exact[k]);
-      rnorm = exact[k] * exact[k];
+      rdiff = (fmm_val - exact_val) * (fmm_val - exact_val);
+      rnorm = exact_val * exact_val;
     }
 
     printf("Error (pot) : %.4e\n", sqrt(rdiff / rnorm));
 #endif
 #ifdef UNIT_KERNEL
     int wrong_results = 0;
-    for (unsigned k = 0; k < result.size(); ++k) {
-      printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
+    for (unsigned k = 0; k < exact.size(); ++k) {
+      auto exact_val = exact[k];
+      auto fmm_val   = result[sample_map[k]];
 
-      if ((exact[k] - result[k]) / exact[k] > 1e-13)
+      // printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
+
+      if ((exact_val - fmm_val) / exact_val > 1e-13)
 	++wrong_results;
     }
     printf("Wrong counts: %d\n", wrong_results);

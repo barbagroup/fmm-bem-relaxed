@@ -3,10 +3,16 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "tree/TreeContext.hpp"
+//#include "tree/TreeContext.hpp"
+#include "executor/INITM.hpp"
+#include "executor/INITL.hpp"
 
 #include <type_traits>
 #include <functional>
+
+#include <boost/iterator/transform_iterator.hpp>
+using boost::transform_iterator;
+using boost::make_transform_iterator;
 
 /** @class Executor
  * @brief A very general Executor class. This provides a context to any tree
@@ -31,8 +37,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
  public:
   //! This type
   typedef ExecutorDualTree<Kernel,Tree> self_type;
-  //! Kernel type
-  typedef Kernel kernel_type;
+
   //! Tree type
   typedef Tree tree_type;
   //! Source tree type
@@ -41,8 +46,15 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   typedef tree_type target_tree_type;
   //! Tree box type
   typedef typename tree_type::box_type box_type;
+  //! Tree box iterator
+  typedef typename tree_type::box_iterator box_iterator;
   //! Tree body type
   typedef typename tree_type::body_type body_type;
+  //! Tree body iterator
+  typedef typename tree_type::body_iterator body_iterator;
+
+  //! Kernel type
+  typedef Kernel kernel_type;
   //! Kernel charge type
   typedef typename kernel_type::multipole_type multipole_type;
   //! Kernel result type
@@ -59,6 +71,28 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   typedef typename kernel_type::result_type result_type;
 
  protected:
+  // Transform a body to a value
+  template <typename Indexable>
+  struct BodyTransformer {
+    typedef typename Indexable::reference result_type;
+    typedef body_type argument_type;
+    BodyTransformer(const Indexable& value) : value_(value) {}
+    result_type operator()(const body_type& body) const {
+      return value_[body.number()]; // TODO: TEMP to avoid permutation for now
+    }
+   private:
+    Indexable value_;
+  };
+
+  template <typename Indexable>
+  BodyTransformer<Indexable> body_transformer(Indexable v) const {
+    return BodyTransformer<Indexable>(v);
+  }
+
+  template <typename Indexable>
+  using body_transform = transform_iterator<BodyTransformer<Indexable>,
+                                            body_iterator>;
+
   //! Reference to the Kernel
   const kernel_type& K_;
 
@@ -66,27 +100,38 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   tree_type source_tree_;
   //! The tree of targets
   tree_type target_tree_;
-
-  // TODO: Fix const correctness
+  //! Multipole acceptance
+  std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
   //! Multipole expansions corresponding to Box indices in Tree
-  BoxMap<tree_type, std::vector<multipole_type>> M_;
+  typedef std::vector<multipole_type> multipole_container;
+  multipole_container M_;
   //! Local expansions corresponding to Box indices in Tree
-  BoxMap<tree_type, std::vector<local_type>> L_;
+  typedef std::vector<local_type> local_container;
+  local_container L_;
   //! The sources associated with bodies in the source_tree
-  BodyMap<tree_type, std::vector<source_type>> s_;
-  //! The charges associated with bodies in the source_tree
-  BodyMap<tree_type, typename std::vector<charge_type>::const_iterator> c_;
-  //! The targets associated with bodies in the source_tree
-  BodyMap<tree_type, std::vector<target_type>> t_;
-  //! The results associated with bodies in the source_tree
-  BodyMap<tree_type, typename std::vector<result_type>::iterator> r_;
+  typedef std::vector<source_type> source_container;
+  typedef typename source_container::const_iterator source_iterator;
+  source_container sources;
+  source_iterator s_;
+  //! The targets associated with bodies in the target_tree
+  typedef std::vector<target_type> target_container;
+  typedef typename target_container::const_iterator target_iterator;
+  target_container targets;
+  target_iterator t_;
+
+
+  //! Iterator to the start of the charge vector
+  typedef std::vector<charge_type> charge_container;
+  typedef typename charge_container::const_iterator charge_iterator;
+  charge_iterator c_;
+  //! Iterator to the start of the result vector
+  typedef std::vector<result_type> result_container;
+  typedef typename result_container::iterator result_iterator;
+  result_iterator r_;
 
   //! Evaluator algorithms to apply
   EvaluatorCollection<self_type> evals_;
-
-  //! Multipole acceptance
-  std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
  public:
   //! Constructor
@@ -98,12 +143,11 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
       : K_(K),
         source_tree_(sfirst, slast, opts),
         target_tree_(tfirst, tlast, opts),
-        M_(std::vector<multipole_type>(source_tree_.boxes())),
-        L_(std::vector<local_type>(opts.evaluator == FMMOptions::TREECODE ?
-                                   0 : source_tree_.boxes())),
-        s_(std::vector<source_type>(sfirst, slast)),
-    t_(std::vector<target_type>(tfirst, tlast)),
-    acceptMultipole(opts.MAC()) {
+        acceptMultipole(opts.MAC()),
+        M_(source_tree_.boxes()),
+        L_((opts.evaluator == FMMOptions::TREECODE ? 0 : target_tree_.boxes())),
+        sources(sfirst, slast),
+        targets(tfirst, tlast) {
   }
 
   void insert(EvaluatorBase<self_type>* eval) {
@@ -112,8 +156,11 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
 
   virtual void execute(const std::vector<charge_type>& charges,
                        std::vector<result_type>& results) {
+    s_ = sources.begin();
     c_ = charges.begin();
+    t_ = targets.begin();
     r_ = results.begin();
+
     evals_.execute(*this);
   }
 
@@ -129,21 +176,21 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     return source_tree_;
   }
   tree_type& target_tree() {
-    return source_tree_;
+    return target_tree_;
   }
 
   // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& box) {
-    return M_(box);
+    return M_[box.index()];
   }
   inline const multipole_type& multipole_expansion(const box_type& box) const {
-    return M_(box);
+    return M_[box.index()];
   }
   inline local_type& local_expansion(const box_type& box) {
-    return L_(box);
+    return L_[box.index()];
   }
   inline const local_type& local_expansion(const box_type& box) const {
-    return L_(box);
+    return L_[box.index()];
   }
 
   inline point_type center(const box_type& b) const {
@@ -153,33 +200,36 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     return b.side_length();
   }
 
-  typedef typename decltype(s_)::body_value_const_iterator source_iterator;
-  inline source_iterator source_begin(const box_type& b) const {
-    return s_.begin(b);
+  typedef body_transform<source_iterator> body_source_iterator;
+  inline body_source_iterator source_begin(const box_type& b) const {
+    return make_transform_iterator(b.body_begin(), body_transformer(s_));
   }
-  inline source_iterator source_end(const box_type& b) const {
-    return s_.end(b);
+  inline body_source_iterator source_end(const box_type& b) const {
+    return make_transform_iterator(b.body_end(), body_transformer(s_));
   }
-  typedef typename decltype(c_)::body_value_const_iterator charge_iterator;
-  inline charge_iterator charge_begin(const box_type& b) const {
-    return c_.begin(b);
+
+  typedef body_transform<charge_iterator> body_charge_iterator;
+  inline body_charge_iterator charge_begin(const box_type& b) const {
+    return make_transform_iterator(b.body_begin(), body_transformer(c_));
   }
-  inline charge_iterator charge_end(const box_type& b) const {
-    return c_.end(b);
+  inline body_charge_iterator charge_end(const box_type& b) const {
+    return make_transform_iterator(b.body_end(), body_transformer(c_));
   }
-  typedef typename decltype(t_)::body_value_const_iterator target_iterator;
-  inline target_iterator target_begin(const box_type& b) const {
-    return t_.begin(b);
+
+  typedef body_transform<target_iterator> body_target_iterator;
+  inline body_target_iterator target_begin(const box_type& b) const {
+    return make_transform_iterator(b.body_begin(), body_transformer(t_));
   }
-  inline target_iterator target_end(const box_type& b) const {
-    return t_.end(b);
+  inline body_target_iterator target_end(const box_type& b) const {
+    return make_transform_iterator(b.body_end(), body_transformer(t_));
   }
-  typedef typename decltype(r_)::body_value_iterator result_iterator;
-  inline result_iterator result_begin(const box_type& b) {
-    return r_.begin(b);
+
+  typedef body_transform<result_iterator> body_result_iterator;
+  inline body_result_iterator result_begin(const box_type& b) {
+    return make_transform_iterator(b.body_begin(), body_transformer(r_));
   }
-  inline result_iterator result_end(const box_type& b) {
-    return r_.end(b);
+  inline body_result_iterator result_end(const box_type& b) {
+    return make_transform_iterator(b.body_end(), body_transformer(r_));
   }
 };
 
@@ -196,3 +246,29 @@ ExecutorDualTree<Kernel,Tree>* make_executor(const Kernel& K,
                                            tfirst, tlast,
                                            opts);
 }
+
+// TODO
+/*
+// This assumes the the body indices are consecutive within a box
+// The assumption is true for Octree,
+// but should be left for an "optimized" Evaluator that
+// explicitely makes this assumption
+inline charge_iterator charge_begin(const box_type& b) const {
+return charges_begin + b.body_begin()->index();
+}
+inline charge_iterator charge_end(const box_type& b) const {
+return charges_begin + b.body_end()->index();
+}
+*/
+/*
+// This assumes the the body indices are consecutive within a box
+// The assumption is true for Octree,
+// but should be left for an "optimized" Evaluator that
+// explicitely makes this assumption
+inline result_iterator result_begin(const box_type& b) {
+return results_begin + b.body_begin()->index();
+}
+inline result_iterator result_end(const box_type& b) {
+return results_begin + b.body_end()->index();
+}
+*/

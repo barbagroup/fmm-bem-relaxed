@@ -38,7 +38,7 @@ CFLAGS +=
 #   include directories like -Ipath/to/files
 INCLUDES = -I. -I$(FMMW_DIR)/include -I$(FMMW_DIR)/kernel
 # External libraries defined in Makefile.inc
-INCLUDES += -I$(GSL_DIR) -I$(FFTW_DIR)
+INCLUDES += -I$(GSL_DIR) -I$(FFTW_DIR) -I$(BOOST_DIR)
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
@@ -58,6 +58,10 @@ serialrun: serialrun.o
 
 test_tree: test_tree.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+test_vec: test_vec.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 
 # suffix replacement rule for building .o's from .cpp's
 #   $<: the name of the prereq of the rule (a .cpp file)

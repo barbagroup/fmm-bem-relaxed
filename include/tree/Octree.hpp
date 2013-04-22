@@ -3,13 +3,15 @@
 #include "BoundingBox.hpp"
 
 #include <vector>
+#include <algorithm>
+
 #include <iostream>
 #include <iomanip>
 
-#include <assert.h>
+#include <boost/iterator/iterator_adaptor.hpp>
+using boost::iterator_adaptor;
 
-// Automatically derive !=, <=, >, and >= from a class's == and <
-using namespace std::rel_ops;
+#include <cassert>
 
 
 /** Bucket sort using pigeonhole sorting
@@ -68,21 +70,21 @@ class Octree
       result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
     // TODO: improve
-    auto dim = result.dimensions();
-    auto maxdim = std::max(dim[0], std::max(dim[1], dim[2]));
-    result |= result.min() + point_type(maxdim) * (1 + 1e-6);
+    point_type dim = result.dimensions();
+    auto maxdim = *std::max_element(dim.begin(), dim.end());
+    point_type a = result.min() + maxdim * (1 + 1e-6);
+    result |= a;
     //std::cout << "Bounding Box: " << result << "\n";
     return result;
   }
 
   // The Coder this tree is based on
-  class MortonCoder {
-   public:
+  struct MortonCoder {
     // Using a 32-bit unsigned int for the code_type
     // means we can only resolve 10 3D levels
     typedef unsigned code_type;
 
-    /** The number of bits per dimension [octree subdivisions]. #cells = 8^L. */
+    /** The number of bits per dimension. #cells = 8^L. */
     static constexpr unsigned levels = 10;
     /** The number of cells per side of the bounding box (2^L). */
     static constexpr code_type cells_per_side = code_type(1) << levels;
@@ -96,20 +98,16 @@ class Octree
       assert(!bb.empty());
     }
 
-    MortonCoder() {};
-
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
-      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_ * cells_per_side));
+      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_*cells_per_side));
     }
 
     /** Return the bounding box of the cell with Morton code @a c.
      * @pre c < end_code */
     BoundingBox<point_type> cell(code_type c) const {
       assert(c < end_code);
-      point_type p = deinterleave(c);
-      p *= cell_size_;
-      p += pmin_;
+      point_type p = pmin_ + deinterleave(c) * cell_size_;
       return BoundingBox<point_type>(p, p + cell_size_);
     }
 
@@ -182,7 +180,6 @@ class Octree
                         value_type(compact_bits(c >> 2)));
     }
   };
-
   // Code type
   typedef typename MortonCoder::code_type code_type;
 
@@ -278,15 +275,19 @@ class Octree
 
   struct Body {
     /** Construct an invalid Body */
-    Body() : idx_(0), tree_(nullptr) {
+    Body()
+        : idx_(0), tree_(nullptr) {
     }
 
     const point_type& point() const {
       return tree_->point_[idx_];
     }
+#if 0
+    // XXX: Danger!!
     point_type& point() {
       return tree_->point_[idx_];
     }
+#endif
     //! The original order this body was seen
     unsigned number() const {
       return tree_->permute_[idx_];
@@ -298,12 +299,11 @@ class Octree
     code_type morton_index() const {
       return tree_->mc_[idx_];
     }
-
    private:
     unsigned idx_;
     tree_type* tree_;
-    Body(unsigned idx, tree_type* tree)
-        : idx_(idx), tree_(tree) {
+    Body(unsigned idx, const tree_type* tree)
+        : idx_(idx), tree_(const_cast<tree_type*>(tree)) {
       assert(idx_ < tree_->size());
     }
     friend class Octree;
@@ -312,7 +312,8 @@ class Octree
   // A tree-aligned box
   struct Box {
     /** Construct an invalid Box */
-    Box() : idx_(0), tree_(nullptr) {
+    Box()
+        : idx_(0), tree_(nullptr) {
     }
 
     unsigned index() const {
@@ -326,6 +327,9 @@ class Octree
     }
     double side_length() const {
       return tree_->coder_.bounding_box().dimensions()[0] / (1 << level());
+    }
+    point_type extents() const {
+      return tree_->coder_.bounding_box().dimensions() / (1 << level());
     }
     double radius() const {
       return side_length() / 2.0;
@@ -382,6 +386,7 @@ class Octree
     bool operator<(const Box& b) const {
       return this->index() < b.index();
     }
+
     /** Write a Box to an output stream */
     inline friend std::ostream& operator<<(std::ostream& s,
                                            const box_type& b) {
@@ -394,8 +399,8 @@ class Octree
    private:
     unsigned idx_;
     tree_type* tree_;
-    Box(unsigned idx, tree_type* tree)
-        : idx_(idx), tree_(tree) {
+    Box(unsigned idx, const tree_type* tree)
+        : idx_(idx), tree_(const_cast<tree_type*>(tree)) {
     }
     inline box_data& data() const {
       return tree_->box_data_[idx_];
@@ -404,127 +409,70 @@ class Octree
   };
 
   /** @struct Tree::box_iterator
-   * @brief Iterator class for Boxes in the tree
-   * TODO: Use a Mutator to condense/clarify code
+   * @brief Random access iterator for Boxes in the tree
    */
-  struct box_iterator {
-    // These type definitions help us use STL's iterator_traits.
-    /** Element type. */
-    typedef Box value_type;
-    /** Type of pointers to elements. */
-    typedef Box* pointer;
-    /** Type of references to elements. */
-    typedef Box& reference;
-    /** Iterator category. */
-    typedef std::input_iterator_tag iterator_category;
-    /** Iterator difference */
-    typedef std::ptrdiff_t difference_type;
+  struct box_iterator
+      : public iterator_adaptor<box_iterator,                    // Derived
+                                unsigned,                        // BaseType
+                                Box,                             // Value
+                                std::random_access_iterator_tag, // IterCategory
+                                Box,                             // Reference
+                                std::ptrdiff_t>                  // DiffType
+  {
     /** Construct an invalid box_iterator */
-    box_iterator() : idx_(0), tree_(nullptr) {
+    box_iterator()
+        : box_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-
-    box_iterator& operator--() {
-      --idx_;
-      return *this;
+    Box dereference() const {
+      return Box(this->base_reference(), tree_);
     }
-    box_iterator& operator++() {
-      ++idx_;
-      return *this;
-    }
-    box_iterator& operator+(int n) {
-      idx_ += n;
-      return *this;
-    }
-    box_iterator& operator-(int n) {
-      idx_ -= n;
-      return *this;
-    }
-    Box operator*() const {
-      return Box(idx_, tree_);
-    }
-    Box* operator->() const {
-      placeholder_ = operator*();
-      return &placeholder_;
-    }
-    bool operator==(const box_iterator& it) const {
-      return tree_ == it.tree_ && idx_ == it.idx_;
-    }
-
    private:
-    unsigned idx_;
-    tree_type* tree_;
-    mutable Box placeholder_;
-    box_iterator(unsigned idx, tree_type* tree)
-        : idx_(idx), tree_(tree) {
+    const tree_type* tree_;
+    box_iterator(unsigned idx, const tree_type* tree)
+        : box_iterator::iterator_adaptor(idx), tree_(tree) {
     }
-    box_iterator(Box b)
-        : idx_(b.idx_), tree_(b.tree_) {
+    box_iterator(const Box& b)
+        : box_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
     friend class Octree;
   };
 
   /** @struct Tree::body_iterator
-   * @brief Iterator class for Bodies in the tree
-   * TODO: Use a Mutator to condense/clarify code
+   * @brief Random access iterator class for Bodies in the tree
    */
-  struct body_iterator {
-    // These type definitions help us use STL's iterator_traits.
-    /** Element type. */
-    typedef Body value_type;
-    /** Type of pointers to elements. */
-    typedef Body* pointer;
-    /** Type of references to elements. */
-    typedef Body& reference;
-    /** Iterator category. */
-    typedef std::input_iterator_tag iterator_category;
-    /** Iterator difference */
-    typedef std::ptrdiff_t difference_type;
-    /** Construct an invalid iterator */
-    body_iterator() : idx_(0), tree_(nullptr) {
+  struct body_iterator
+      : public iterator_adaptor<body_iterator,                   // Derived
+                                unsigned,                        // BaseType
+                                Body,                            // Value
+                                std::random_access_iterator_tag, // IterCategory
+                                Body,                            // Reference
+                                std::ptrdiff_t>                  // DiffType
+  {
+    /* Construct an invalid body_iterator */
+    body_iterator()
+        : body_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-
-    body_iterator& operator++() {
-      ++idx_;
-      return *this;
+    Body dereference() const {
+      return Body(this->base_reference(), tree_);
     }
-    body_iterator& operator--() {
-      --idx_;
-      return *this;
-    }
-    body_iterator& operator+(int n) {
-      idx_ += n;
-      return *this;
-    }
-    body_iterator& operator-(int n) {
-      idx_ -= n;
-      return *this;
-    }
-    Body operator*() const {
-      return Body(idx_, tree_);
-    }
-    Body* operator->() const {
-      placeholder_ = operator*();
-      return &placeholder_;
-    }
-    bool operator==(const body_iterator& it) const {
-      return tree_ == it.tree_ && idx_ == it.idx_;
-    }
-
    private:
-    unsigned idx_;
-    tree_type* tree_;
-    mutable Body placeholder_;
-    body_iterator(unsigned idx, tree_type* tree)
-        :idx_(idx), tree_(tree) {
+    const tree_type* tree_;
+    body_iterator(unsigned idx, const tree_type* tree)
+        : body_iterator::iterator_adaptor(idx), tree_(tree) {
+    }
+    body_iterator(const Body& b)
+        : body_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
     friend class Octree;
   };
 
-  //! Construct an octree encompassing a bounding box
+  /** Construct an octree encompassing a bounding box */
   Octree(const BoundingBox<Point>& bb)
       : coder_(bb) {
   }
 
+  /** Construct an octree encompassing a bounding box
+   * and insert a range of points */
   template <typename PointIter, typename Options>
   Octree(PointIter first, PointIter last,
          Options& opts)
@@ -532,19 +480,16 @@ class Octree
     construct_tree(first, last, opts.max_per_box());
   }
 
-  Octree() {};
-
   /** Return the Bounding Box that this Octree encompasses */
   BoundingBox<point_type> bounding_box() const {
     return coder_.bounding_box();
   }
 
-  /** The number of points contained in this tree */
+  /** The number of bodies contained in this tree */
   inline unsigned size() const {
     return point_.size();
   }
-
-  /** The number of points contained in this tree */
+  /** The number of bodies contained in this tree */
   inline unsigned bodies() const {
     return size();
   }
@@ -559,13 +504,14 @@ class Octree
     return level_offset_.size() - 1;
   }
 
+  /** Returns true if the box is contained in this tree, false otherwise */
   inline bool contains(const box_type& box) const {
-    std::cout << box.tree_ << "\t" << this << std::endl;
-    return box.tree_ == const_cast<tree_type*>(this);
+    return this == box.tree_;
   }
 
+  /** Returns true if the body is contained in this tree, false otherwise */
   inline bool contains(const body_type& body) const {
-    return body.tree_ == const_cast<tree_type*>(this);
+    return this == body.tree_;
   }
 
 #if 0
@@ -740,38 +686,43 @@ class Octree
 #endif
 
   /** Return the root box of this tree */
-  Box root() const {
-    return Box(0, const_cast<tree_type*>(this));
+  box_type root() const {
+    return Box(0, this);
+  }
+  /** Return a box given it's index */
+  box_type box(const unsigned idx) const {
+    assert(idx < box_data_.size());
+    return Box(idx, this);
   }
   /** Return an iterator to the first body in this tree */
   body_iterator body_begin() const {
-    return body_iterator(0, const_cast<tree_type*>(this));
+    return body_iterator(0, this);
   }
   /** Return an iterator one past the last body in this tree */
   body_iterator body_end() const {
-    return body_iterator(point_.size(), const_cast<tree_type*>(this));
+    return body_iterator(point_.size(), this);
   }
   /** Return an iterator to the first box in this tree */
   box_iterator box_begin() const {
-    return box_iterator(0, const_cast<tree_type*>(this));
+    return box_iterator(0, this);
   }
   /** Return an iterator one past the last box in this tree */
   box_iterator box_end() const {
-    return box_iterator(box_data_.size(), const_cast<tree_type*>(this));
+    return box_iterator(box_data_.size(), this);
   }
   /** Return an iterator to the first box at level L in this tree
    * @pre L < levels()
    */
   box_iterator box_begin(unsigned L) const {
     assert(L < levels());
-    return box_iterator(level_offset_[L], const_cast<tree_type*>(this));
+    return box_iterator(level_offset_[L], this);
   }
   /** Return an iterator one past the last box at level L in this tree
    * @pre L < levels()
    */
   box_iterator box_end(unsigned L) const {
     assert(L < levels());
-    return box_iterator(level_offset_[L+1], const_cast<tree_type*>(this));
+    return box_iterator(level_offset_[L+1], this);
   }
 
   /** Write an Octree to an output stream */
@@ -794,44 +745,15 @@ class Octree
     return level_traverse.print(s, t.root());
   }
 
-
-  // TODO: Remove
-#if 0
-  /** Permute a vector to the same order of the input points.
-   *
-   * @param[in] v The vector associated with the original input points
-   * @returns A vector whose elements have been permuted into the same
-   * order as the points in this tree.
-   */
-  template <typename T>
-  std::vector<T> permute(const std::vector<T>& v) {
-    std::vector<T> temp(v.size());
-    for (unsigned i=0; i < v.size(); ++i)
-      temp[i] = v[permute_[i]];
-    return temp;
-  }
-
-  /** Inverse permute a vector from the same order of the input points.
-   *
-   * @param[in] v The vector associated with the current points in the tree
-   * @returns A vector whose elements have been permuted into the same
-   * order as the original input points of this tree.
-   */
-  template <typename T>
-  std::vector<T> ipermute(const std::vector<T>& v) {
-    std::vector<T> temp(v.size());
-    for (unsigned i = 0; i < v.size(); ++i)
-      temp[permute_[i]] = v[i];
-    return temp;
-  }
-#endif
-
  private:
   Octree(const Octree& other_tree) {};
   void operator=(const Octree& other_tree) {};
 };
 
-
-
-
-
+/** Annoying C++ */
+template <typename Point>
+constexpr unsigned Octree<Point>::MortonCoder::levels;
+template <typename Point>
+constexpr typename Octree<Point>::MortonCoder::code_type Octree<Point>::MortonCoder::cells_per_side;
+template <typename Point>
+constexpr typename Octree<Point>::MortonCoder::code_type Octree<Point>::MortonCoder::end_code;

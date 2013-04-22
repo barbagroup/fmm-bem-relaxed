@@ -38,8 +38,10 @@ class M2M
     printf("M2M: %d to %d\n", source.index(), target.index());
 #endif
 
+    typename Kernel::point_type r = bc.center(target) - bc.center(source);
     M2M::eval(K,
-              bc.multipole_expansion(source), bc.multipole_expansion(target),
-              bc.center(target) - bc.center(source));
+              bc.multipole_expansion(source),
+              bc.multipole_expansion(target),
+              r);
   }
 };

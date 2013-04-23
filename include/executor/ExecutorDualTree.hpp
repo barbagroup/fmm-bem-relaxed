@@ -78,7 +78,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     typedef body_type argument_type;
     BodyTransformer(const Indexable& value) : value_(value) {}
     result_type operator()(const body_type& body) const {
-      return value_[body.number()]; // TODO: TEMP to avoid permutation for now
+      return value_[body.number()]; // TODO: TEMP to avoid permutation
     }
    private:
     Indexable value_;

@@ -1,138 +1,16 @@
 #pragma once
 
 #include "EvaluatorBase.hpp"
-#include "P2P.hpp"
-// #include "SparseMatrix.hpp"
+#include "EvalP2P.hpp"
+
 #include <deque>
 
-template <typename I, typename T>
-struct SparseMatrix
-{
-  typedef T value_type;
-  typedef I index_type;
-  // data
-  I rows, cols, nnz;
-  std::vector<I> offsets, indices;
-  std::vector<T> vals;
-
-  // default constructor
-  SparseMatrix() : rows(0), cols(0), nnz(0), offsets(0), indices(0), vals(0) {};
-  // empty matrix
-  SparseMatrix(int r, int c, int nz)
-    : rows(r), cols(c), nnz(nz), offsets(r+1), indices(nz), vals(nz) {};
-
-  // matvec
-  template <typename VecType>
-  std::vector<T> dot(VecType& x) const
-  {
-    // init return vector
-    std::vector<T> y(x.size(),T(0));
-
-    // matvec
-    I jj, j;
-    T yy;
-    #pragma omp parallel for private(j,jj,yy)
-    for (I i=0; i<rows; i++) {
-      yy = T(0);
-      for (jj=offsets[i]; jj<offsets[i+1]; jj++) {
-        j = indices[jj];
-
-        // accumulate into register
-        yy += x[j]*vals[jj];
-      }
-      // write out
-      y[i] = yy;
-    }
-    return y;
-  }
-
-  // matvec with droptol
-  template <typename VecType>
-  std::vector<T> dot(VecType& x, double droptol) const
-  {
-    // init return vector
-    std::vector<T> y(x.size(),T(0));
-
-    // matvec
-    I j, jj;
-    T yy, v;
-    #pragma omp parallel for private(j,jj,yy,v)
-    for (I i=0; i<rows; i++) {
-      yy = T(0);
-      for (jj=offsets[i]; jj<offsets[i+1]; jj++) {
-        j = indices[jj];
-
-        v = vals[jj];
-        // accumulate large enough values into register
-        yy += x[j]*(fabs(v) >= droptol)*v;
-      }
-      // write out
-      y[i] = yy;
-    }
-    return y;
-  }
-  // assignment operator
-  SparseMatrix& operator=(const SparseMatrix& m) {
-    this->rows = m.rows;
-    this->cols = m.cols;
-    this->nnz = m.nnz;
-
-    this->offsets.resize(m.rows+1);
-    this->indices.resize(m.nnz);
-    this->vals.resize(m.nnz);
-    this->offsets = m.offsets;
-    this->indices = m.indices;
-    this->vals = m.vals;
-
-    return *this;
-  }
-
-  void resize(int r, int c, int nz) {
-    rows = r;
-    cols = c;
-    nnz = nz;
-    offsets.resize(r+1);
-    indices.resize(nnz);
-    vals.resize(nnz);
-  }
-  // copy constructor
-  SparseMatrix(const SparseMatrix& m) : rows(m.rows), cols(m.cols), nnz(m.nnz), offsets(m.offsets), indices(m.nnz), vals(m.vals) {};
-
-  // destructor
-  ~SparseMatrix() {
-    offsets.resize(0);
-    indices.resize(0);
-    vals.resize(0);
-  }
-
-  // return storage size in bytes
-  auto storage_size() -> decltype(sizeof(T) + sizeof(I))
-  {
-    auto index_storage = (rows+1 + nnz + 3)*sizeof(I);
-    auto value_storage = nnz * sizeof(T);
-    return index_storage + value_storage;
-  }
-};
-
-template <typename Matrix, typename Vector>
-std::vector<typename Matrix::value_type> matvec(const Matrix& A, const Vector& x)
-{
-  return A.dot(x);
-}
-
-template <typename Matrix, typename Vector>
-std::vector<typename Matrix::value_type> matvec(const Matrix& A, const Vector& x, const double droptol)
-{
-  return A.dot(x,droptol);
-}
-
-/**
- * Only evaluate local (direct) portion of the tree
+/** Only evaluate local (direct) portion of the tree
  */
 template <typename Context>
-class EvalLocalSparse : public EvaluatorBase<Context>
-{
-  //! type of box
+class EvalLocalSparse
+    : public EvaluatorBase<Context> {
+  //! Type of box
   typedef typename Context::box_type box_type;
   //! Pair of boxees
   typedef std::pair<box_type, box_type> box_pair;
@@ -145,33 +23,15 @@ class EvalLocalSparse : public EvaluatorBase<Context>
   //! kernel result type
   typedef typename kernel_type::result_type result_type;
 
-  //! temp vector for charges
-  mutable std::vector<charge_type> charges;
-  //! temp vector for results
-  mutable std::vector<result_type> results;
   //! matrix pair
   typedef std::pair<int, kernel_value_type> matrix_pair;
   //! sparse matrix
-  SparseMatrix<int,kernel_value_type> A;
-
+  ublas::compressed_matrix<kernel_value_type> A;
 
  public:
   // constructor -- create matrix
   EvalLocalSparse(Context& bc) {
-    // source / target details
-    auto num_sources = bc.source_tree().bodies();
-    auto num_targets = bc.target_tree().bodies();
-    // resize charge vector
-    charges.resize(num_sources);
-    results.resize(num_targets);
-    // initialise temporary storage for the matrix
-    std::vector<std::vector<matrix_pair>> temp_matrix;
-
-    temp_matrix.resize(num_targets);
-    //for (auto i=0u; i<num_targets; i++) {
-      //printf("init temp_matrix[%d]: %d\n",(int)i,(int)num_sources);
-      //temp_matrix[i].resize(num_sources);
-    //}
+    P2P_Sparse p2p_sparse(bc);
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     std::deque<box_pair> pairQ;
@@ -186,9 +46,7 @@ class EvalLocalSparse : public EvaluatorBase<Context>
       if (b1.is_leaf()) {
 	      if (b2.is_leaf()) {
 		      // Both are leaves, P2P
-          // modify this to generate this line of the sparse matrix
-          evalP2P(bc, b1, b2, temp_matrix);
-		      // P2P::eval(bc.kernel(), bc, b1, b2, P2P::ONE_SIDED());
+          p2p_sparse.insert(b1, b2);
 	      } else {
 		      // b2 is not a leaf, Split the second box into children and interact
 		      auto c_end = b2.child_end();
@@ -215,34 +73,8 @@ class EvalLocalSparse : public EvaluatorBase<Context>
 	      }
       }
     }
-    // now we have all values in temporary storage, get the total nnz
-    auto nnz = 0u;
-    for (auto i=0u; i<temp_matrix.size(); i++) {
-      // printf("nnz += %d\n",(int)temp_matrix[i].size());
-      nnz += temp_matrix[i].size();
-    };
-    // build matrix
-    printf("Initialising matrix: %d x %d : %d\n",num_targets, num_sources, nnz);
-    //A = SparseMatrix<int,kernel_value_type>(num_targets, num_sources, nnz);
-    A.resize(num_targets, num_sources, nnz);
-    printf("Matrix created: %.4eMB\n",(double)A.storage_size()/1024./1024.);
 
-    // loop through temp values, streaming into sparse matrix
-    int offset = 0;
-    for (auto i=0u; i<temp_matrix.size(); i++) {
-
-      for (auto j=0u; j<temp_matrix[i].size(); j++) {
-        A.indices[offset+j] = temp_matrix[i][j].first;
-        A.vals[offset+j] = temp_matrix[i][j].second;
-      }
-
-      offset += temp_matrix[i].size();
-      A.offsets[i+1] = offset;
-      // now clear this row of the temp matrix to save excess memory
-      temp_matrix[i].resize(0);
-    }
-    // now we should have a completed matrix representation of the near-field
-
+    A = p2p_sparse.to_matrix();
   } // end constructor
 
   void execute(Context& bc) const {
@@ -254,50 +86,25 @@ class EvalLocalSparse : public EvaluatorBase<Context>
     //static double t_charge = 0., t_result = 0.;
 
     //tic = get_time();
-    int i=0;
-    for (auto it=bc.charge_begin(root); it != bc.charge_end(root); ++it, i++) {
-      charges[i] = *it; // *const_cast<charge_type*>(&(*it));
-    }
+    typedef typename Context::charge_type charge_type;
+    ublas::vector<charge_type> charges;
+    std::copy(bc.charge_begin(root), bc.charge_end(root), charges.begin());
     //toc = get_time();
     //t_charge += toc-tic;
 
     // call the matvec
-    auto r = matvec(A, charges);
+    typedef typename Context::result_type result_type;
+    ublas::vector<result_type> results = ublas::prod(A, charges);
+
     // copy results back into iterator
     //tic = get_time();
-    i=0;
-    for (auto it=bc.result_begin(root); it!= bc.result_end(root); ++it, ++i) {
-      *it = r[i];
-    }
+    std::transform(results.begin(), results.end(),
+                   bc.result_begin(root), bc.result_begin(root),
+                   std::plus<result_type>());
     //toc = get_time();
     //t_result += toc-tic;
 
     //printf("charge copy: %.3es, result copy: %.3es\n",t_charge, t_result);
-  }
-
-  template <typename BOX, typename Storage>
-  void evalP2P(Context& bc, BOX& b1, BOX& b2, Storage& temp_matrix)
-  {
-    auto& K = bc.kernel();
-    // targets
-    auto t_it = bc.source_begin(b1);
-    for (auto it=b1.body_begin(); it!=b1.body_end(); ++it, ++t_it) {
-      // sources
-      auto s_it = bc.source_begin(b2);
-      for (auto jit=b2.body_begin(); jit!=b2.body_end(); ++jit, ++s_it) {
-        // row number
-        auto target_idx = it->index();
-        // column number
-        auto source_idx = jit->index();
-
-        // value
-        auto v = K(*t_it, *s_it);
-
-        // insert into list / directly into matrix
-        // printf("interacting bodies %d and %d: %.4lg\n", (int)target_idx, (int)source_idx, (double)v);
-        temp_matrix[target_idx].push_back(std::make_pair(source_idx, v));
-      }
-    }
   }
 
   template <typename BOX, typename Q>

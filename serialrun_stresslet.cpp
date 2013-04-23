@@ -180,7 +180,7 @@ int main(int argc, char **argv)
     for (unsigned k = 0; k < exact.size(); ++k) {
       auto exact_val = exact[k];
       auto fmm_val = result[sample_map[k]];
-      std::cout << exact_val << "  :  " << fmm_val << std::endl;
+      // std::cout << exact_val << "  :  " << fmm_val << std::endl;
 
       for (unsigned i=0; i < 3; i++) {
         rdiff[i] += (fmm_val[i]-exact_val[i])*(fmm_val[i]-exact_val[i]);

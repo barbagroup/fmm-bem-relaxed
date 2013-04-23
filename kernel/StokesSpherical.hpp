@@ -248,10 +248,10 @@ class StokesSpherical : public LaplaceSpherical
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
     point_type gradient[4]; //   = {0.,0.,0.,0.};
-    gradient[0] = 0.;
-    gradient[1] = 0.;
-    gradient[2] = 0.;
-    gradient[3] = 0.;
+    gradient[0] = point_type(0.);
+    gradient[1] = point_type(0.);
+    gradient[2] = point_type(0.);
+    gradient[3] = point_type(0.);
 
     point_type cartesian(0);
     real r, theta, phi;
@@ -357,10 +357,10 @@ class StokesSpherical : public LaplaceSpherical
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
     point_type gradient[4]; //   = {0.,0.,0.,0.};
-    gradient[0] = 0.;
-    gradient[1] = 0.;
-    gradient[2] = 0.;
-    gradient[3] = 0.;
+    gradient[0] = point_type(0.);
+    gradient[1] = point_type(0.);
+    gradient[2] = point_type(0.);
+    gradient[3] = point_type(0.);
     point_type cartesian(0);
 
     real r, theta, phi;

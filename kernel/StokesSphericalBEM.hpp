@@ -29,7 +29,7 @@ class StokesSphericalBEM : public StokesSpherical
   //! structure for Boundary elements
   struct Panel
   {
-    typedef enum { POTENTIAL, NORMAL_DERIV } BoundaryType;
+    typedef enum { VELOCITY, TRACTION } BoundaryType;
 
     //! center of the panel
     point_type center;
@@ -42,7 +42,7 @@ class StokesSphericalBEM : public StokesSpherical
     double Area;
     //! Boundary condition
     BoundaryType BC;
-    Panel() : center(0), normal(0), Area(0), BC(POTENTIAL) {};
+    Panel() : center(0), normal(0), Area(0), BC(VELOCITY) {};
     //! copy constructor
     Panel(const Panel& p) {
       vertices = p.vertices;
@@ -53,7 +53,7 @@ class StokesSphericalBEM : public StokesSpherical
       quad_points = p.quad_points;
     }
     //! main constructor
-    Panel(point_type p0, point_type p1, point_type p2) : BC(POTENTIAL) {
+    Panel(point_type p0, point_type p1, point_type p2) : BC(VELOCITY) {
       vertices.resize(3);
       vertices[0] = p0;
       vertices[1] = p1;
@@ -104,8 +104,8 @@ class StokesSphericalBEM : public StokesSpherical
 
     /** flip the boundary condition flag for calculating RHS */
     void switch_BC(void) {
-      if (this->BC == POTENTIAL) { this->BC = NORMAL_DERIV; }
-      else                       { this->BC = POTENTIAL; }
+      if (this->BC == VELOCITY) { this->BC = TRACTION; }
+      else                       { this->BC = VELOCITY; }
     };
   };
 
@@ -231,10 +231,19 @@ class StokesSphericalBEM : public StokesSpherical
   void M2P(const multipole_type& M, const point_type& center,
            const target_type& target, result_type& result) const
   {
-    (void) M;
-    (void) center;
-    (void) target;
-    (void) result;
+    // temporary result
+    result_type r(0.);
+
+    if (target.BC == Panel::VELOCITY)
+    {
+      StokesSpherical::M2P(M[0],center,target,r);
+      result += r;
+    }
+    else
+    {
+      StokesSpherical::M2P(M[1],center,target,r);
+      result -= 1./6*r;
+    }
   }
 
   void M2L(const multipole_type& Msource,
@@ -254,9 +263,18 @@ class StokesSphericalBEM : public StokesSpherical
   void L2P(const local_type& L, const point_type& center,
            const target_type& target, result_type& result) const
   {
-    (void) L;
-    (void) center;
-    (void) target;
-    (void) result;
+    // temporary result
+    result_type r(0.);
+
+    if (target.BC == Panel::VELOCITY)
+    {
+      StokesSpherical::L2P(L[0],center,target,r);
+      result += r;
+    }
+    else
+    {
+      StokesSpherical::L2P(L[1],center,target,r);
+      result -= 1./6*r;
+    }
   }
 };

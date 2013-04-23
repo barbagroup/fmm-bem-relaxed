@@ -31,7 +31,8 @@ class EvalLocalSparse
  public:
   // constructor -- create matrix
   EvalLocalSparse(Context& bc) {
-    P2P_Sparse<Context> p2p_sparse(bc);
+    // Local P2P evaluator to construct the interaction matrix
+    P2P_Lazy<Context> p2p_lazy(bc);
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     std::deque<box_pair> pairQ;
@@ -46,7 +47,7 @@ class EvalLocalSparse
       if (b1.is_leaf()) {
 	      if (b2.is_leaf()) {
 		      // Both are leaves, P2P
-          p2p_sparse.insert(b1, b2);
+          p2p_lazy.insert(b1, b2);
 	      } else {
 		      // b2 is not a leaf, Split the second box into children and interact
 		      auto c_end = b2.child_end();
@@ -74,7 +75,7 @@ class EvalLocalSparse
       }
     }
 
-    A = p2p_sparse.to_matrix();
+    A = p2p_lazy.to_matrix();
   } // end constructor
 
   void execute(Context& bc) const {

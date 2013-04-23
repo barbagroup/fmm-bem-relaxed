@@ -61,6 +61,8 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   typedef typename kernel_type::local_type local_type;
   //! Kernel point type
   typedef typename kernel_type::point_type point_type;
+  //! Kernel value_type
+  typedef typename kernel_type::kernel_value_type kernel_value_type;
   //! Kernel source type
   typedef typename kernel_type::source_type source_type;
   //! Kernel target type
@@ -137,6 +139,7 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
         M_(source_tree_.boxes()),
         L_((opts.evaluator == FMMOptions::TREECODE ? 0 : source_tree_.boxes())),
         sources(first, last) {
+    s_ = sources.begin();
   }
 
   void insert(EvaluatorBase<self_type>* eval) {

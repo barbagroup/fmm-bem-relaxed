@@ -8,6 +8,7 @@
  * elementwise multiplication/division.
  */
 
+#define BOOST_UBLAS_NDEBUG
 #include <boost/numeric/ublas/vector.hpp>
 namespace ublas = boost::numeric::ublas;
 
@@ -106,6 +107,13 @@ BOOST_UBLAS_INLINE
 bool operator==(const Vec<N,T>& a,
                 const Vec<N,T>& b) {
   return std::equal(a.begin(), a.end(), b.begin());
+}
+/** Equality comparison (weak) */
+template <unsigned N, typename T>
+BOOST_UBLAS_INLINE
+bool operator!=(const Vec<N,T>& a,
+                const Vec<N,T>& b) {
+  return !(a == b);
 }
 /** Send to output stream */
 template <unsigned N, typename T>

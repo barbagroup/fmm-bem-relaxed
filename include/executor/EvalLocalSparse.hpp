@@ -31,7 +31,7 @@ class EvalLocalSparse
  public:
   // constructor -- create matrix
   EvalLocalSparse(Context& bc) {
-    P2P_Sparse p2p_sparse(bc);
+    P2P_Sparse<Context> p2p_sparse(bc);
 
     // Queue based tree traversal for P2P, M2P, and/or M2L operations
     std::deque<box_pair> pairQ;
@@ -87,7 +87,7 @@ class EvalLocalSparse
 
     //tic = get_time();
     typedef typename Context::charge_type charge_type;
-    ublas::vector<charge_type> charges;
+    ublas::vector<charge_type> charges(bc.source_tree().bodies());
     std::copy(bc.charge_begin(root), bc.charge_end(root), charges.begin());
     //toc = get_time();
     //t_charge += toc-tic;

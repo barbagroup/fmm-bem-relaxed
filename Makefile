@@ -75,7 +75,7 @@ test_vec: test_vec.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) serialrun test_tree
+	-$(RM) serialrun test_tree serialrun_stresslet
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

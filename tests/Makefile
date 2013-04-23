@@ -53,6 +53,8 @@ EXECS += scaling
 EXECS += correctness
 EXECS += dual_correctness
 EXECS += single_level
+EXECS += single_level_stresslet
+EXECS += multi_level_stresslet
 
 all: $(EXECS)
 

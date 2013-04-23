@@ -1,7 +1,7 @@
 #pragma once
 /** @file KernelSkeleton
  * @brief An example Kernel implementation that explains the required and
- * optionals methods and types to be included in a Kernel class.
+ * optional methods and types that define a Kernel class.
  *
  * This class will be used to evaluate the matrix-vector product
  * r_i = sum_j K(t_i, s_j) c_j
@@ -34,20 +34,26 @@ class KernelSkeleton
   // Any other member variables to be used in the Tree operations
 
  public:
-  //! The dimension of the Kernel
+  //! The dimension of the point_type
   static constexpr unsigned dimension = 3;
-  //! Point type -- Can use include/Vec.hpp or anything with op[]
+  //! Point type -- Recommend include/Vec.hpp.
+  // TODO Ability to use anything with op[]/size() or begin()/end()?
   typedef Vec<dimension,double> point_type;
-  //! Source type
-  //! Must be castable to point_type: static_cast<point_type>(source_type)
-  typedef point_type source_type;
-  //! Target type
-  //! Must be castable to point_type: static_cast<point_type>(target_type)
-  typedef point_type target_type;
-  //! Charge type
-  typedef real charge_type;
-  //! The return type of a kernel evaluation
+
+  //! Return type of a kernel evaluation
   typedef real kernel_value_type;
+
+  //! Source type
+  //! Must be convertible to point_type: static_cast<point_type>(source_type)
+  typedef point_type source_type;
+  //! Charge type associated with each source
+  //! The type of the vector in the FMM/Treecode matvec
+  typedef real charge_type;
+
+  //! Target type
+  //! Must be convertible to point_type: static_cast<point_type>(target_type)
+  typedef point_type target_type;
+  //! Result type associated with each target
   //! The product of the kernel_value_type and the charge_type
   typedef real result_type;
 
@@ -72,8 +78,8 @@ class KernelSkeleton
   /** Initialize a local expansion with the size of a box at this level
    * (Optional: If not implemented, default constructor for local_type used)
    *
-   * @param[in] M The multipole to be initialized
-   * @param[in] extents The dimensions of the box containing the multipole
+   * @param[in] L The local expansion to be initialized
+   * @param[in] extents The dimensions of the box containing the expansion
    * @param[in] level The level number of the box. 0: Root box
    */
   void init_local(local_type& L,
@@ -84,7 +90,8 @@ class KernelSkeleton
   }
 
   /** Kernel evaluation
-   * K(t,s) where s is the source and t is the target
+   * K(t,s) where s is the source
+   *          and t is the target.
    *
    * @param[in] t,s The target and source to evaluate the kernel
    * @return The Kernel evaluation, K(t,s)
@@ -97,7 +104,9 @@ class KernelSkeleton
   }
 
   /** Kernel P2M operation
-   * M += Op(s) * c where M is the multipole and s is the source
+   * M += c * Op(s) where M is the multipole,
+   *                      s is the source,
+   *                  and c is the charge.
    *
    * @param[in] source The source to accumulate into the multipole
    * @param[in] charge The source's corresponding charge
@@ -112,8 +121,9 @@ class KernelSkeleton
     (void) M;
   }
 
-  /** Kernel M2M operator
-   * M_t += Op(M_s) where M_t is the target and M_s is the source
+  /** Kernel M2M operation
+   * M_t += Op(M_s) where M_t is the target
+   *                  and M_s is the source.
    *
    * @param[in] source The multipole source at the child level
    * @param[in,out] target The multipole target to accumulate into
@@ -129,12 +139,14 @@ class KernelSkeleton
   }
 
   /** Kernel M2P operation
-   * r += Op(M, t) where M is the multipole and r is the result
+   * r += Op(M, t) where M is the multipole,
+   *                     t is the target,
+   *                 and r is the result.
    *
    * @param[in] M The multpole expansion
    * @param[in] center The center of the box with the multipole expansion
-   * @param[in] target The target to evaluate the multipole at
-   * @param[in,out] result The target's corresponding result to accumulate into
+   * @param[in] target The target at which to evaluate the multipole
+   * @param[in,out] result The corresponding result value to accumulate into
    * @pre M includes the influence of all sources within its box
    */
   void M2P(const multipole_type& M, const point_type& center,
@@ -146,7 +158,8 @@ class KernelSkeleton
   }
 
   /** Kernel M2L operation
-   * L += Op(M) where L is the local expansion and M is the multipole
+   * L += Op(M) where L is the local expansion
+   *              and M is the multipole expansion
    *
    * @param[in] source The multpole expansion source
    * @param[in,out] target The local expansion target
@@ -162,8 +175,9 @@ class KernelSkeleton
     (void) translation;
   }
 
-  /** Kernel L2L operator
-   * L_t += Op(L_s) where L_t is the target and L_s is the source
+  /** Kernel L2L operation
+   * L_t += Op(L_s) where L_t is the target
+   *                  and L_s is the source.
    *
    * @param[in] source The local source at the parent level
    * @param[in,out] target The local target to accumulate into
@@ -179,12 +193,14 @@ class KernelSkeleton
   }
 
   /** Kernel L2P operation
-   * r += Op(L, t) where L is the local expansion and r is the result
+   * r += Op(L, t) where L is the local expansion,
+   *                     t is the target,
+   *                 and r is the result.
    *
    * @param[in] L The local expansion
    * @param[in] center The center of the box with the local expansion
    * @param[in] target The target of this L2P operation
-   * @param[in] result The result to accumulate into
+   * @param[in] result The corresponding result value to accumulate into
    * @pre L includes the influence of all sources outside its box
    */
   void L2P(const local_type& L, const point_type& center,
@@ -200,6 +216,7 @@ class KernelSkeleton
   /*******************************************************************/
   /************************* Optional ********************************/
   /*******************************************************************/
+
   /* The methods below may be implemented to potentially optimize the P2P
    * operations. If these methods are not implemented, the P2P will be delegated
    * to the Direct.hpp methods which use K.operator()(target_type,source_type)
@@ -211,10 +228,10 @@ class KernelSkeleton
    * Often, a kernel has a symmetry in s and t that can be computed faster than
    * by calling the evaluation operator. If this function is implemented, the
    * computation may use it to prevent uneccessary calls to the evaluation
-   * operator and accelerate the P2P evaluations.
+   * operator and accelerate the P2P interactions.
    *
-   * @param[in] kst A kernel value that was returned from operator()(s,t)
-   * @returns The value of operator()(t,s)
+   * @param[in] kst A kernel value that was returned from operator()(t,s)
+   * @returns The value of operator()(s,t)
    */
   kernel_value_type transpose(const kernel_value_type& kst) const {
     return kst;

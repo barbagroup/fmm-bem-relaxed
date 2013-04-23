@@ -62,7 +62,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
       auto b2 = pairQ.front().second;
       pairQ.pop_front();
 
-      char code = (b1.is_leaf() << 1) | (b2.is_leaf());
+      char code = (b1.is_leaf() << 1) | (b2.is_leaf() << 0);
       switch (code) {
         case 3: {    // Both boxes are leaves
           P2P_list.push_back(std::make_pair(b2,b1));

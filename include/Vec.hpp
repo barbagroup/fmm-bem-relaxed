@@ -1,251 +1,259 @@
 #pragma once
 /** @file Vec.hpp
- * @brief A wrapper class to provide simple vector operations for
- * primitive types and classes that only require op[].
+ * @brief A custom constant size vector class based on a Boost uBlas vector.
+ *
+ * This provides convenient constructors to initialize coordinates,
+ * imports common operators such as norms and inner products, and implements
+ * additional expression templates such as scalar addition/subtration and
+ * elementwise multiplication/division.
  */
 
-#include <iostream>
+#include <boost/numeric/ublas/vector.hpp>
+namespace ublas = boost::numeric::ublas;
+
 #include <type_traits>
-#include <cstdarg>
-#include <math.h>
-#include <assert.h>
 
-//! Predeclaration of SmallVec
-template <unsigned DIM, typename DATA>
-class SmallVec;
 
-/** @class Vec
- * A general class that endows types with vector operations. If the base type
- * is a primitive type, the Vec stores information as an array of that type.
- * If the base type is not a primitive type, then it must implement the bracket
- * operator (lvalue and rvalue)
- *
- * All of the following result in nearly the same public Vec interface
- * Vec<3, double> v1;
- * Vec<3, double[3]> v2;
- * Vec<3, MyClassThatImplementsOpBracketWithDoubles> v3;
- */
-template <unsigned DIM, typename DATA>
-using Vec = typename std::conditional<std::is_fundamental<DATA>::value,
-                                      SmallVec<DIM, DATA[DIM]>,
-                                      SmallVec<DIM, DATA>>::type;
+template <unsigned N, typename T>
+class Vec
+    : public ublas::vector<T, ublas::bounded_array<T,N>>
+{
+  typedef ublas::vector<T, ublas::bounded_array<T,N>> super_type;
 
-#define for_i for(unsigned i=0; i!=dimension; ++i)
-
-/** @class SmallVec
- * @brief Class representing ND points and vectors.
- *
- * SmallVec contains methods that support use of the underlying type
- * as points in ND space. The underlying data is stored as type POINT,
- * which must only provide the operators:
- * value_type& operator[](unsigned i)
- * const value_type& operator[](unsigned i) const
- */
-template <unsigned DIM, typename POINT>
-class SmallVec {
-  static_assert(DIM > 0, "SmallVec DIM must be greater than 0");
-
-  POINT a;
-
- public:
-  static constexpr unsigned dimension = DIM;
-  typedef POINT point_type;
-  typedef typename std::decay<decltype(a[0])>::type value_type;
-
-  // CONSTRUCTORS
-
-  SmallVec() {
-    for_i a[i] = value_type(0);
-  }
-  SmallVec(const SmallVec& b) {
-    for_i a[i] = b[i];
-  }
-  explicit SmallVec(const point_type& b) {
-    for_i a[i] = b[i];
-  }
-  explicit SmallVec(value_type b) {
-    for_i a[i] = b;
-  }
-  SmallVec(value_type b0, value_type b1) {
-    static_assert(dimension == 2, "Calling 2-value Vec constructor for Non-2D Vec");
-    a[0] = b0; a[1] = b1;
-  }
-  SmallVec(value_type b0, value_type b1, value_type b2) {
-    static_assert(dimension == 3, "Calling 3-value Vec constructor for Non-3D Vec");
-    a[0] = b0; a[1] = b1; a[2] = b2;
-  }
-  SmallVec(value_type b0, value_type b1, value_type b2, value_type b3) {
-    static_assert(dimension == 4, "Calling 4-value Vec constructor for Non-4D Vec");
-    a[0] = b0; a[1] = b1; a[2] = b2; a[3] = b3;
+  /** Template unrolling for assigning an argument pack to this->data() */
+  template <unsigned I>
+  inline void insert() {}
+  template <unsigned I, typename A, typename ...Rest>
+  inline void insert(const A& a, Rest... r) {
+    this->data()[I] = a;
+    insert<I+1>(r...);
   }
 
-  inline bool operator==(const SmallVec& b) const {
-    for_i if (a[i] != b[i]) return false;
-    return true;
+  /** Template for determining if *all* types in a pack
+   * are convertible to type @a To */
+  template <typename To, typename ...>
+  struct all_convertible;
+  template <typename To>
+  struct all_convertible<To>
+      : std::true_type {};
+  template <typename To, typename From, typename ...Rest>
+  struct all_convertible<To, From, Rest...>
+      : std::integral_constant<bool,
+                               std::is_convertible<From,To>::value &&
+                               all_convertible<To,Rest...>::value> {};
+public:
+  static constexpr unsigned dimension = N;
+
+  /** Constructors */
+  Vec()
+      : super_type(N,T()) {}
+  Vec(const Vec& v)
+      : super_type(v) {}
+  template <class A>
+  Vec(const ublas::vector<T,A>& v)
+      : super_type (v) {}
+  template <class E>
+  Vec(const ublas::vector_expression<E>& e)
+      : super_type(e) {}
+
+  /** Construct with value for all coordinates */
+  explicit Vec(const T& t)
+      : super_type(N,t) {
+  }
+  /** Construct with values for each coordinate */
+  template <typename ...Arg,
+            typename std::enable_if<sizeof...(Arg) == N,int>::type=0,
+            typename std::enable_if<all_convertible<T,Arg...>::value,int>::type=0>
+  explicit Vec(Arg ...args)
+      : super_type(N) {
+    insert<0>(args...);
   }
 
-  // MODIFIERS
-
-  /** Return a negated version of @a p. */
-  inline SmallVec operator-() const {
-    return SmallVec(-a[0], -a[1], -a[2]);
-  }
-  /** Scalar assignment */
-  inline SmallVec& operator=(const value_type b) {
-    for_i a[i] = b;
+  /** Assignment operators */
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const Vec& v) {
+    super_type::operator=(v);
     return *this;
   }
-  /** Add scalar @a b to this SmallVec */
-  inline SmallVec& operator+=(const value_type b) {
-    for_i a[i] += b;
+  template <class A>
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector<T,A>& v) {
+    super_type::operator=(v);
     return *this;
   }
-  /** Subtract scalar @a b from this SmallVec */
-  inline SmallVec& operator-=(const value_type b) {
-    for_i a[i] -= b;
+  template <class E>
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector_expression<E>& v) {
+    super_type::operator=(v);
     return *this;
   }
-  /** Scale this SmallVec up by scalar @a b */
-  inline SmallVec& operator*=(const value_type b) {
-    for_i a[i] *= b;
+  /** Container assignment without temporary */
+  template <class C>
+  BOOST_UBLAS_INLINE
+  Vec& operator=(const ublas::vector_container<C>& v) {
+    super_type::operator=(v);
     return *this;
-  }
-  /** Scale this SmallVec down by scalar @a b */
-  inline SmallVec& operator/=(const value_type b) {
-    for_i a[i] /= b;
-    return *this;
-  }
-  /** Add SmallVec @a b to this SmallVec */
-  inline SmallVec& operator+=(const SmallVec& b) {
-    for_i a[i] += b[i];
-    return *this;
-  }
-  /** Subtract SmallVec @a b from this SmallVec */
-  inline SmallVec& operator-=(const SmallVec& b) {
-    for_i a[i] -= b[i];
-    return *this;
-  }
-  /** Scale this SmallVec up by factors in @a b */
-  inline SmallVec& operator*=(const SmallVec& b) {
-    for_i a[i] *= b[i];
-    return *this;
-  }
-  /** Scale this SmallVec down by factors in @a b */
-  inline SmallVec& operator/=(const SmallVec& b) {
-    for_i a[i] /= b[i];
-    return *this;
-  }
-  /** Compute the dot product of this SmallVec with another SmallVec */
-  inline value_type dot(const SmallVec& b) const {
-    value_type d(0);
-    for_i d += a[i]*b[i];
-    return d;
-  }
-
-  // ACCESSORS
-
-  /** Access the @a i th (lvalue) element of this SmallVec
-   * @pre i < dimension */
-  inline value_type& operator[](unsigned i) {
-    //assert(i < dimension);
-    return a[i];
-  }
-  /** Access the @a i th (rvalue) element of this SmallVec
-   * @pre i < dimension */
-  inline const value_type& operator[](unsigned i) const {
-    //assert(i < dimension);
-    return a[i];
-  }
-  static constexpr unsigned size() {
-    return dimension;
-  }
-
-  /** Compute the dot product of this SmallVec with another SmallVec */
-  inline friend value_type dot(const SmallVec& a, const SmallVec& b) {
-    return a.dot(b);
-  }
-  /** Compute cross product of two SmallVecs */
-  inline friend SmallVec cross(const SmallVec& a, const SmallVec& b) {
-    static_assert(SmallVec::dimension == 3, "Cross product only defined for 3D");
-    SmallVec r;
-    r[0] = a[1]*b[2] - a[2]*b[1];
-    r[1] = -(a[0]*b[2] - a[2]*b[0]);
-    r[2] = a[0]*b[1] - a[1]*b[0];
-    return r;
-  }
-  /** Compute the squared L2 norm of this SmallVec */
-  inline friend value_type normSq(const SmallVec& b) {
-    return b.dot(b);
-  }
-  /** Compute the L2 norm of this SmallVec */
-  inline friend value_type norm(const SmallVec& b) {
-    return sqrt(normSq(b));
-  }
-  /** Write a SmallVec to an output stream */
-  inline friend std::ostream& operator<<(std::ostream& s, const SmallVec& a) {
-    for_i s << a[i] << " ";
-    return s;
-  }
-  /** Read a SmallVec from an input stream */
-  inline friend std::istream& operator>>(std::istream& s, SmallVec& a) {
-    for_i s >> a[i];
-    return s;
   }
 };
 
-#undef for_i
-
 // OPERATORS
+#include <algorithm>
+#include <iostream>
 
-/** Compute the dot product of two SmallVecs */
-template <unsigned D, typename P>
-inline typename SmallVec<D,P>::value_type dot(const SmallVec<D,P>& a,
-                                              const SmallVec<D,P>& b) {
-  return a.dot(b);
+/** Equality comparison (weak) */
+template <unsigned N, typename T>
+BOOST_UBLAS_INLINE
+bool operator==(const Vec<N,T>& a,
+                const Vec<N,T>& b) {
+  return std::equal(a.begin(), a.end(), b.begin());
 }
-/** Compute the squared L2 norm of this SmallVec */
-template <unsigned D, typename P>
-inline typename SmallVec<D,P>::value_type normSq(const SmallVec<D,P>& a) {
-  return a.dot(a);
+/** Send to output stream */
+template <unsigned N, typename T>
+std::ostream& operator<<(std::ostream& s,
+                         const Vec<N,T>& v) {
+  s << "(";
+  std::copy(v.begin(), v.end(), std::ostream_iterator<T>(s, ", "));
+  return s << "\b\b)";
 }
-/** Compute the L2 norm of this SmallVec */
-template <unsigned D, typename P>
-inline typename SmallVec<D,P>::value_type norm(const SmallVec<D,P>& a) {
-  return sqrt(normSq(a));
+/** Inner product */
+using ublas::inner_prod;
+/** L1 norm */
+using ublas::norm_1;
+/** L2 norm */
+using ublas::norm_2;
+/** L_inf norm */
+using ublas::norm_inf;
+
+// TEMP: BACKWARD COMPATABILITY
+
+/** Compute the dot product */
+template <typename E1, typename E2>
+inline auto dot(const ublas::vector_expression<E1>& a,
+                const ublas::vector_expression<E2>& b)
+    -> decltype(ublas::inner_prod(a,b)) {
+  return ublas::inner_prod(a,b);
+}
+/** Compute the squared L2 norm */
+template <typename E>
+inline auto normSq(const ublas::vector_expression<E>& a)
+    -> decltype(ublas::inner_prod(a,a)) {
+  return ublas::inner_prod(a,a);
+}
+/** Compute the L2 norm */
+template <typename E>
+inline auto norm(const ublas::vector_expression<E>& a)
+    -> decltype(ublas::norm_2(a)) {
+  return ublas::norm_2(a);
 }
 
-// ARITHMETIC
 
-/** Unary plus: Return @a p. ("+p" should work if "-p" works.) */
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator+(const SmallVec<D,P>& a) {
-  return a;
+/////////////////////////////////
+// Vector Expression Operators //
+/////////////////////////////////
+
+
+/** Scalar addition */
+template <class T1, class E2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<T1,typename E2::value_type>,
+  typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_plus<T1, typename E2::value_type>
+    >::result_type
+  >::type
+operator+(const T1& e1,
+          const ublas::vector_expression<E2>& e2) {
+  typedef typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_plus<T1, typename E2::value_type>
+    >::expression_type expression_type;
+  return expression_type(e1, e2());
 }
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator+(SmallVec<D,P> a, const SmallVec<D,P>& b) {
-  return a += b;
+
+/** Scalar addition */
+template <class E1, class T2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<typename E1::value_type,T2>,
+  typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_plus<typename E1::value_type,T2>
+    >::result_type
+  >::type
+operator+(const ublas::vector_expression<E1>& e1,
+          const T2& e2) {
+  typedef typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_plus<typename E1::value_type,T2>
+    >::expression_type expression_type;
+  return expression_type(e1(), e2);
 }
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator-(SmallVec<D,P> a, const SmallVec<D,P>& b) {
-  return a -= b;
+
+/** Scalar subtraction */
+template <class T1, class E2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<T1,typename E2::value_type>,
+  typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_minus<T1, typename E2::value_type>
+    >::result_type
+  >::type
+operator-(const T1& e1,
+          const ublas::vector_expression<E2>& e2) {
+  typedef typename ublas::vector_binary_scalar1_traits<
+    const T1, E2, ublas::scalar_minus<T1, typename E2::value_type>
+    >::expression_type expression_type;
+  return expression_type(e1, e2());
 }
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(SmallVec<D,P> a, double b) {
-  return a *= b;
+
+/** Scalar subtraction */
+template <class E1, class T2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<typename E1::value_type,T2>,
+  typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_minus<typename E1::value_type,T2>
+    >::result_type
+  >::type
+operator-(const ublas::vector_expression<E1>& e1,
+          const T2& e2) {
+  typedef typename ublas::vector_binary_scalar2_traits<
+    E1, const T2, ublas::scalar_minus<typename E1::value_type,T2>
+    >::expression_type expression_type;
+  return expression_type(e1(), e2);
 }
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(double b, SmallVec<D,P> a) {
-  return a *= b;
+
+/** Elementwise division */
+template <class E1, class E2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<typename E1::value_type,typename E2::value_type>,
+  typename ublas::vector_binary_traits<
+    E1, E2, ublas::scalar_divides<typename E1::value_type,
+                                  typename E2::value_type>
+    >::result_type
+  >::type
+operator/(const ublas::vector_expression<E1>& e1,
+          const ublas::vector_expression<E2>& e2) {
+  typedef typename ublas::vector_binary_traits<
+    E1, E2, ublas::scalar_divides<typename E1::value_type,
+                                  typename E2::value_type>
+    >::expression_type expression_type;
+  return expression_type(e1(), e2());
 }
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator*(SmallVec<D,P> a, const SmallVec<D,P>& b) {
-  return a *= b;
-}
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator/(SmallVec<D,P> a, double b) {
-  return a /= b;
-}
-template <unsigned D, typename P>
-inline SmallVec<D,P> operator/(SmallVec<D,P> a, const SmallVec<D,P>& b) {
-  return a /= b;
+
+/** Elementwise multiplication */
+template <class E1, class E2>
+BOOST_UBLAS_INLINE
+typename boost::enable_if<
+  boost::is_convertible<typename E1::value_type,typename E2::value_type>,
+  typename ublas::vector_binary_traits<
+    E1, E2, ublas::scalar_multiplies<typename E1::value_type,
+                                     typename E2::value_type>
+    >::result_type
+  >::type
+operator*(const ublas::vector_expression<E1>& e1,
+          const ublas::vector_expression<E2>& e2) {
+  typedef typename ublas::vector_binary_traits<
+    E1, E2, ublas::scalar_multiplies<typename E1::value_type,
+                                     typename E2::value_type>
+    >::expression_type expression_type;
+  return expression_type(e1(), e2());
 }

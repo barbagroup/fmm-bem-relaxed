@@ -29,17 +29,11 @@ class UnitKernel
   typedef double local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M,
-                      const point_type& extents, unsigned level) const {
-    (void) extents;
-    (void) level;
+  void init_multipole(multipole_type& M, const point_type&, unsigned) const {
     M = 0;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L,
-                  const point_type& extents, unsigned level) const {
-    (void) extents;
-    (void) level;
+  void init_local(local_type& L, const point_type&, unsigned) const {
     L = 0;
   }
 

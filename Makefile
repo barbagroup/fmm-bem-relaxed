@@ -62,6 +62,10 @@ serialrun_stresslet: serialrun_stresslet.o
 test_tree: test_tree.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+test_vec: test_vec.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+
 # suffix replacement rule for building .o's from .cpp's
 #   $<: the name of the prereq of the rule (a .cpp file)
 #   $@: the name of the target of the rule (a .o file)

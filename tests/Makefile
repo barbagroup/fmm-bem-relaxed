@@ -39,7 +39,7 @@ INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
-LIBS +=
+LIBS += -lm
 
 ##################
 # The following part of the makefile is generic; it can be used to
@@ -58,19 +58,19 @@ all: $(EXECS)
 
 
 multi_level: multi_level.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 scaling: scaling.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 correctness: correctness.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 dual_correctness: dual_correctness.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 single_level: single_level.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 single_level_stresslet: single_level_stresslet.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^

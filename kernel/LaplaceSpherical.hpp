@@ -505,7 +505,8 @@ class LaplaceSpherical
 
   /** Cartesian to spherical coordinates
    */
-  void cart2sph(real& r, real& theta, real& phi, point_type dist=0) const {
+  void cart2sph(real& r, real& theta, real& phi,
+                point_type dist = point_type(0)) const {
     r = norm(dist) + EPS;                                       // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps

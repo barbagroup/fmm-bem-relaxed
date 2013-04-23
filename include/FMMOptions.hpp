@@ -1,9 +1,9 @@
 #pragma once
-
 /**
  * Storage class for all FMM options
  */
 
+#include "Vec.hpp"
 
 /** Class to define compile-time and run-time FMM options */
 class FMMOptions
@@ -17,15 +17,15 @@ public:
 	enum EvalType {FMM, TREECODE};
 	EvalType evaluator;
 
-
 	struct DefaultMAC {
 		double theta_;
 		DefaultMAC(double theta) : theta_(theta) {}
 
 		template <typename BOX>
 		bool operator()(const BOX& b1, const BOX& b2) const {
-			double r0_norm = norm(b1.center() - b2.center());
-			return r0_norm * theta_ > b1.radius() + b2.radius();
+			double r0_normSq = normSq(b1.center() - b2.center());
+      double rhs = (b1.radius() + b2.radius()) / theta_;
+			return r0_normSq > rhs*rhs;
 		}
 	};
 
@@ -67,16 +67,14 @@ public:
 };
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /** Get the FMMOptions from command line arguments
  */
 FMMOptions get_options(int argc, char** argv) {
-	FMMOptions opts;
-	opts.set_mac_theta(0.5);    // Default multipole acceptance criteria
-	opts.set_max_per_box(64);   // Default NCRIT
+	FMMOptions opts = FMMOptions();
 
 	// parse command line args
 	for (int i = 1; i < argc; ++i) {

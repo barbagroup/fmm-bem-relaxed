@@ -155,10 +155,70 @@ class StokesSphericalBEM : public StokesSpherical
   void P2M(const source_type& source, const charge_type& charge,
            const point_type& center, multipole_type& M) const
   {
-    (void) source;
-    (void) charge;
-    (void) center;
-    (void) M;
+    // setup stuff
+    auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
+    auto c0 = charge[0], c1 = charge[1], c2 = charge[2];
+
+    complex Ynm[4*P*P], YnmTheta[4*P*P];
+
+    // loop over quadrature points
+    for (auto i=0u; i<source.quad_points.size(); i++) {
+      auto qp = source.quad_points[i];
+      point_type dist = static_cast<point_type>(qp) - center;
+      real rho, alpha, beta;
+      cart2sph(rho,alpha,beta,dist);
+      evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
+
+      // create expansions
+      for (int n=0; n!=P; ++n) {
+        for (int m=0; m<=n; ++m) {
+          const int nm  = n * (n + 1) + m;
+          const int nms = n * (n + 1) / 2 + m;
+
+          // velocity specified
+          if (source.BC == Panel::VELOCITY)
+          {
+            // ease of writing
+            auto area = source.area;
+            auto gw = gauss_weight[i];
+
+            auto fdotx = gw*area*c0*source[0] + gw*area*c1*source[1] + gw*area*c2*source[2];
+            M[0][0][nms] += gw * area * c0 * Ynm[nm];
+            M[0][1][nms] += gw * area * c1 * Ynm[nm];
+            M[0][2][nms] += gw * area * c2 * Ynm[nm];
+            M[0][3][nms] += fdotx * Ynm[nm];
+          }
+          // traction specified
+          else
+          {
+            auto& normal = source.normal;
+            auto& area = source.area;
+            auto gw = gauss_weight[i];
+
+            complex brh = (double)n/rho*Ynm[nm]; // d(rho)
+            complex bal = YnmTheta[nm];          // d(alpha)
+            complex bbe = -complex(0,1.)*(double)m*Ynm[nm]; // d(beta)
+
+            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe; // dx
+            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
+            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
+
+            complex mult_term = gw*area;
+
+            // which order should these be in?
+            auto rdotn = bxd*n0 + byd*n1 + bzd*n2;
+            auto rdotg = bxd*gw*area*c0 + byd*gw*area*c1 + bzd*gw*area*c2;
+            M[1][0][nms] += (rdotn * gw*area*c0 + rdotg * n0);
+            M[1][1][nms] += (rdotn * gw*area*c1 + rdotg * n1);
+            M[1][2][nms] += (rdotn * gw*area*c2 + rdotg * n2);
+
+            auto xdotg = source[0]*gw*area*c0 + source[1]*gw*area*c1 + source[2]*gw*area*c2;
+            auto ndotx = n0*source[0] + n1*source[1] + n2*source[2];
+            M[1][3][nms] += rdotn * xdotg + rdotg * ndotx;
+          }
+        }
+      }
+    }
   }
 
   void M2M(const multipole_type& Msource,

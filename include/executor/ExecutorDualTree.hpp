@@ -61,6 +61,8 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   typedef typename kernel_type::local_type local_type;
   //! Kernel point type
   typedef typename kernel_type::point_type point_type;
+  //! Kernel value_type
+  typedef typename kernel_type::kernel_value_type kernel_value_type;
   //! Kernel source type
   typedef typename kernel_type::source_type source_type;
   //! Kernel target type
@@ -78,7 +80,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     typedef body_type argument_type;
     BodyTransformer(const Indexable& value) : value_(value) {}
     result_type operator()(const body_type& body) const {
-      return value_[body.number()]; // TODO: TEMP to avoid permutation for now
+      return value_[body.number()]; // TODO: TEMP to avoid permutation
     }
    private:
     Indexable value_;
@@ -148,6 +150,8 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
         L_((opts.evaluator == FMMOptions::TREECODE ? 0 : target_tree_.boxes())),
         sources(sfirst, slast),
         targets(tfirst, tlast) {
+    s_ = sources.begin();
+    t_ = targets.begin();
   }
 
   void insert(EvaluatorBase<self_type>* eval) {

@@ -48,6 +48,9 @@ int main(int argc, char **argv)
 
   FMMOptions opts = get_options(argc, argv);
 
+  opts.local_evaluation = true;
+  opts.sparse_local = true;
+
   // parse custom command line args
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i],"-N") == 0) {

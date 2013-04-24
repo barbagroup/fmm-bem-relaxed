@@ -13,7 +13,7 @@ class EvalInteractionQueue : public EvaluatorBase<Context>
 {
   //! type of box
   typedef typename Context::box_type box_type;
-  //! Pair of boxees
+  //! Pair of boxes
   typedef std::pair<box_type, box_type> box_pair;
   //! List for P2P interactions
   mutable std::vector<box_pair> P2P_list;
@@ -103,10 +103,9 @@ private:
 
 template <typename Context, typename Options>
 EvaluatorBase<Context>* make_interact_queue(Context&, Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM) {
+  if (opts.evaluator == FMMOptions::FMM)
     return new EvalInteractionQueue<Context, true>();
-  } else if (opts.evaluator == FMMOptions::TREECODE) {
+  if (opts.evaluator == FMMOptions::TREECODE)
     return new EvalInteractionQueue<Context, false>();
-  }
   return nullptr;
 }

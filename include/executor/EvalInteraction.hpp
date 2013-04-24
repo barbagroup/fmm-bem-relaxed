@@ -81,10 +81,9 @@ class EvalInteraction : public EvaluatorBase<Context>
 
 template <typename Context, typename Options>
 EvaluatorBase<Context>* make_interact(Context&, Options& opts) {
-  if (opts.evaluator == FMMOptions::FMM) {
+  if (opts.evaluator == FMMOptions::FMM)
     return new EvalInteraction<Context, true>();
-  } else if (opts.evaluator == FMMOptions::TREECODE) {
+  if (opts.evaluator == FMMOptions::TREECODE)
     return new EvalInteraction<Context, false>();
-  }
   return nullptr;
 }

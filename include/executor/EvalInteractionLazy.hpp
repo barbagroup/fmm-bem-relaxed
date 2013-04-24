@@ -19,7 +19,7 @@
 template <typename Context, bool IS_FMM>
 class EvalInteractionLazy : public EvaluatorBase<Context>
 {
-  //! type of box
+  //! Type of box
   typedef typename Context::box_type box_type;
   //! Pair of boxees
   typedef std::pair<box_type, box_type> box_pair;

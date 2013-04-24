@@ -78,12 +78,22 @@ class FMM_plan
 		return results;
 	}
 
-	//private:
+  /** Access the to Kernel this plan is operating with
+   */
+  kernel_type& kernel() {
+    return K;
+  }
+
+  /** Access to the Options this plan is operating with
+   */
+  FMMOptions& options() {
+    return opts_;  // XXX: Need to update the plan with any new settings...
+  }
+
+ private:
 	ExecutorBase<kernel_type>* executor_;
 	kernel_type K;
 	FMMOptions opts_;
-
- private:
 
 	void check_kernel() {
 		if (opts_.evaluator == FMMOptions::FMM &&

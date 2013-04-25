@@ -44,9 +44,7 @@ void make_evaluators(Executor& executor, Options& opts)
 		executor.insert(inter);
 		auto downward = make_downward(executor, opts);
 		executor.insert(downward);
-#ifndef TEMP
 	}
-#endif
 }
 
 /** Single tree executor construction

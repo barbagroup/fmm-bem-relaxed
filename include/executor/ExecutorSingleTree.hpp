@@ -3,12 +3,15 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "TreeContext.hpp"
+#include "tree/TreeContext.hpp"
+#include "executor/INITM.hpp"
+#include "executor/INITL.hpp"
 
 #include "INITM.hpp"
 #include "INITL.hpp"
 
 #include <type_traits>
+#include <functional>
 
 /** @class Executor
  * @brief A very general Executor class. This provides a context to any tree
@@ -86,7 +89,7 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
-  //! Store whether we have a treecode or not
+  //! Whether we're using a treecode or not
   bool isTreecode;
 
  public:

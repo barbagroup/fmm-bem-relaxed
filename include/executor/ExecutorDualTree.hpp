@@ -3,9 +3,10 @@
 #include "ExecutorBase.hpp"
 #include "EvaluatorBase.hpp"
 
-#include "TreeContext.hpp"
+#include "tree/TreeContext.hpp"
 
 #include <type_traits>
+#include <functional>
 
 /** @class Executor
  * @brief A very general Executor class. This provides a context to any tree
@@ -87,6 +88,9 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   //! Multipole acceptance
   std::function<bool(const box_type&, const box_type&)> acceptMultipole;
 
+  //! is treecode evaluator being used
+  bool isTreecode;
+
  public:
   //! Constructor
   template <typename SourceIter, typename TargetIter, typename Options>
@@ -102,7 +106,8 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
                                    0 : source_tree_.boxes())),
         s_(std::vector<source_type>(sfirst, slast)),
     t_(std::vector<target_type>(tfirst, tlast)),
-    acceptMultipole(opts.MAC()) {
+    acceptMultipole(opts.MAC()),
+    isTreecode(opts.evaluator == FMMOptions::TREECODE ? true : false) {
   }
 
   void insert(EvaluatorBase<self_type>* eval) {

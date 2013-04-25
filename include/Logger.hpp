@@ -1,11 +1,49 @@
 #pragma once
 
-#include "Util.hpp"
-
 #include <iostream>
 #include <iomanip>
 
 #include <map>
+
+
+#include <sys/time.h>
+
+/** Clock class, useful when timing code.
+ */
+struct Clock {
+  /** Construct a Clock and start timing. */
+  Clock() {
+    start();
+  }
+  /** Start the clock. */
+  inline void start() {
+    time_ = now();
+  }
+  /** Return the seconds elapsed since the last start. */
+  inline double elapsed() const {
+    timeval tv = now();
+    timersub(&tv, &time_, &tv);
+    return seconds(tv);
+  }
+  /** Return the seconds difference between the Clocks */
+  inline double operator-(const Clock& clock) const {
+    timeval tv;
+    timersub(&time_, &clock.time_, &tv);
+    return seconds(tv);
+  }
+ private:
+  timeval time_;
+  inline static timeval now() {
+    timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv;
+  }
+  inline static double seconds(const timeval& tv) {
+    return tv.tv_sec + 1e-6 * tv.tv_usec;
+  }
+};
+
+
 
 //! Timer and Trace logger
 class Logger {
@@ -19,6 +57,12 @@ class Logger {
     }
     void start() {
       start_time.start();
+    }
+    double log(const Clock& end_time) {
+      double elapsed = (end_time - start_time);
+      total_time += elapsed;
+      hit += 1;
+      return elapsed;
     }
     friend std::ostream& operator<<(std::ostream& s, const EventData& e) {
       return s << e.hit << " (calls) * " << e.total_time/e.hit << " (sec/call) = "
@@ -38,15 +82,10 @@ class Logger {
   //! Return the elasped time for given event
   double stop(const std::string& event, bool print_event = false) {
     Clock end_time;      // Stop the clock
-    EventData& event_data = data_[event];
-
-    // Accumulate event times in the log
-    double elapsed = end_time - event_data.start_time;
-    event_data.total_time += elapsed;
-    event_data.hit += 1;
+    double elapsed = data_[event].log(end_time);
 
     if (print_event)
-      std::cout << event_data << std::endl;
+      std::cout << data_[event] << std::endl;
 
     return elapsed;
   }

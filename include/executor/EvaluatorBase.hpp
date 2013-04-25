@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 template <typename Context>
 struct EvaluatorBase {
   typedef Context context_type;

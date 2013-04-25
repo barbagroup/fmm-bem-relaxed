@@ -58,6 +58,15 @@ class FMM_plan
 		delete executor_;
 	}
 
+  // MODIFIER
+
+  kernel_type& kernel() {
+    return K;
+  }
+  const kernel_type& kernel() const {
+    return K;
+  }
+
 	// EXECUTE
 
 	/** Execute this FMM plan

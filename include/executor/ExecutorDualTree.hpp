@@ -196,9 +196,6 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   inline point_type center(const box_type& b) const {
     return b.center();
   }
-  inline double box_size(const box_type& b) const {
-    return b.side_length();
-  }
 
   typedef body_transform<source_iterator> body_source_iterator;
   inline body_source_iterator source_begin(const box_type& b) const {

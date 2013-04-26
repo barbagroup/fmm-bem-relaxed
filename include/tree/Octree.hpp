@@ -423,18 +423,19 @@ class Octree
     box_iterator()
         : box_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-    Box dereference() const {
-      return Box(this->base_reference(), tree_);
-    }
    private:
     const tree_type* tree_;
+    friend class Octree;
     box_iterator(unsigned idx, const tree_type* tree)
         : box_iterator::iterator_adaptor(idx), tree_(tree) {
     }
     box_iterator(const Box& b)
         : box_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
-    friend class Octree;
+    friend class boost::iterator_core_access;
+    Box dereference() const {
+      return Box(this->base_reference(), tree_);
+    }
   };
 
   /** @struct Tree::body_iterator
@@ -452,18 +453,19 @@ class Octree
     body_iterator()
         : body_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-    Body dereference() const {
-      return Body(this->base_reference(), tree_);
-    }
    private:
     const tree_type* tree_;
+    friend class Octree;
     body_iterator(unsigned idx, const tree_type* tree)
         : body_iterator::iterator_adaptor(idx), tree_(tree) {
     }
     body_iterator(const Body& b)
         : body_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
-    friend class Octree;
+    friend class boost::iterator_core_access;
+    Body dereference() const {
+      return Body(this->base_reference(), tree_);
+    }
   };
 
   /** Construct an octree encompassing a bounding box */
@@ -474,8 +476,7 @@ class Octree
   /** Construct an octree encompassing a bounding box
    * and insert a range of points */
   template <typename PointIter, typename Options>
-  Octree(PointIter first, PointIter last,
-         Options& opts)
+  Octree(PointIter first, PointIter last, Options& opts)
       : coder_(get_boundingbox(first, last)) {
     construct_tree(first, last, opts.max_per_box());
   }
@@ -746,6 +747,7 @@ class Octree
   }
 
  private:
+  // Just making sure for now
   Octree(const Octree& other_tree) {};
   void operator=(const Octree& other_tree) {};
 };

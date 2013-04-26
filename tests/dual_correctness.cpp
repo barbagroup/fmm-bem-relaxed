@@ -75,7 +75,7 @@ int main(int argc, char **argv)
       printf("[%03d] exact: %lg, FMM: %lg\n", k, exact[k], result[k]);
 
       if ((exact[k] - result[k]) / exact[k] > 1e-13)
-	++wrong_results;
+        ++wrong_results;
     }
     printf("Wrong counts: %d\n", wrong_results);
   }

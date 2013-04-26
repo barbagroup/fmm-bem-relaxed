@@ -70,8 +70,7 @@ class Octree
       result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
     // TODO: improve
-    point_type dim = result.dimensions();
-    auto maxdim = *std::max_element(dim.begin(), dim.end());
+    auto maxdim = norm_inf(result.dimensions());
     point_type a = result.min() + maxdim * (1 + 1e-6);
     result |= a;
     //std::cout << "Bounding Box: " << result << "\n";

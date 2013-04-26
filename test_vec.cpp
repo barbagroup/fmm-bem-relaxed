@@ -1,5 +1,7 @@
 #include "Vec.hpp"
 
+#include <iostream>
+
 int main() {
   Vec<3,double> v1 = Vec<3,double>(0.,1.,2);
   Vec<3,double> v2 = Vec<3,double>(3,4,5);

@@ -1,6 +1,6 @@
 #pragma once
 /** @file Vec.hpp
- * @brief A custom constant size vector class based on a Boost uBlas vector.
+ * @brief A custom fixed size vector class based on a Boost uBlas vector.
  *
  * This provides convenient constructors to initialize coordinates,
  * imports common operators such as norms and inner products, and implements
@@ -14,17 +14,16 @@ namespace ublas = boost::numeric::ublas;
 
 #include <type_traits>
 
-
-// Fixed array - with allocator for size_type and difference_type
-template <class T, std::size_t N>
-class fixed_array:
-    public ublas::storage_array<fixed_array<T, N>>
+// Fixed array
+template <class T, std::size_t N, class ALLOC = std::allocator<T>>
+class fixed_array
+    : public ublas::storage_array<fixed_array<T, N, ALLOC>>
 {
-  typedef fixed_array<T, N> self_type;
+  typedef fixed_array<T, N, ALLOC> self_type;
  public:
   // No allocator_type as ALLOC is not used for allocation
-  typedef unsigned size_type;
-  typedef unsigned difference_type;
+  typedef typename ALLOC::size_type size_type;
+  typedef typename ALLOC::difference_type difference_type;
   typedef T value_type;
   typedef const T& const_reference;
   typedef T& reference;
@@ -35,106 +34,108 @@ class fixed_array:
 
   // Construction and destruction
   BOOST_UBLAS_INLINE
-  fixed_array () {
+  fixed_array() {
   }
   explicit BOOST_UBLAS_INLINE
-  fixed_array (size_type size) {
+  fixed_array(size_type size) {
     (void) size;
-    BOOST_UBLAS_CHECK (size == N, bad_size ());
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
     // data_ (an array) elements are already default constructed
   }
   BOOST_UBLAS_INLINE
-  fixed_array (size_type size, const value_type &init) {
+  fixed_array(size_type size, const value_type& init) {
     (void) size;
-    BOOST_UBLAS_CHECK (size == N, bad_size ());
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
     // ISSUE elements should be value constructed here, but we must fill instead as already default constructed
-    std::fill (begin(), end(), init) ;
+    std::fill(begin(), end(), init) ;
   }
   BOOST_UBLAS_INLINE
-  fixed_array (const fixed_array &c) {
+  fixed_array(const fixed_array &c) {
     // ISSUE elements should be copy constructed here, but we must copy instead as already default constructed
-    std::copy (c.begin(), c.end(), begin());
+    std::copy(c.begin(), c.end(), begin());
   }
 
   // Resizing
   BOOST_UBLAS_INLINE
-  void resize (size_type size) {
-    BOOST_UBLAS_CHECK (size == N, bad_size ());
+  void resize(size_type size) {
+    (void) size;
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
   }
   BOOST_UBLAS_INLINE
-  void resize (size_type size, value_type init) {
-    BOOST_UBLAS_CHECK (size == N, bad_size ());
+  void resize(size_type size, value_type init) {
+    (void) size;
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
   }
 
   // Random Access Container
   BOOST_UBLAS_INLINE
-  size_type max_size () const {
+  size_type max_size() const {
     return N;
   }
 
   BOOST_UBLAS_INLINE
-  bool empty () const {
+  bool empty() const {
     return N == 0;
   }
 
   BOOST_UBLAS_INLINE
-  size_type size () const {
+  size_type size() const {
     return N;
   }
 
   // Element access
   BOOST_UBLAS_INLINE
-  const_reference operator [] (size_type i) const {
-    BOOST_UBLAS_CHECK (i < N, bad_index ());
-    return data_ [i];
+  const_reference operator[](size_type i) const {
+    BOOST_UBLAS_CHECK (i < N, ublas::bad_index ());
+    return data_[i];
   }
   BOOST_UBLAS_INLINE
-  reference operator [] (size_type i) {
-    BOOST_UBLAS_CHECK (i < N, bad_index ());
-    return data_ [i];
+  reference operator[](size_type i) {
+    BOOST_UBLAS_CHECK (i < N, ublas::bad_index ());
+    return data_[i];
   }
 
   // Assignment
   BOOST_UBLAS_INLINE
-  fixed_array &operator = (const fixed_array &a) {
+  fixed_array& operator=(const fixed_array& a) {
     if (this != &a) {
-      std::copy (a.data_, a.data_ + N, data_);
+      std::copy(a.data_, a.data_ + N, data_);
     }
     return *this;
   }
   BOOST_UBLAS_INLINE
-  fixed_array &assign_temporary (fixed_array &a) {
+  fixed_array& assign_temporary(fixed_array& a) {
     *this = a;
     return *this;
   }
 
   // Swapping
   BOOST_UBLAS_INLINE
-  void swap (fixed_array &a) {
+  void swap(fixed_array& a) {
     if (this != &a) {
-      std::swap_ranges (data_, data_ + N, a.data_);
+      std::swap_ranges(data_, data_ + N, a.data_);
     }
   }
   BOOST_UBLAS_INLINE
-  friend void swap (fixed_array &a1, fixed_array &a2) {
-    a1.swap (a2);
+  friend void swap(fixed_array& a1, fixed_array& a2) {
+    a1.swap(a2);
   }
 
   BOOST_UBLAS_INLINE
-  const_iterator begin () const {
+  const_iterator begin() const {
     return data_;
   }
   BOOST_UBLAS_INLINE
-  const_iterator end () const {
+  const_iterator end() const {
     return data_ + N;
   }
 
   BOOST_UBLAS_INLINE
-  iterator begin () {
+  iterator begin() {
     return data_;
   }
   BOOST_UBLAS_INLINE
-  iterator end () {
+  iterator end() {
     return data_ + N;
   }
 
@@ -143,24 +144,24 @@ class fixed_array:
   typedef std::reverse_iterator<iterator> reverse_iterator;
 
   BOOST_UBLAS_INLINE
-  const_reverse_iterator rbegin () const {
-    return const_reverse_iterator (end ());
+  const_reverse_iterator rbegin() const {
+    return const_reverse_iterator(end());
   }
   BOOST_UBLAS_INLINE
-  const_reverse_iterator rend () const {
-    return const_reverse_iterator (begin ());
+  const_reverse_iterator rend() const {
+    return const_reverse_iterator(begin());
   }
   BOOST_UBLAS_INLINE
-  reverse_iterator rbegin () {
-    return reverse_iterator (end ());
+  reverse_iterator rbegin() {
+    return reverse_iterator(end());
   }
   BOOST_UBLAS_INLINE
-  reverse_iterator rend () {
-    return reverse_iterator (begin ());
+  reverse_iterator rend() {
+    return reverse_iterator(begin());
   }
 
  private:
-  value_type data_ [N];
+  value_type data_[N];
 };
 
 
@@ -168,14 +169,14 @@ class fixed_array:
 // Fixed vector class
 // --------------------
 
-/// \brief a dense vector of values of type \c T, of fixed size \f$N\f$.
-/// A dense vector of values of type \c T, of fixed size \f$N\f$.
-/// Elements are constructed by the storage type \c fixed_array, which \b need \b not \b initialise their value.
+/// @brief A dense vector of values of type @c T, of fixed size @f$N@f$.
+/// A dense vector of values of type @c T, of fixed size @f$N@f$.
+/// Elements are constructed by the storage type @c fixed_array
 template<class T, std::size_t N>
-class fixed_vector:
-    public ublas::vector<T, fixed_array<T, N>> {
-
-  typedef ublas::vector<T, fixed_array<T, N>> vector_type;
+class fixed_vector
+    : public ublas::vector<T, fixed_array<T,N>>
+{
+  typedef ublas::vector<T, fixed_array<T,N>> vector_type;
 
   /** Template unrolling for assigning an argument pack to this->data() */
   template <unsigned I>
@@ -205,72 +206,67 @@ class fixed_vector:
 
   // Construction and destruction
   BOOST_UBLAS_INLINE
-  fixed_vector ():
-      vector_type (N) {}
+  fixed_vector()
+      : vector_type(N,T()) {}
   BOOST_UBLAS_INLINE
-  fixed_vector (const fixed_vector &v):
-      vector_type (v) {}
+  fixed_vector(const fixed_vector& v)
+      : vector_type(v) {}
   template<class A2>              // Allow vector<T,fixed_array<N> construction
   BOOST_UBLAS_INLINE
-  fixed_vector (const ublas::vector<T, A2> &v):
-      vector_type (v) {}
+  fixed_vector(const ublas::vector<T, A2>& v)
+      : vector_type(v) {}
   template<class AE>
   BOOST_UBLAS_INLINE
-  fixed_vector (const ublas::vector_expression<AE> &ae):
-      vector_type (ae) {}
+  fixed_vector(const ublas::vector_expression<AE>& ae)
+      : vector_type(ae) {
+  }
   BOOST_UBLAS_INLINE
-  ~fixed_vector () {}
+  ~fixed_vector() {}
 
   /** Construct with value for all coordinates */
-  explicit fixed_vector(const T& t)
-      : vector_type(N,t) {
-  }
+  //BOOST_UBLAS_INLINE
+  //explicit fixed_vector(const T& t)
+  //    : vector_type(N,t) {}
   /** Construct with values for each coordinate */
   template <typename ...Arg,
             typename std::enable_if<sizeof...(Arg) == N,int>::type=0,
             typename std::enable_if<all_convertible<T,Arg...>::value,int>::type=0>
+  BOOST_UBLAS_INLINE
   explicit fixed_vector(Arg ...args)
       : vector_type(N) {
     insert<0>(args...);
   }
 
   // Assignment
-#ifdef BOOST_UBLAS_MOVE_SEMANTICS
+
   /*! @note "pass by value" the key idea to enable move semantics */
   BOOST_UBLAS_INLINE
-  fixed_vector &operator = (fixed_vector v) {
-    vector_type::operator = (v);
+  fixed_vector& operator=(const fixed_vector& v) {
+    vector_type::operator=(v);
     return *this;
   }
-#else
-  BOOST_UBLAS_INLINE
-  fixed_vector &operator = (const fixed_vector &v) {
-    vector_type::operator = (v);
-    return *this;
-  }
-#endif
   template<class A2>         // Generic vector assignment
   BOOST_UBLAS_INLINE
-      fixed_vector &operator = (const ublas::vector<T, A2> &v) {
-    vector_type::operator = (v);
+  fixed_vector& operator=(const ublas::vector<T, A2>& v) {
+    vector_type::operator=(v);
     return *this;
   }
   template<class C>          // Container assignment without temporary
   BOOST_UBLAS_INLINE
-      fixed_vector &operator = (const ublas::vector_container<C> &v) {
-    vector_type::operator = (v);
+  fixed_vector& operator=(const ublas::vector_container<C>& v) {
+    vector_type::operator=(v);
     return *this;
   }
   template<class AE>
   BOOST_UBLAS_INLINE
-      fixed_vector &operator = (const ublas::vector_expression<AE> &ae) {
-    vector_type::operator = (ae);
+  fixed_vector& operator=(const ublas::vector_expression<AE>& ae) {
+    vector_type::operator=(ae);
     return *this;
   }
 };
 
 
-  template <std::size_t N, typename T>
+template <std::size_t N, typename T>
 using Vec = fixed_vector<T,N>;
 
 
@@ -279,7 +275,7 @@ using Vec = fixed_vector<T,N>;
 #include <iostream>
 
 /** Equality comparison (weak) */
-template <unsigned N, typename T>
+template <std::size_t N, typename T>
 BOOST_UBLAS_INLINE
 bool operator==(const Vec<N,T>& a,
                 const Vec<N,T>& b) {
@@ -331,7 +327,6 @@ inline auto norm(const ublas::vector_expression<E>& a)
 /////////////////////////////////
 // Vector Expression Operators //
 /////////////////////////////////
-
 
 /** Scalar addition */
 template <class T1, class E2>
@@ -438,3 +433,4 @@ operator*(const ublas::vector_expression<E1>& e1,
     >::expression_type expression_type;
   return expression_type(e1(), e2());
 }
+

@@ -70,10 +70,9 @@ class Octree
       result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
     // TODO: improve
-    auto maxdim = norm_inf(result.dimensions());
-    point_type a = result.min() + maxdim * (1 + 1e-6);
+    point_type a = result.min() + norm_inf(result.dimensions()) * (1 + 1e-6);
     result |= a;
-    //std::cout << "Bounding Box: " << result << "\n";
+    std::cout << "Bounding Box: " << result << "\n";
     return result;
   }
 
@@ -86,7 +85,7 @@ class Octree
     /** The number of bits per dimension. #cells = 8^L. */
     static constexpr unsigned levels = 10;
     /** The number of cells per side of the bounding box (2^L). */
-    static constexpr code_type cells_per_side = code_type(1) << levels;
+    static constexpr unsigned cells_per_side = unsigned(1) << levels;
     /** One more than the largest code (8^L). */
     static constexpr code_type end_code = code_type(1) << (3*levels);
 
@@ -99,22 +98,28 @@ class Octree
 
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
-      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_*cells_per_side));
+      point_type pmax = pmin_ + cells_per_side * cell_size_;
+      return BoundingBox<point_type>(pmin_, pmax);
     }
 
     /** Return the bounding box of the cell with Morton code @a c.
      * @pre c < end_code */
     BoundingBox<point_type> cell(code_type c) const {
       assert(c < end_code);
-      point_type p = pmin_ + deinterleave(c) * cell_size_;
-      return BoundingBox<point_type>(p, p + cell_size_);
+      point_type pmin = pmin_ + cell_size_ * deinterleave(c);
+      return BoundingBox<point_type>(pmin, pmin + cell_size_);
     }
 
     /** Return the Morton code of Point @a p.
      * @pre bounding_box().contains(@a p)
      * @post cell(result).contains(@a p) */
     code_type code(const point_type& p) const {
-      point_type s = (p - pmin_) / cell_size_;
+      //point_type s = (p - pmin_) / cell_size_;
+      point_type s = p;
+      for (unsigned k = 0; k < point_type::dimension; ++k) {
+        s[k] -= pmin_[k];
+        s[k] /= cell_size_[k];
+      }
       assert((unsigned) s[0] < cells_per_side &&
              (unsigned) s[1] < cells_per_side &&
              (unsigned) s[2] < cells_per_side);

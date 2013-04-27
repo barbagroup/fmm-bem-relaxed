@@ -1,5 +1,5 @@
-#include "INITM.hpp"
-#include "INITL.hpp"
+#include "executor/INITM.hpp"
+#include "executor/INITL.hpp"
 
 #include "LaplaceCartesian.hpp"
 #include "LaplaceSpherical.hpp"
@@ -43,7 +43,6 @@ void single_level_test(const Kernel& K)
   point_type M_center(0.125,0,0); // 0.125,0.125);
   INITM::eval(K, M, M_center, 1u);
   K.P2M(s, c, M_center, M);
-
 
   // test M2P
   K.M2P(M, M_center, t, rm2p);

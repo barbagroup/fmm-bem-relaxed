@@ -43,7 +43,7 @@ class YukawaCartesianBEM : public YukawaCartesian
     double Area;
     //! Boundary condition
     BoundaryType BC;
-    Panel() : center(0), normal(0), Area(0), BC(POTENTIAL) {};
+    Panel() : BC(POTENTIAL) {};
     //! copy constructor
     Panel(const Panel& p) {
       vertices = p.vertices;
@@ -64,12 +64,12 @@ class YukawaCartesianBEM : public YukawaCartesian
       center = (p0+p1+p2)/3;
 
       // area & normal
-      auto L0 = p2-p0;
-      auto L1 = p1-p0;
+      point_type L0 = p2-p0;
+      point_type L1 = p1-p0;
 
-      auto c = point_type(L0[1]*L1[2]-L0[2]*L1[1],
-                          -(L0[0]*L1[2]-L0[2]*L1[0]),
-                          L0[0]*L1[1]-L0[1]*L1[0]);
+      point_type c = point_type(L0[1]*L1[2]-L0[2]*L1[1],
+                                -(L0[0]*L1[2]-L0[2]*L1[0]),
+                                L0[0]*L1[1]-L0[1]*L1[0]);
       Area = 0.5*norm(c);
       normal = c/2/Area;
 
@@ -186,7 +186,7 @@ class YukawaCartesianBEM : public YukawaCartesian
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(K);
       double res=0.;
       for (unsigned i=0; i<K; i++) {
-        auto dx = target - source.quad_points[i];
+        point_type dx = target - source.quad_points[i];
         // dG/dn = dx.n / |dx|^3
         auto r  = norm(dx);
         auto inv_r = 1./r;

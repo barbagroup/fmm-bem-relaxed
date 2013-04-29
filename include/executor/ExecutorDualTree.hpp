@@ -111,17 +111,17 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
   //! Local expansions corresponding to Box indices in Tree
   typedef std::vector<local_type> local_container;
   local_container L_;
+
   //! The sources associated with bodies in the source_tree
-  typedef std::vector<source_type> source_container;
+  typedef const std::vector<source_type> source_container;
   typedef typename source_container::const_iterator source_iterator;
   source_container sources;
   source_iterator s_;
   //! The targets associated with bodies in the target_tree
-  typedef std::vector<target_type> target_container;
+  typedef const std::vector<target_type> target_container;
   typedef typename target_container::const_iterator target_iterator;
   target_container targets;
   target_iterator t_;
-
 
   //! Iterator to the start of the charge vector
   typedef std::vector<charge_type> charge_container;
@@ -199,9 +199,6 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
 
   inline point_type center(const box_type& b) const {
     return b.center();
-  }
-  inline double box_size(const box_type& b) const {
-    return b.side_length();
   }
 
   typedef body_transform<source_iterator> body_source_iterator;

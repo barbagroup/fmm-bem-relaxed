@@ -321,8 +321,8 @@ class LaplaceSpherical
            const target_type& target, result_type& result) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
-    point_type spherical(0);
-    point_type cartesian(0);
+    point_type spherical;
+    point_type cartesian;
     real r, theta, phi;
     cart2sph(r,theta,phi,dist);
     evalLocal(r,theta,phi,Ynm,YnmTheta);
@@ -403,8 +403,8 @@ class LaplaceSpherical
            const target_type& target, result_type& result) const {
     complex Ynm[4*P*P], YnmTheta[4*P*P];
     point_type dist = target - center;
-    point_type spherical(0);
-    point_type cartesian(0);
+    point_type spherical;
+    point_type cartesian;
     real r, theta, phi;
     cart2sph(r,theta,phi,dist);
     evalMultipole(r,theta,phi,Ynm,YnmTheta);
@@ -506,7 +506,7 @@ class LaplaceSpherical
   /** Cartesian to spherical coordinates
    */
   void cart2sph(real& r, real& theta, real& phi,
-                point_type dist = point_type(0)) const {
+                point_type dist = point_type()) const {
     r = norm(dist) + EPS;                                       // r = sqrt(x^2 + y^2 + z^2) + eps
     theta = acos(dist[2] / r);                                  // theta = acos(z / r)
     if( fabs(dist[0]) + fabs(dist[1]) < EPS ) {                 // If |x| < eps & |y| < eps

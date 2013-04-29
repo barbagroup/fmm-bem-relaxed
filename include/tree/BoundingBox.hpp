@@ -26,18 +26,18 @@ class BoundingBox {
 
   /** Construct an empty bounding box. */
   BoundingBox()
-    : empty_(true) {
+      : empty_(true) {
   }
   /** Construct the minimal bounding box containing @a p.
    * @post contains(@a p) && min() == @a p && max() == @a p */
   explicit BoundingBox(const point_type& p)
-    : empty_(false), min_(p), max_(p) {
+      : empty_(false), min_(p), max_(p) {
   }
   /** Construct the minimal bounding box containing a given sphere.
    * @param[in] center center of the sphere
    * @param[in] radius radius of the sphere */
   BoundingBox(const point_type& center, double radius)
-    : empty_(false) {
+      : empty_(false) {
     radius = fabs(radius);
     min_ = center - radius;
     max_ = center + radius;
@@ -45,13 +45,13 @@ class BoundingBox {
   /** Construct the minimal bounding box containing @a p1 and @a p2.
    * @post contains(@a p1) && contains(@a p2) */
   BoundingBox(const point_type& p1, const point_type& p2)
-    : empty_(false), min_(p1), max_(p1) {
+      : empty_(false), min_(p1), max_(p1) {
     *this |= p2;
   }
   /** Construct a bounding box containing the points in [first, last). */
   template <typename IT>
   BoundingBox(IT first, IT last)
-    : empty_(true) {
+      : empty_(true) {
     insert(first, last);
   }
 
@@ -124,7 +124,7 @@ class BoundingBox {
       empty_ = false;
       min_ = max_ = p;
     } else {
-      for (unsigned i=0; i!=point_type::dimension; ++i) {
+      for (unsigned i = 0; i != point_type::dimension; ++i) {
         min_[i] = std::min(min_[i], p[i]);
         max_[i] = std::max(max_[i], p[i]);
       }
@@ -150,28 +150,26 @@ class BoundingBox {
   }
 
   /** Intersect this bounding box with @a box. */
-  BoundingBox &operator&=(const BoundingBox& box) {
+  BoundingBox& operator&=(const BoundingBox& box) {
     if (empty() || box.empty())
-      goto erase;
-    for (int i = 0; i!=point_type::dimension; ++i) {
+      return clear();
+    for (unsigned i = 0; i != point_type::dimension; ++i) {
       if (min_[i] > box.max_[i] || max_[i] < box.min_[i])
-	goto erase;
+        return clear();
       if (min_[i] < box.min_[i])
-	min_[i] = box.min_[i];
+        min_[i] = box.min_[i];
       if (max_[i] > box.max_[i])
-	max_[i] = box.max_[i];
+        max_[i] = box.max_[i];
     }
-    return *this;
- erase:
-    clear();
     return *this;
   }
 
   /** Clear the bounding box.
    * @post empty() */
-  void clear() {
+  BoundingBox& clear() {
     empty_ = true;
     min_ = max_ = point_type();
+    return *this;
   }
 
   /** Write a BoundingBox to an output stream.
@@ -180,12 +178,12 @@ class BoundingBox {
    * written as "[min:max] (dim)".
    */
   inline friend std::ostream& operator<<(std::ostream& s,
-					 const BoundingBox<point_type>& box) {
+                                         const BoundingBox<point_type>& box) {
     if (box.empty())
       return (s << '[' << ']');
     else
       return (s << '[' << box.min() << ':' << box.max() << "] ("
-	      << box.dimensions() << ')');
+              << box.dimensions() << ')');
   }
 
  private:

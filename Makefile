@@ -22,7 +22,7 @@ endif
 LINK := $(CXX)
 
 # define any compile-time flags
-CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra #-ffast-math
+CFLAGS := -fopenmp -funroll-loops -O3 -W -Wall -Wextra
 ifeq ($(DEBUG),1)
 CFLAGS += -g -fno-inline
 endif
@@ -72,7 +72,7 @@ test_vec: test_vec.o
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) serialrun test_tree
+	-$(RM) serialrun test_tree test_vec
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

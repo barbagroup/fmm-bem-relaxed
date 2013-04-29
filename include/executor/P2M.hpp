@@ -57,6 +57,8 @@ class P2M
   {
 #ifdef DEBUG
     printf("P2M: %d\n", box.index());
+    printf("  Bodies %d-%d\n", box.body_begin()->index(), (--box.body_end())->index());
+    printf("  Bodies %d-%d\n", box.body_begin()->number(), (--box.body_end())->number());
 #endif
 
     P2M::eval(K,

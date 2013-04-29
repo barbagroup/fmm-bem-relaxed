@@ -42,7 +42,7 @@ public:
       sparse_local(false),
 		  evaluator(FMM),
 		  MAC_(DefaultMAC(0.5)),
-		  NCRIT_(126),
+		  NCRIT_(64),
 		  printTree(false) {
 	};
 

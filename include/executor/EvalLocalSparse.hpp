@@ -26,14 +26,14 @@ struct SparseMatrix
   std::vector<T> dot(VecType& x) const
   {
     // init return vector
-    std::vector<T> y(x.size(),T(0));
+    std::vector<T> y(x.size(),T());
 
     // matvec
     I jj, j;
     T yy;
     #pragma omp parallel for private(j,jj,yy)
     for (I i=0; i<rows; i++) {
-      yy = T(0);
+      yy = T();
       for (jj=offsets[i]; jj<offsets[i+1]; jj++) {
         j = indices[jj];
 
@@ -51,14 +51,14 @@ struct SparseMatrix
   std::vector<T> dot(VecType& x, double droptol) const
   {
     // init return vector
-    std::vector<T> y(x.size(),T(0));
+    std::vector<T> y(x.size(),T());
 
     // matvec
     I j, jj;
     T yy, v;
     #pragma omp parallel for private(j,jj,yy,v)
     for (I i=0; i<rows; i++) {
-      yy = T(0);
+      yy = T();
       for (jj=offsets[i]; jj<offsets[i+1]; jj++) {
         j = indices[jj];
 

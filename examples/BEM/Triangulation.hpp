@@ -8,16 +8,6 @@
 #include "Vec.hpp"
 #include <fstream>
 
-template <typename vector>
-void normalise(vector& v)
-{
-  auto lens = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-
-  v[0] /= lens;
-  v[1] /= lens;
-  v[2] /= lens;
-}
-
 struct triangle
 {
   typedef struct triangle triangle_type;
@@ -26,13 +16,14 @@ struct triangle
   vertex_type v1_;
   vertex_type v2_;
 
-  triangle() : v0_(0), v1_(0), v2_(0) {};
-  triangle(vertex_type v0, vertex_type v1, vertex_type v2) : v0_(v0), v1_(v1), v2_(v2) {};
+  triangle() {};
+  triangle(vertex_type v0, vertex_type v1, vertex_type v2)
+      : v0_(v0), v1_(v1), v2_(v2) {}
   // copy constructor
-  triangle(const triangle& t) : v0_(t.v0_), v1_(t.v1_), v2_(t.v2_) {};
+  triangle(const triangle& t)
+      : v0_(t.v0_), v1_(t.v1_), v2_(t.v2_) {}
   // assignment
-  triangle& operator=(const triangle& t)
-  {
+  triangle& operator=(const triangle& t) {
     v0_ = t.v0_;
     v1_ = t.v1_;
     v2_ = t.v2_;
@@ -42,13 +33,13 @@ struct triangle
   std::vector<triangle_type> split() {
     std::vector<triangle_type> r(4);
 
-    auto a = (v0_+v2_)*0.5;
-    auto b = (v0_+v1_)*0.5;
-    auto c = (v1_+v2_)*0.5;
+    vertex_type a = (v0_+v2_)*0.5;
+    vertex_type b = (v0_+v1_)*0.5;
+    vertex_type c = (v1_+v2_)*0.5;
 
-    normalise(a);
-    normalise(b);
-    normalise(c);
+    a /= norm(a);
+    b /= norm(b);
+    c /= norm(c);
 
     // assemble the 4 new triangles
     r[0] = triangle(v0_,b,a);

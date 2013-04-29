@@ -29,17 +29,11 @@ class UnitKernel
   typedef double local_type;
 
   /** Initialize a multipole expansion with the size of a box at this level */
-  void init_multipole(multipole_type& M,
-                      const point_type& extents, unsigned level) const {
-    (void) extents;
-    (void) level;
+  void init_multipole(multipole_type& M, const point_type&, unsigned) const {
     M = 0;
   }
   /** Initialize a local expansion with the size of a box at this level */
-  void init_local(local_type& L,
-                  const point_type& extents, unsigned level) const {
-    (void) extents;
-    (void) level;
+  void init_local(local_type& L, const point_type&, unsigned) const {
     L = 0;
   }
 
@@ -50,7 +44,10 @@ class UnitKernel
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) const {
-    return t == s ? kernel_value_type(0) : kernel_value_type(1);
+    assert(t.size() == 3);
+    assert(s.size() == 3);
+    return (t[0] == s[0] && t[1] == s[1] && t[2] == s[2]) ?
+        kernel_value_type(0) : kernel_value_type(1);
   }
 
   /** Kernel P2M operation

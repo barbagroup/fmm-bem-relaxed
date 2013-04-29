@@ -14,7 +14,7 @@
 //#include <YukawaCartesian.hpp>
 //#include <YukawaSpherical.hpp>
 
-#include <string.h>
+#include <cstring>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
@@ -37,6 +37,9 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
+  //std::vector<std::string> args(argv+1, argv+argc);
+  //std::cout << args[0] << '\n' << args[1] << '\n' << args[2] << std::endl;
+
   int numBodies = 1000, p=5;
   bool checkErrors = true;
   double beta = 0.125;

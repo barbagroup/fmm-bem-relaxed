@@ -170,20 +170,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
     return source_tree_;
   }
 
-  //! Re-initialise all expansions. Needed for use with lazy evaluators in BEM / GMRES
-  void reset_expansions() {
-    for (auto it = this->source_tree().box_begin(); it!=this->source_tree().box_end(); ++it) {
-      INITM::eval(this->kernel(), *this, *it);
-      if (!isTreecode) {
-        INITL::eval(this->kernel(), *this, *it);
-      }
-    }
-  }
-
-  typename tree_type::Box get_box(int idx) const {
-    return source_tree_.get_box(idx);
-  }
-
   // Accessors to make this Executor into a BoxContext
   inline multipole_type& multipole_expansion(const box_type& box) {
     return M_[box.index()];
@@ -200,9 +186,6 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
 
   inline point_type center(const box_type& b) const {
     return b.center();
-  }
-  inline double box_size(const box_type& b) const {
-    return b.side_length();
   }
 
   typedef body_transform<source_iterator> body_source_iterator;

@@ -44,7 +44,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     double Area;
     //! Boundary condition
     BoundaryType BC;
-    Panel() : center(0), normal(0), Area(0), BC(POTENTIAL) {};
+    Panel() : BC(POTENTIAL) {};
     //! copy constructor
     Panel(const Panel& p) {
       vertices = p.vertices;
@@ -338,7 +338,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
 
     for( ; t_begin != t_end ; ++t_begin, ++r_begin ) {
       point_type dist = static_cast<point_type>(*t_begin) - center;
-      point_type cartesian(0);
+      point_type cartesian;
       double r0_temp(0), r1_temp(0);
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
@@ -393,7 +393,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     for (auto t = t_begin; t != t_end; ++t, ++r_begin) {
       double r0_temp = 0., r1_temp = 0.;
       point_type dist = static_cast<point_type>(*t) - center;
-      point_type cartesian(0);
+      point_type cartesian;
       real r, theta, phi;
       cart2sph(r,theta,phi,dist);
       evalMultipole(r,theta,phi,Ynm,YnmTheta);

@@ -29,7 +29,7 @@ struct L2L
  public:
 
   template <typename Kernel, typename Context>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
                           Context& bc,
                           const typename Context::box_type& source,
                           const typename Context::box_type& target)
@@ -38,8 +38,10 @@ struct L2L
     printf("M2M: %d to %d\n", source.index(), target.index());
 #endif
 
+    typename Kernel::point_type r = bc.center(target) - bc.center(source);
     L2L::eval(K,
-              bc.local_expansion(source), bc.local_expansion(target),
-              bc.center(target) - bc.center(source));
+              bc.local_expansion(source),
+              bc.local_expansion(target),
+              r);
   }
 };

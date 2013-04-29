@@ -23,7 +23,7 @@ struct Mat3 {
   };
   // matvec
   Vec<3,T> multiply(Vec<3,T>& x) {
-    Vec<3,T> result(0);
+    Vec<3,T> result;
     result[0] = vals_[0]*x[0]+vals_[1]*x[1]+vals_[2]*x[2];
     result[1] = vals_[3]*x[0]+vals_[4]*x[1]+vals_[5]*x[2];
     result[2] = vals_[6]*x[0]+vals_[7]*x[1]+vals_[8]*x[2];
@@ -105,6 +105,13 @@ void lineInt(ResultType& G, ResultType& dGdn, T z, T x, T v1, T v2, KappaType ka
   }
 }
 
+template <typename T>
+Vec<3,T> cross(const Vec<3,T>& u, const Vec<3,T>& v) {
+  return Vec<3,T>(u[1]*v[2] - u[2]*v[1],
+                  u[2]*v[0] - u[0]*v[2],
+                  u[0]*v[1] - u[1]*v[0]);
+}
+
 template <equation E, typename ResultType=double, typename T=double>
 void intSide(ResultType& G, ResultType& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
 {
@@ -116,8 +123,8 @@ void intSide(ResultType& G, ResultType& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T
   auto L21 = norm(v21);
   vec3 v21u = v21/L21;
 
-  vec3 unit(0.,0.,1.);
-  vec3 orthog = cross(unit,v21u);
+  vec3 unit(0,0,1);
+  vec3 orthog = cross(unit, v21u);
 
   auto alpha = dot(v21,v1)/(L21*L21);
 
@@ -180,7 +187,7 @@ void SemiAnalytical(ResultType& G, ResultType& dGdn, Vec<3,T> y0, Vec<3,T> y1, V
 
   // Put first panel at origin
   vec3 x_panel = x-y0;
-  vec3 y0_panel(0);
+  vec3 y0_panel;
   vec3 y1_panel = y1-y0;
   vec3 y2_panel = y2-y0;
   vec3 X = y1_panel;

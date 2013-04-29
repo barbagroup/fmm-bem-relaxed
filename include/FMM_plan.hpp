@@ -1,11 +1,10 @@
 #pragma once
 
 // FMM includes
-#include "FMMOptions.hpp"
 #include "Vec.hpp"
+
+#include "FMMOptions.hpp"
 #include "KernelTraits.hpp"
-
-
 #include "Logger.hpp"
 
 #include "executor/make_executor.hpp"
@@ -58,6 +57,12 @@ class FMM_plan
 	~FMM_plan() {
 		delete executor_;
 	}
+
+  // MODIFIER
+
+  const kernel_type& kernel() const {
+    return K;
+  }
 
 	// EXECUTE
 

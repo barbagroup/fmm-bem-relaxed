@@ -26,7 +26,7 @@ struct INITM
   }
 
   template <typename Kernel, typename Context>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
                           Context& bc,
                           const typename Context::box_type& b)
   {
@@ -34,7 +34,6 @@ struct INITM
     printf("initM: %d\n", b.index());
 #endif
 
-    typename Kernel::point_type extents(b.side_length());
-    INITM::eval(K, bc.multipole_expansion(b), extents, (unsigned)b.level());
+    INITM::eval(K, bc.multipole_expansion(b), b.extents(), b.level());
   }
 };

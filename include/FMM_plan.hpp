@@ -60,6 +60,9 @@ class FMM_plan
 
   // MODIFIER
 
+  kernel_type& kernel() {
+    return K;
+  }
   const kernel_type& kernel() const {
     return K;
   }
@@ -75,6 +78,7 @@ class FMM_plan
 			return std::vector<result_type>(0);
 		}
 
+    // XXX: results.size == charges.size()?
 		std::vector<result_type> results(charges.size());
 		executor_->execute(charges, results);
 
@@ -82,20 +86,16 @@ class FMM_plan
 		return results;
 	}
 
-  /**
-   * return a non-const reference to the kernel
+  /** Access to the Options this plan is operating with
    */
-  kernel_type& kernel()
-  {
-    return K;
+  FMMOptions& options() {
+    return opts_;  // XXX: Need to update the plan with any new settings...
   }
 
-	//private:
+ private:
 	ExecutorBase<kernel_type>* executor_;
 	kernel_type K;
 	FMMOptions opts_;
-
- private:
 
 	void check_kernel() {
 		if (opts_.evaluator == FMMOptions::FMM &&

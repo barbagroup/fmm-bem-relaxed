@@ -41,10 +41,9 @@ struct EvalUpward : public EvaluatorBase<Context>
 
 template <typename Context, typename Options>
 EvaluatorBase<Context>* make_upward(Context&, Options& opts) {
-	if (opts.evaluator == FMMOptions::TREECODE) {
+	if (opts.evaluator == FMMOptions::TREECODE)
 		return new EvalUpward<Context, false>();
-	} else if (opts.evaluator == FMMOptions::FMM) {
+	if (opts.evaluator == FMMOptions::FMM)
 		return new EvalUpward<Context, true>();
-	}
   return nullptr;
 }

@@ -72,7 +72,9 @@ class Octree
     // TODO: improve
     point_type a = result.min() + norm_inf(result.dimensions()) * (1 + 1e-6);
     result |= a;
+#if DEBUG
     std::cout << "Bounding Box: " << result << "\n";
+#endif
     return result;
   }
 

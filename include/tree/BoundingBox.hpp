@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 /** @file BoundingBox.hpp
  * @brief Define the BoundingBox class for ND bounding boxes. */

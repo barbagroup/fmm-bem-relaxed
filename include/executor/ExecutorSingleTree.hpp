@@ -55,6 +55,8 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
 
   //! Kernel type
   typedef Kernel kernel_type;
+  //! Kernel value type
+  typedef typename Kernel::kernel_value_type kernel_value_type;
   //! Kernel charge type
   typedef typename kernel_type::multipole_type multipole_type;
   //! Kernel result type

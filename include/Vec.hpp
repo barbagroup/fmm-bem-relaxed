@@ -209,6 +209,12 @@ class fixed_vector
   fixed_vector()
       : vector_type(N,T()) {}
   BOOST_UBLAS_INLINE
+  explicit fixed_vector(size_type size)
+      : vector_type(N,T()) {
+    (void) size;
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
+  }
+  BOOST_UBLAS_INLINE
   fixed_vector(const fixed_vector& v)
       : vector_type(v) {}
   template<class A2>              // Allow vector<T,fixed_array<N> construction

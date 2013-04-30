@@ -5,12 +5,12 @@
  */
 
 #include "KernelTraits.hpp"
+
 #include <type_traits>
 #include <iterator>
 #include <vector>
 
-class Direct
-{
+class Direct {
 	/** If no other Direct dispatcher matches */
 	template <typename... Args>
 	inline static void eval(Args...) {
@@ -143,16 +143,16 @@ class Direct
        SourceIter p2_first, SourceIter p2_last, ChargeIter c2_first,
        ResultIter r2_first)
   {
-    // TODO
-    // Optimize on random_access_iterator?
-
-    static_assert(std::is_same<typename Kernel::source_type,
-                               typename Kernel::target_type>::value,
-                  "source_type != target_type in symmetric P2P");
-
     typedef typename Kernel::source_type source_type;
     typedef typename Kernel::charge_type charge_type;
+    typedef typename Kernel::target_type target_type;
     typedef typename Kernel::result_type result_type;
+
+    static_assert(std::is_same<source_type,target_type>::value,
+                  "source_type != target_type in symmetric P2P");
+
+    // TODO
+    // Optimize on random_access_iterator?
 
     for ( ; p1_first != p1_last; ++p1_first, ++c1_first, ++r1_first) {
       const source_type& p1 = *p1_first;
@@ -180,13 +180,22 @@ class Direct
        SourceIter p_first, SourceIter p_last,
        ChargeIter c_first, ResultIter r_first)
   {
-    static_assert(std::is_same<typename Kernel::source_type,
-                               typename Kernel::target_type>::value,
-                  "source_type != target_type in symmetric P2P");
-
     typedef typename Kernel::source_type source_type;
     typedef typename Kernel::charge_type charge_type;
+    typedef typename Kernel::target_type target_type;
     typedef typename Kernel::result_type result_type;
+
+    static_assert(std::is_same<source_type, target_type>::value,
+                  "source_type != target_type in symmetric P2P");
+    static_assert(std::is_same<source_type,
+                               typename SourceIter::value_type>::value,
+                  "SourceIter::value_type != Kernel::source_type");
+    static_assert(std::is_same<charge_type,
+                               typename ChargeIter::value_type>::value,
+                  "ChargeIter::value_type != Kernel::charge_type");
+    static_assert(std::is_same<result_type,
+                               typename ResultIter::value_type>::value,
+                  "ResultIter::value_type != Kernel::result_type");
 
     // TODO
     // Optimize on random_access_iterator?

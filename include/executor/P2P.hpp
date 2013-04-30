@@ -8,6 +8,10 @@
 
 struct P2P
 {
+  //////////////////////////////////////
+  /////// Static Dispatchers ///////////
+  //////////////////////////////////////
+
   struct ONE_SIDED {};
   struct TWO_SIDED {};
 
@@ -42,6 +46,7 @@ struct P2P
   {
 #ifdef DEBUG
     printf("P2P: %d to %d\n", source.index(), target.index());
+    printf("P2P: %d to %d\n", target.index(), source.index());
 #endif
 
     Direct::matvec(K,

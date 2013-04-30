@@ -67,7 +67,7 @@ test_vec: test_vec.o
 #   $<: the name of the prereq of the rule (a .cpp file)
 #   $@: the name of the target of the rule (a .o file)
 .cpp.o:
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(DEFS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(INCLUDES) -c -o $@ $<
 
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:

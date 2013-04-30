@@ -5,6 +5,8 @@
  * K(t,s) = 0  if t == s
  */
 
+#include "Vec.hpp"
+
 class UnitKernel
 {
  public:
@@ -44,10 +46,7 @@ class UnitKernel
    */
   kernel_value_type operator()(const point_type& t,
                                const point_type& s) const {
-    assert(t.size() == 3);
-    assert(s.size() == 3);
-    return (t[0] == s[0] && t[1] == s[1] && t[2] == s[2]) ?
-        kernel_value_type(0) : kernel_value_type(1);
+    return t == s ? kernel_value_type(0) : kernel_value_type(1);
   }
 
   /** Kernel P2M operation

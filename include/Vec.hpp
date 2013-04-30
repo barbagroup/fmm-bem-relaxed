@@ -279,10 +279,13 @@ template <std::size_t N, typename T>
 BOOST_UBLAS_INLINE
 bool operator==(const Vec<N,T>& a,
                 const Vec<N,T>& b) {
-  printf("Vec ==\n");
-  bool result = std::equal(a.begin(), a.end(), b.begin());
-  printf("Vec == done\n");
-  return result;
+  return std::equal(a.begin(), a.end(), b.begin());
+}
+template <std::size_t N, typename T>
+BOOST_UBLAS_INLINE
+bool operator!=(const Vec<N,T>& a,
+                const Vec<N,T>& b) {
+  return !(a == b);
 }
 /** Send to output stream */
 template <std::size_t N, typename T>

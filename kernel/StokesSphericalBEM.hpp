@@ -192,6 +192,7 @@ class StokesSphericalBEM : public StokesSpherical
           else
           {
             auto& normal = source.normal;
+            auto n0 = normal[0], n1 = normal[1], n2 = normal[2];
             auto& area = source.area;
             auto gw = gauss_weight[i];
 

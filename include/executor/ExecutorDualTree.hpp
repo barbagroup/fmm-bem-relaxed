@@ -80,7 +80,7 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
     typedef body_type argument_type;
     BodyTransformer(const Indexable& value) : value_(value) {}
     result_type operator()(const body_type& body) const {
-      return value_[body.number()]; // TODO: TEMP to avoid permutation for now
+      return value_[body.number()]; // TODO: TEMP to avoid permutation
     }
    private:
     Indexable value_;
@@ -150,6 +150,8 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
         L_((opts.evaluator == FMMOptions::TREECODE ? 0 : target_tree_.boxes())),
         sources(sfirst, slast),
         targets(tfirst, tlast) {
+    s_ = sources.begin();
+    t_ = targets.begin();
   }
 
   void insert(EvaluatorBase<self_type>* eval) {

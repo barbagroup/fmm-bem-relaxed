@@ -442,4 +442,3 @@ operator*(const ublas::vector_expression<E1>& e1,
     >::expression_type expression_type;
   return expression_type(e1(), e2());
 }
-

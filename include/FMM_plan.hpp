@@ -58,6 +58,15 @@ class FMM_plan
 		delete executor_;
 	}
 
+  // MODIFIER
+
+  kernel_type& kernel() {
+    return K;
+  }
+  const kernel_type& kernel() const {
+    return K;
+  }
+
 	// EXECUTE
 
 	/** Execute this FMM plan
@@ -77,12 +86,6 @@ class FMM_plan
 		// TODO: don't return this, provide accessor
 		return results;
 	}
-
-  /** Access the to Kernel this plan is operating with
-   */
-  kernel_type& kernel() {
-    return K;
-  }
 
   /** Access to the Options this plan is operating with
    */

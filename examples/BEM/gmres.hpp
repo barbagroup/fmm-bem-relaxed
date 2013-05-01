@@ -22,7 +22,7 @@ class Matrix
   std::vector<T> vals_;
 
  public:
-  Matrix() : rows_(0), cols_(0), vals_(0) {};
+  Matrix() {};
   Matrix(int r, int c) : rows_(r), cols_(c) {
     vals_.resize(rows_*cols_);
   };
@@ -65,7 +65,7 @@ namespace blas {
 
 template <typename T>
 T nrm2(std::vector<T>& vec) {
-  T res = T(0);
+  T res = T();
   for (auto it=vec.begin(); it!=vec.end(); ++it) res += (*it) * (*it);
   return std::sqrt(res);
 }
@@ -79,7 +79,7 @@ void scal(std::vector<T>& vec, T s)
 
 template <typename T>
 T dotc(std::vector<T>& x, std::vector<T>& y) {
-  T ret = T(0);
+  T ret = T();
   auto yit = y.begin();
   for (auto it=x.begin(); it!=x.end(); ++it, ++yit)
     ret += (*it) * (*yit);
@@ -135,7 +135,7 @@ void GeneratePlaneRotation(T& dx, T&dy, T& cs, T& sn)
   }else if (fabs(dy) > fabs(dx)) {
     T tmp = dx / dy;
     sn = T(1.0) / sqrt(T(1.0) + tmp*tmp);
-    cs = tmp*sn;            
+    cs = tmp*sn;
   }else {
     T tmp = dy / dx;
     cs = T(1.0) / sqrt(T(1.0) + tmp*tmp);

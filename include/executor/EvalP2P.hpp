@@ -1,12 +1,12 @@
 #pragma once
 
+#define BOOST_UBLAS_NDEBUG
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 namespace ublas = boost::numeric::ublas;
 
 #include <cmath>
 
 #include "P2P.hpp"
-
 
 /** A lazy P2P evaluator which saves a list of pairs of boxes
  * That are sent to the P2P dispatcher on demand.
@@ -17,6 +17,7 @@ class P2P_Lazy
   // The context of this evaluator
   Context& bc;
 
+  typedef typename Context::kernel_type kernel_type;
   //! Kernel value type
   typedef typename Context::kernel_value_type kernel_value_type;
 
@@ -62,51 +63,37 @@ class P2P_Lazy
       for (auto t = bc.target_begin(box2); t != target_end; ++t) {
         // Row
         unsigned i = t - first_target;
+        std::vector<unsigned>& csri = csr[i];
 
         for (auto s = bc.source_begin(box1); s != source_end; ++s) {
           // Column
           unsigned j = s - first_source;
 
-          //assert(std::find(csr[i].begin(),csr[i].end(),j) == csr[i].end());
-          csr[i].push_back(j);
+          //assert(std::find(csri.begin(), csri.end(), j) == csri.end());
+          csri.push_back(j);
           ++nnz;
+          cols = std::max(cols, j);
         }
-        cols = std::max(cols, unsigned(csr[i].size()));
       }
     }
+    ++cols;
 
     // The precomputed interaction matrix
     ublas::compressed_matrix<kernel_value_type> m(rows, cols, nnz);
 
+    typedef typename kernel_type::source_type source_type;
+    typedef typename kernel_type::target_type target_type;
     for (unsigned i = 0; i < csr.size(); ++i) {
       // Insert elements to compressed_matrix in-order for efficiency
       std::sort(csr[i].begin(), csr[i].end());
-      auto& target = *(first_target + i);
+      const target_type& target = first_target[i];
 
       for (unsigned j : csr[i]) {
-        auto& source = *(first_source + j);
+        const source_type& source = first_source[j];
         m.push_back(i, j, bc.kernel()(target, source));
       }
     }
 
     return m;
-  }
-};
-
-
-/** A P2P that stages the interaction list for the GPU.
- */
-template <typename Context>
-class P2P_GPU
-    : public EvaluatorBase<Context> {
-  //! Type of box
-  typedef typename Context::box_type box_type;
-
- public:
-  P2P_GPU(Context& bc) {
-
-  }
-  void insert(const box_type& box1, const box_type& box2) {
-
   }
 };

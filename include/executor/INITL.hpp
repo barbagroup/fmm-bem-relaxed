@@ -26,7 +26,7 @@ struct INITL
   }
 
   template <typename Kernel, typename Context>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
                           Context& bc,
                           const typename Context::box_type& b)
   {

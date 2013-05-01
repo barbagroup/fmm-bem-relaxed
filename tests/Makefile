@@ -2,6 +2,7 @@
 # 'make'        build executable file
 # 'make clean'  removes all .o and executable files
 #
+include Makefile.inc
 
 # dependency directory
 DEPSDIR := $(shell mkdir -p .deps; echo .deps)
@@ -21,9 +22,9 @@ endif
 LINK := $(CXX)
 
 # define any compile-time flags
-CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra #-ffast-math
+CFLAGS := -fopenmp -funroll-loops -O3 -W -Wall -Wextra
 ifeq ($(DEBUG),1)
-CFLAGS += -g -fno-inline
+CFLAGS += -g -fno-inline -DDEBUG
 endif
 ifeq ($(PROFILE),1)
 CFLAGS += -g -pg
@@ -35,7 +36,7 @@ CFLAGS +=
 
 # define any directories containing header files other than /usr/include
 #   include directories like -Ipath/to/files
-INCLUDES = -I. -I../include -I../include/tree -I../include/executor -I../kernel
+INCLUDES = -I. -I$(FMMW_DIR)/include -I$(FMMW_DIR)/kernel
 
 # define any libraries to link into executable
 #   To link in libraries (libXXX.so or libXXX.a) use -lXXX options
@@ -85,7 +86,7 @@ multi_level_stresslet: multi_level_stresslet.o
 #   $<: the name of the prereq of the rule (a .cpp file)
 #   $@: the name of the target of the rule (a .o file)
 %.o: %.cpp
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(DEFS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(INCLUDES) -c -o $@ $<
 
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:

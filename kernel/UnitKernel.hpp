@@ -5,6 +5,8 @@
  * K(t,s) = 0  if t == s
  */
 
+#include "Vec.hpp"
+
 class UnitKernel
 {
  public:

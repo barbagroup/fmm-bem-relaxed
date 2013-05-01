@@ -49,7 +49,7 @@ struct L2P
   /** Unwrap the data from BoxContext and dispatch to the L2P evaluator
    */
   template <typename Kernel, typename Context>
-  inline static void eval(Kernel& K,
+  inline static void eval(const Kernel& K,
                           Context& bc,
                           const typename Context::box_type& box)
   {

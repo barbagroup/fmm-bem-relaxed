@@ -69,9 +69,8 @@ class Octree
     for ( ; begin != end; ++begin)
       result |= static_cast<point_type>(*begin);
     // Make sure the bounding box is square and slightly scaled
-    point_type dim = result.dimensions();
-    auto maxdim = *std::max_element(dim.begin(), dim.end());
-    point_type a = result.min() + maxdim * (1 + 1e-6);
+    // TODO: improve
+    point_type a = result.min() + norm_inf(result.dimensions()) * (1 + 1e-6);
     result |= a;
     //std::cout << "Bounding Box: " << result << "\n";
     return result;
@@ -86,7 +85,7 @@ class Octree
     /** The number of bits per dimension. #cells = 8^L. */
     static constexpr unsigned levels = 10;
     /** The number of cells per side of the bounding box (2^L). */
-    static constexpr code_type cells_per_side = code_type(1) << levels;
+    static constexpr unsigned cells_per_side = unsigned(1) << levels;
     /** One more than the largest code (8^L). */
     static constexpr code_type end_code = code_type(1) << (3*levels);
 
@@ -99,22 +98,28 @@ class Octree
 
     /** Return the MortonCoder's bounding box. */
     BoundingBox<point_type> bounding_box() const {
-      return BoundingBox<point_type>(pmin_, pmin_ + (cell_size_*cells_per_side));
+      point_type pmax = pmin_ + cells_per_side * cell_size_;
+      return BoundingBox<point_type>(pmin_, pmax);
     }
 
     /** Return the bounding box of the cell with Morton code @a c.
      * @pre c < end_code */
     BoundingBox<point_type> cell(code_type c) const {
       assert(c < end_code);
-      point_type p = pmin_ + deinterleave(c) * cell_size_;
-      return BoundingBox<point_type>(p, p + cell_size_);
+      point_type pmin = pmin_ + cell_size_ * deinterleave(c);
+      return BoundingBox<point_type>(pmin, pmin + cell_size_);
     }
 
     /** Return the Morton code of Point @a p.
      * @pre bounding_box().contains(@a p)
      * @post cell(result).contains(@a p) */
     code_type code(const point_type& p) const {
-      point_type s = (p - pmin_) / cell_size_;
+      //point_type s = (p - pmin_) / cell_size_;
+      point_type s = p;
+      for (unsigned k = 0; k < point_type::dimension; ++k) {
+        s[k] -= pmin_[k];
+        s[k] /= cell_size_[k];
+      }
       assert((unsigned) s[0] < cells_per_side &&
              (unsigned) s[1] < cells_per_side &&
              (unsigned) s[2] < cells_per_side);
@@ -422,18 +427,19 @@ class Octree
     box_iterator()
         : box_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-    Box dereference() const {
-      return Box(this->base_reference(), tree_);
-    }
    private:
     const tree_type* tree_;
+    friend class Octree;
     box_iterator(unsigned idx, const tree_type* tree)
         : box_iterator::iterator_adaptor(idx), tree_(tree) {
     }
     box_iterator(const Box& b)
         : box_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
-    friend class Octree;
+    friend class boost::iterator_core_access;
+    Box dereference() const {
+      return Box(this->base_reference(), tree_);
+    }
   };
 
   /** @struct Tree::body_iterator
@@ -451,18 +457,19 @@ class Octree
     body_iterator()
         : body_iterator::iterator_adaptor(0), tree_(nullptr) {
     }
-    Body dereference() const {
-      return Body(this->base_reference(), tree_);
-    }
    private:
     const tree_type* tree_;
+    friend class Octree;
     body_iterator(unsigned idx, const tree_type* tree)
         : body_iterator::iterator_adaptor(idx), tree_(tree) {
     }
     body_iterator(const Body& b)
         : body_iterator::iterator_adaptor(b.index()), tree_(b.tree_) {
     }
-    friend class Octree;
+    friend class boost::iterator_core_access;
+    Body dereference() const {
+      return Body(this->base_reference(), tree_);
+    }
   };
 
   /** Construct an octree encompassing a bounding box */
@@ -473,8 +480,7 @@ class Octree
   /** Construct an octree encompassing a bounding box
    * and insert a range of points */
   template <typename PointIter, typename Options>
-  Octree(PointIter first, PointIter last,
-         Options& opts)
+  Octree(PointIter first, PointIter last, Options& opts)
       : coder_(get_boundingbox(first, last)) {
     construct_tree(first, last, opts.max_per_box());
   }
@@ -745,6 +751,7 @@ class Octree
   }
 
  private:
+  // Just making sure for now
   Octree(const Octree& other_tree) {};
   void operator=(const Octree& other_tree) {};
 };

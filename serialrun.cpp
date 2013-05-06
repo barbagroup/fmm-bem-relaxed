@@ -10,7 +10,7 @@
 //#include <UnitKernel.hpp>
 //#include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
-//#include <LaplaceCartesian.hpp>
+#include <LaplaceCartesian.hpp>
 //#include <YukawaCartesian.hpp>
 //#include <YukawaSpherical.hpp>
 
@@ -20,8 +20,8 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
-//#define CART_KERNEL
+//#define SPH_KERNEL
+#define CART_KERNEL
 //#define YUKAWA_KERNEL
 //#define YUKAWA_SPH
 
@@ -46,8 +46,8 @@ int main(int argc, char **argv)
 
   FMMOptions opts = get_options(argc, argv);
 
-  opts.local_evaluation = true;
-  opts.sparse_local = true;
+  //opts.local_evaluation = true;
+  //opts.sparse_local = true;
 
   // parse custom command line args
   for (int i = 1; i < argc; ++i) {

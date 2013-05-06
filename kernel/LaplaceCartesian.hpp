@@ -8,28 +8,31 @@
 
 #include "Vec.hpp"
 
+#include <type_traits>
+
+
 typedef double real;
 
-template<int nx, int ny, int nz>
+constexpr unsigned cart_index(unsigned nx, unsigned ny, unsigned nz) {
+	return (nx+ny+nz)*(nx+ny+nz+1)*(nx+ny+nz+2)/6 + (ny+nz)*(ny+nz+1)/2 + nz;
+}
+constexpr unsigned factorial(unsigned k) {
+	return k <= 1 ? 1 : k * factorial(k-1);
+}
+constexpr unsigned cart_value(unsigned nx, unsigned ny, unsigned nz) {
+	return factorial(nx) * factorial(ny) * factorial(nz);
+}
+
+// Guarantee that compile time values are compile time
+template <unsigned V>
+struct u_constant : public std::integral_constant<unsigned, V> {};
+
+template <int nx, int ny, int nz>
 struct Index {
-  static constexpr unsigned I = Index<nx,ny+1,nz-1>::I + 1;
-  static constexpr real     F = Index<nx,ny,nz-1>::F * nz;
+	static constexpr unsigned I = u_constant<cart_index(nx,ny,nz)>::value;
+	static constexpr real     F = u_constant<cart_value(nx,ny,nz)>::value;
 };
-template<int nx, int ny>
-struct Index<nx,ny,0> {
-  static constexpr unsigned I = Index<nx+1,0,ny-1>::I + 1;
-  static constexpr real     F = Index<nx,ny-1,0>::F * ny;
-};
-template<int nx>
-struct Index<nx,0,0> {
-  static constexpr unsigned I = Index<0,0,nx-1>::I + 1;
-  static constexpr real     F = Index<nx-1,0,0>::F * nx;
-};
-template<>
-struct Index<0,0,0> {
-  static constexpr unsigned I = 0;
-  static constexpr real     F = 1.0;
-};
+
 
 
 template<int n, int kx, int ky , int kz, int d>
@@ -738,9 +741,9 @@ inline void sumM2P(Result& B, const Lset& C, const Mset& M) {
 template <unsigned P>
 class LaplaceCartesian
 {
-  //!< Number of Cartesian mutlipole terms
+  //! Number of Cartesian mutlipole terms
   static constexpr int MTERM = P*(P+1)*(P+2)/6;
-  //!< Number of Cartesian local terms
+  //! Number of Cartesian local terms
   static constexpr int LTERM = (P+1)*(P+2)*(P+3)/6;
 
  public:

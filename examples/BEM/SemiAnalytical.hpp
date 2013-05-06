@@ -2,13 +2,14 @@
 
 /** holder class for semi-analytical integral */
 
+#include "AnalyticalIntegral.hpp"
 #include "Vec.hpp"
 #include "Mat3.hpp"
 
 namespace AnalyticalIntegral
 {
 
-typedef enum { LAPLACE, YUKAWA } equation;
+// typedef enum { LAPLACE, YUKAWA } equation;
 
 template <equation E, typename T=double>
 void lineInt(T& G, T& dGdn, T z, T x, T v1, T v2, T kappa=0.)

@@ -2,6 +2,7 @@
  * @brief Testing and debugging script for FMM-BEM applications
  */
 
+#include "StokesSphericalBEM.hpp"
 
 #include "FMM_plan.hpp"
 #include "LaplaceSphericalBEM.hpp"
@@ -151,7 +152,7 @@ int main(int argc, char **argv)
   double e2 = 0.;
   double an = 1.;
   for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
-  
+
   printf("error: %.3e\n",sqrt(e/e2));
 }
 

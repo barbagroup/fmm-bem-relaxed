@@ -1,7 +1,7 @@
 #pragma once
 
 #include "StokesSpherical.hpp"
-#include "SemiAnalytical.hpp"
+#include "FataAnalytical.hpp"
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
 
@@ -105,7 +105,7 @@ class StokesSphericalBEM : public StokesSpherical
     /** flip the boundary condition flag for calculating RHS */
     void switch_BC(void) {
       if (this->BC == VELOCITY) { this->BC = TRACTION; }
-      else                       { this->BC = VELOCITY; }
+      else                      { this->BC = VELOCITY; }
     };
   };
 
@@ -118,7 +118,7 @@ class StokesSphericalBEM : public StokesSpherical
   typedef Panel panel_type;
 
   //! default constructor
-  StokesSphericalBEM() : StokesSphericalBEM(5,3,0.1);
+  StokesSphericalBEM() : StokesSphericalBEM(5,3,0.1) {};
   //! main constructor
   StokesSphericalBEM(int p, unsigned k, double mu) : StokesSpherical(p), K(k), Mu(mu) {
     BEMConfig::Init();
@@ -138,18 +138,128 @@ class StokesSphericalBEM : public StokesSpherical
     StokesSpherical::init_local(L[1],extents,level);
   }
 
+  result_type eval_traction_integral(const source_type& source, const target_type& target, const charge_type& g)
+  {
+    auto dist = static_cast<point_type>(target) - source.center;
+    auto d = norm(dist);
+
+    // check for self-interaction
+    bool self = d < 1e-8;
+
+    // check for analytical integral / gauss quadrature
+    if (sqrt(2*source.Area)/d>= 0.5)
+    {
+      namespace AI = AnalyticalIntegral;
+      auto& vertices = source.vertices;
+
+      return AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn);
+    }
+    else
+    {
+      auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
+      result_type res(0.);
+
+      for (unsigned i=0; i<K; i++) {
+        // eval contribution from this gauss point
+        auto g2 = g*gauss_weight[i]*source.Area;
+        point_type dist_quad = source.quad_points[i] - target.center;
+        auto r2 = normSq(dist_quad);
+        real R1 = r2;
+        // real R2 = R1;
+        real invR = 1. / R1;
+        if (r2 < 1e-8) invR = 0;
+
+        auto& normal = source.normal;
+        auto dxdotn = dist_quad[0]*normal[0] + dist_quad[1]*normal[1] + dist_quad[2]*normal[2];
+
+        //auto invR2 = 1./r2;
+        //if (invR2 < 1e-8) invR2 = 0;
+        //auto invR = std::sqrt(invR2);
+        auto H = std::sqrt(invR) * invR; // 1 / R^3
+        H *= dxdotn * invR;  // (dx . n) / r^5
+
+        auto dx0 = dist_quad[0], dx1 = dist_quad[1], dx2 = dist_quad[2];
+
+        res[0] += H * (dx0*dx0*g2[0] + dx0*dx1*g2[1] + dx0*dx2*g2[2]);
+        res[1] += H * (dx0*dx1*g2[0] + dx1*dx1*g2[1] + dx1*dx2*g2[2]);
+        res[2] += H * (dx0*dx2*g2[0] + dx1*dx2*g2[1] + dx2*dx2*g2[2]);
+      }
+      return res;
+    }
+  }
+
+  result_type eval_velocity_integral(const source_type& source, const target_type& target, const charge_type& f)
+  {
+    auto dist = static_cast<point_type>(target) - source.center;
+    auto d = norm(dist);
+
+    bool self = d < 1e-8;
+
+    // check for analytical / gauss quadrature
+    if (sqrt(2*source.Area)/d>= 0.5)
+    {
+      namespace AI = AnalyticalIntegral;
+      auto& vertices = source.vertices;
+
+      return AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G);
+    }
+    else
+    {
+      auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
+      auto area = source.Area;
+      result_type res(0.);
+
+      for (unsigned i=0; i<K; i++) {
+        // eval contribution from this gauss point
+        auto dist_quad = source.quad_points[i] - target.center;
+        auto r2 = normSq(dist_quad);
+        real R1 = r2;
+        real R2 = R1;
+        real invR = 1. / R1;
+        if (r2 < 1e-8) invR = 0;
+
+        auto H = std::sqrt(invR) * invR; // 1 / R^3
+
+        auto f2 = f*gauss_weight[i]*area;
+        auto fdx = dist_quad[0]*f[0] + dist_quad[1]*f[1] + dist_quad[2]*f[2];
+
+        res[0] +=  H * (f2[0] * R2 + fdx * dist_quad[0]);
+        res[1] +=  H * (f2[1] * R2 + fdx * dist_quad[1]);
+        res[2] +=  H * (f2[2] * R2 + fdx * dist_quad[2]);
+      }
+      return res;
+    }
+  }
+
   // Operators
   template <typename SourceIter, typename ChargeIter,
             typename TargetIter, typename ResultIter>
   void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
            TargetIter t_first, TargetIter t_last, ResultIter r_first) const
   {
-    (void) s_first;
-    (void) s_last;
-    (void) c_first;
-    (void) t_first;
-    (void) t_last;
-    (void) r_first;
+    auto ti = t_first;
+    auto ri = r_first;
+
+    for ( ; ti != t_last; ++ti, ++ri) {
+      auto si = s_first;
+      auto ci = c_first;
+
+      result_type res = 0.;
+      for ( ; si != s_last; ++si, ++ci) {
+
+        // get relevant G / dGdn for this panel
+        if (ti->BC == Panel::VELOCITY) {
+          res += eval_velocity_integral(*si, *ti, *ci);
+        }
+        else if (ti->BC == Panel::TRACTION) {
+          res -= eval_traction_integral(*si, *ti, *ci);
+        }
+        else // should never get here
+        {
+          res += result_type(0.);
+        }
+      }
+    }
   }
 
   void P2M(const source_type& source, const charge_type& charge,
@@ -179,10 +289,10 @@ class StokesSphericalBEM : public StokesSpherical
           if (source.BC == Panel::VELOCITY)
           {
             // ease of writing
-            auto area = source.area;
+            auto area = source.Area;
             auto gw = gauss_weight[i];
 
-            auto fdotx = gw*area*c0*source[0] + gw*area*c1*source[1] + gw*area*c2*source[2];
+            auto fdotx = gw*area*c0*qp[0] + gw*area*c1*qp[1] + gw*area*c2*qp[2];
             M[0][0][nms] += gw * area * c0 * Ynm[nm];
             M[0][1][nms] += gw * area * c1 * Ynm[nm];
             M[0][2][nms] += gw * area * c2 * Ynm[nm];
@@ -193,7 +303,7 @@ class StokesSphericalBEM : public StokesSpherical
           {
             auto& normal = source.normal;
             auto n0 = normal[0], n1 = normal[1], n2 = normal[2];
-            auto& area = source.area;
+            auto& area = source.Area;
             auto gw = gauss_weight[i];
 
             complex brh = (double)n/rho*Ynm[nm]; // d(rho)
@@ -204,8 +314,6 @@ class StokesSphericalBEM : public StokesSpherical
             complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
             complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
 
-            complex mult_term = gw*area;
-
             // which order should these be in?
             auto rdotn = bxd*n0 + byd*n1 + bzd*n2;
             auto rdotg = bxd*gw*area*c0 + byd*gw*area*c1 + bzd*gw*area*c2;
@@ -213,8 +321,8 @@ class StokesSphericalBEM : public StokesSpherical
             M[1][1][nms] += (rdotn * gw*area*c1 + rdotg * n1);
             M[1][2][nms] += (rdotn * gw*area*c2 + rdotg * n2);
 
-            auto xdotg = source[0]*gw*area*c0 + source[1]*gw*area*c1 + source[2]*gw*area*c2;
-            auto ndotx = n0*source[0] + n1*source[1] + n2*source[2];
+            auto xdotg = qp[0]*gw*area*c0 + qp[1]*gw*area*c1 + qp[2]*gw*area*c2;
+            auto ndotx = n0*qp[0] + n1*qp[1] + n2*qp[2];
             M[1][3][nms] += rdotn * xdotg + rdotg * ndotx;
           }
         }

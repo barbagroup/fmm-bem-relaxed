@@ -307,6 +307,7 @@ struct Integration<STOKES>
 
       I3_xi_xi = 0.;
       I3_zeta_zeta = 0.;
+      I3_zeta_xi = 0.;
       for (int i=0; i<3; i++) {
         I3_xi_xi     += (c.q[i]*c.chi[i]*cos(c.alpha[i]) + rho_bar[i]*sin(c.alpha[i]))*cos(c.alpha[i]);
         I3_zeta_zeta += (c.q[i]*c.chi[i]*sin(c.alpha[i]) - rho_bar[i]*cos(c.alpha[i]))*sin(c.alpha[i]);

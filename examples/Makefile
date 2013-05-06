@@ -53,6 +53,9 @@ all: LaplaceBEM YukawaBEM
 LaplaceBEM: LaplaceBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+StokesBEM: StokesBEM.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 YukawaBEM: YukawaBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 

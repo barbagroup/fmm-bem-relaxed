@@ -119,6 +119,8 @@ class StokesSphericalBEM : public StokesSpherical
 
   //! default constructor
   StokesSphericalBEM() : StokesSphericalBEM(5,3,0.1) {};
+  //! don't set viscosity
+  StokesSphericalBEM(int p, unsigned k) : StokesSphericalBEM(p,k,0.1) {};
   //! main constructor
   StokesSphericalBEM(int p, unsigned k, double mu) : StokesSpherical(p), K(k), Mu(mu) {
     BEMConfig::Init();
@@ -138,7 +140,7 @@ class StokesSphericalBEM : public StokesSpherical
     StokesSpherical::init_local(L[1],extents,level);
   }
 
-  result_type eval_traction_integral(const source_type& source, const target_type& target, const charge_type& g)
+  result_type eval_traction_integral(const source_type& source, const target_type& target, const charge_type& g) const
   {
     auto dist = static_cast<point_type>(target) - source.center;
     auto d = norm(dist);
@@ -188,7 +190,7 @@ class StokesSphericalBEM : public StokesSpherical
     }
   }
 
-  result_type eval_velocity_integral(const source_type& source, const target_type& target, const charge_type& f)
+  result_type eval_velocity_integral(const source_type& source, const target_type& target, const charge_type& f) const
   {
     auto dist = static_cast<point_type>(target) - source.center;
     auto d = norm(dist);
@@ -244,7 +246,7 @@ class StokesSphericalBEM : public StokesSpherical
       auto si = s_first;
       auto ci = c_first;
 
-      result_type res = 0.;
+      result_type res(0.);
       for ( ; si != s_last; ++si, ++ci) {
 
         // get relevant G / dGdn for this panel

@@ -5,6 +5,12 @@
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
 
+#define USE_ANALYTICAL
+
+#if defined(USE_ANALYTICAL)
+#include "FataAnalytical.hpp"
+#endif
+
 class LaplaceSphericalBEM : public LaplaceSpherical
 {
  // private:
@@ -152,10 +158,14 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     if (sqrt(2*source.Area)/dist >= 0.5) {
       // perform semi-analytical integral
       namespace AI = AnalyticalIntegral;
-      double G = 0., dGdn = 0.;
       auto& vertices = source.vertices;
+#if defined(USE_ANALYTICAL)
+      return AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::G);
+#else
+      double G = 0., dGdn = 0.;
       AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
       return G;
+#endif
     }
     else
     {
@@ -178,9 +188,13 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       namespace AI = AnalyticalIntegral;
       // semi-analytical integral
       auto& vertices = source.vertices;
+#if defined(USE_ANALYTICAL)
+      return -AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::dGdn);
+#else
       double G = 0., dGdn = 0.;
       AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
       return -dGdn;
+#endif
     } else {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(K);
       double res=0.;

@@ -9,7 +9,7 @@ struct Mat3 {
   // 3 rows, 3 cols, 9 values
   T vals_[9];
 
-  Mat3() {};
+  Mat3() { for (unsigned i=0; i<9; i++) vals_[i] = 0.; };
   template <typename IterType>
   Mat3(IterType start, IterType end) {
     assert(end-start == 9); // ensure correct # values
@@ -19,6 +19,10 @@ struct Mat3 {
   // copy constructor
   Mat3(const Mat3<T>& M) {
     for (unsigned i=0; i<9; i++) vals_[i] = M.vals_[i];
+  }
+  // initialise with a uniform value
+  Mat3(double v) {
+    for (unsigned i=0; i<9; i++) vals_[i] = v;
   }
 
   // return negated matrix

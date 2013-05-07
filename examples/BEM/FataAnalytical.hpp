@@ -235,6 +235,8 @@ void print_matrix(const char *name, Mat3<T>& A)
 // Context to be given to specific integration routines
 struct IntegrationContext
 {
+  // panels self-interacting?
+  bool self_interaction;
   // Laplace
   double et, ThetGam, omega;
 
@@ -337,6 +339,7 @@ struct Integration<STOKES>
       return IU;
     }
     // Stresslet
+    else if (type == dGdn && c.self_interaction) return Mat3<double>(0.);
     else
     {
       double delta[3], d[3], L[3], et = c.et;
@@ -429,7 +432,7 @@ auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f
   double e1[3], e2[3], e3[3]; // Orthonormal companion basis associated with element elQ
   // Geometric parameters of element elQ: bQ = base, aQ = height, cQ = relative position of the 3rd node of element elQ
   double aQ, bQ, cQ;
-  double r1[3], xi, zt, eth, et, ets, q[3], qs[3], rho[3], chi[3], gamma[3], gam;
+  double r1[3], xi, zt, eth, et, ets, q[3], qs[3], rho[3], chi[3] = {0.,0.,0.}, gamma[3], gam;
   double vij[2][3], aQs, bmc, theta[3], alpha2, alpha3, Rh[3], Rhs[3], ch11, ch12, ch22, ch23, ch33, ch31;
   double kQ3; // kQ3 = Slope of Edge3 of element elQ
   double shc[3], sncf2, sncf3, cscf2, cscf3, qetx2[3];
@@ -643,6 +646,7 @@ auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f
     ThetGam = 0.5*gam - theta0;
 
   // now we can setup the context
+  context.self_interaction = self_interaction;
   context.et = et;
   context.ThetGam = ThetGam;
   context.omega = omega;

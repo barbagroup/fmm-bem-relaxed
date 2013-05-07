@@ -118,9 +118,9 @@ class StokesSphericalBEM : public StokesSpherical
   typedef Panel panel_type;
 
   //! default constructor
-  StokesSphericalBEM() : StokesSphericalBEM(5,3,0.1) {};
+  StokesSphericalBEM() : StokesSphericalBEM(5,3,1e-3) {};
   //! don't set viscosity
-  StokesSphericalBEM(int p, unsigned k) : StokesSphericalBEM(p,k,0.1) {};
+  StokesSphericalBEM(int p, unsigned k) : StokesSphericalBEM(p,k,1e-3) {};
   //! main constructor
   StokesSphericalBEM(int p, unsigned k, double mu) : StokesSpherical(p), K(k), Mu(mu) {
     BEMConfig::Init();
@@ -146,7 +146,10 @@ class StokesSphericalBEM : public StokesSpherical
     auto d = norm(dist);
 
     // check for self-interaction
-    bool self = d < 1e-8;
+    bool self = fabs(d) < 1e-8;
+    if (d < 1e-8) {
+      return 2*M_PI*g;
+    }
 
     // check for analytical integral / gauss quadrature
     if (sqrt(2*source.Area)/d>= 0.5)
@@ -154,7 +157,20 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      return AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn);
+      auto ai = -3*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn);
+      // std::cout << "ai: " << result_type(ai) << std::endl;
+      if (isnan(ai[0]) || isnan(ai[1]) || isnan(ai[2])) {
+        printf("NAN found\n");
+        std::cout << "self: " << self << std::endl;
+        std::cout << "y1: " << vertices[0] << std::endl;
+        std::cout << "y2: " << vertices[2] << std::endl;
+        std::cout << "y3: " << vertices[1] << std::endl;
+        std::cout << "x: " << target.center << std::endl;
+        std::cout << "g: " << g << std::endl;
+        std::exit(0);
+      }
+
+      return ai;
     }
     else
     {
@@ -164,7 +180,8 @@ class StokesSphericalBEM : public StokesSpherical
       for (unsigned i=0; i<K; i++) {
         // eval contribution from this gauss point
         auto g2 = g*gauss_weight[i]*source.Area;
-        point_type dist_quad = source.quad_points[i] - target.center;
+        // point_type dist_quad = source.quad_points[i] - target.center;
+        point_type dist_quad = target.center - source.quad_points[i];
         auto r2 = normSq(dist_quad);
         real R1 = r2;
         // real R2 = R1;
@@ -186,7 +203,7 @@ class StokesSphericalBEM : public StokesSpherical
         res[1] += H * (dx0*dx1*g2[0] + dx1*dx1*g2[1] + dx1*dx2*g2[2]);
         res[2] += H * (dx0*dx2*g2[0] + dx1*dx2*g2[1] + dx2*dx2*g2[2]);
       }
-      return res;
+      return -3*res;
     }
   }
 
@@ -203,7 +220,7 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      return AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G);
+      return 1./2/Mu*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G);
     }
     else
     {
@@ -213,7 +230,8 @@ class StokesSphericalBEM : public StokesSpherical
 
       for (unsigned i=0; i<K; i++) {
         // eval contribution from this gauss point
-        auto dist_quad = source.quad_points[i] - target.center;
+        // auto dist_quad = source.quad_points[i] - target.center;
+        auto dist_quad = target.center - source.quad_points[i];
         auto r2 = normSq(dist_quad);
         real R1 = r2;
         real R2 = R1;
@@ -223,13 +241,13 @@ class StokesSphericalBEM : public StokesSpherical
         auto H = std::sqrt(invR) * invR; // 1 / R^3
 
         auto f2 = f*gauss_weight[i]*area;
-        auto fdx = dist_quad[0]*f[0] + dist_quad[1]*f[1] + dist_quad[2]*f[2];
+        auto fdx = dist_quad[0]*f2[0] + dist_quad[1]*f2[1] + dist_quad[2]*f2[2];
 
         res[0] +=  H * (f2[0] * R2 + fdx * dist_quad[0]);
         res[1] +=  H * (f2[1] * R2 + fdx * dist_quad[1]);
         res[2] +=  H * (f2[2] * R2 + fdx * dist_quad[2]);
       }
-      return res;
+      return 1./2/Mu*res;
     }
   }
 
@@ -241,26 +259,35 @@ class StokesSphericalBEM : public StokesSpherical
   {
     auto ti = t_first;
     auto ri = r_first;
+    int t_idx = 0;
 
     for ( ; ti != t_last; ++ti, ++ri) {
       auto si = s_first;
       auto ci = c_first;
 
-      result_type res(0.);
+      result_type res(0.), res_i(0.);
+      int s_idx = 0;
       for ( ; si != s_last; ++si, ++ci) {
 
         // get relevant G / dGdn for this panel
         if (ti->BC == Panel::VELOCITY) {
-          res += eval_velocity_integral(*si, *ti, *ci);
+          res_i = eval_traction_integral(*si, *ti, *ci); // +=
         }
         else if (ti->BC == Panel::TRACTION) {
-          res -= eval_traction_integral(*si, *ti, *ci);
+          res_i = -eval_velocity_integral(*si, *ti, *ci); // -=
         }
         else // should never get here
         {
+          printf("Error\n");
           res += result_type(0.);
         }
+        // printf("\tres += %g, %g, %g\n",res_i[0],res_i[1],res_i[2]);
+        res += res_i;
+        s_idx++;
       }
+      // printf("t: %d, s: %d, r: %g, %g, %g\n",t_idx,s_idx,res[0],res[1],res[2]);
+      (*ri) += res;
+      t_idx++;
     }
   }
 
@@ -348,12 +375,12 @@ class StokesSphericalBEM : public StokesSpherical
     if (target.BC == Panel::VELOCITY)
     {
       StokesSpherical::M2P(M[0],center,target,r);
-      result += r;
+      result += 1./2/Mu*r;
     }
     else
     {
       StokesSpherical::M2P(M[1],center,target,r);
-      result -= 1./6*r;
+      result -= 1./2*r;
     }
   }
 

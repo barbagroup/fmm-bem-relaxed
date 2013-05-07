@@ -259,35 +259,31 @@ class StokesSphericalBEM : public StokesSpherical
   {
     auto ti = t_first;
     auto ri = r_first;
-    int t_idx = 0;
 
     for ( ; ti != t_last; ++ti, ++ri) {
       auto si = s_first;
       auto ci = c_first;
 
       result_type res(0.), res_i(0.);
-      int s_idx = 0;
       for ( ; si != s_last; ++si, ++ci) {
 
         // get relevant G / dGdn for this panel
         if (ti->BC == Panel::VELOCITY) {
-          res_i = eval_traction_integral(*si, *ti, *ci); // +=
+          //res_i = eval_traction_integral(*si, *ti, *ci); // +=
+          res_i = eval_velocity_integral(*si, *ti, *ci); // -=
         }
         else if (ti->BC == Panel::TRACTION) {
-          res_i = -eval_velocity_integral(*si, *ti, *ci); // -=
+          // res_i = -eval_velocity_integral(*si, *ti, *ci); // -=
+          res_i = -eval_traction_integral(*si, *ti, *ci); // +=
         }
         else // should never get here
         {
           printf("Error\n");
           res += result_type(0.);
         }
-        // printf("\tres += %g, %g, %g\n",res_i[0],res_i[1],res_i[2]);
         res += res_i;
-        s_idx++;
       }
-      // printf("t: %d, s: %d, r: %g, %g, %g\n",t_idx,s_idx,res[0],res[1],res[2]);
       (*ri) += res;
-      t_idx++;
     }
   }
 
@@ -296,14 +292,15 @@ class StokesSphericalBEM : public StokesSpherical
   {
     // setup stuff
     auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
-    auto c0 = charge[0], c1 = charge[1], c2 = charge[2];
 
     complex Ynm[4*P*P], YnmTheta[4*P*P];
 
     // loop over quadrature points
     for (auto i=0u; i<source.quad_points.size(); i++) {
       auto qp = source.quad_points[i];
+      auto gw = gauss_weight[i];
       point_type dist = static_cast<point_type>(qp) - center;
+      // point_type dist = center - static_cast<point_type>(qp);
       real rho, alpha, beta;
       cart2sph(rho,alpha,beta,dist);
       evalMultipole(rho,alpha,-beta,Ynm,YnmTheta);
@@ -319,12 +316,12 @@ class StokesSphericalBEM : public StokesSpherical
           {
             // ease of writing
             auto area = source.Area;
-            auto gw = gauss_weight[i];
 
-            auto fdotx = gw*area*c0*qp[0] + gw*area*c1*qp[1] + gw*area*c2*qp[2];
-            M[0][0][nms] += gw * area * c0 * Ynm[nm];
-            M[0][1][nms] += gw * area * c1 * Ynm[nm];
-            M[0][2][nms] += gw * area * c2 * Ynm[nm];
+            auto f2 = area*gw*charge;
+            auto fdotx = f2[0]*qp[0] + f2[1]*qp[1] + f2[2]*qp[2];
+            M[0][0][nms] += f2[0] * Ynm[nm];
+            M[0][1][nms] += f2[1] * Ynm[nm];
+            M[0][2][nms] += f2[2] * Ynm[nm];
             M[0][3][nms] += fdotx * Ynm[nm];
           }
           // traction specified
@@ -333,7 +330,6 @@ class StokesSphericalBEM : public StokesSpherical
             auto& normal = source.normal;
             auto n0 = normal[0], n1 = normal[1], n2 = normal[2];
             auto& area = source.Area;
-            auto gw = gauss_weight[i];
 
             complex brh = (double)n/rho*Ynm[nm]; // d(rho)
             complex bal = YnmTheta[nm];          // d(alpha)
@@ -343,14 +339,15 @@ class StokesSphericalBEM : public StokesSpherical
             complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
             complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
 
+            auto g2 = area*gw*charge;
             // which order should these be in?
             auto rdotn = bxd*n0 + byd*n1 + bzd*n2;
-            auto rdotg = bxd*gw*area*c0 + byd*gw*area*c1 + bzd*gw*area*c2;
-            M[1][0][nms] += (rdotn * gw*area*c0 + rdotg * n0);
-            M[1][1][nms] += (rdotn * gw*area*c1 + rdotg * n1);
-            M[1][2][nms] += (rdotn * gw*area*c2 + rdotg * n2);
+            auto rdotg = bxd*g2[0] + byd*g2[1] + bzd*g2[2];
+            M[1][0][nms] += (rdotn * g2[0] + rdotg * n0);
+            M[1][1][nms] += (rdotn * g2[1] + rdotg * n1);
+            M[1][2][nms] += (rdotn * g2[2] + rdotg * n2);
 
-            auto xdotg = qp[0]*gw*area*c0 + qp[1]*gw*area*c1 + qp[2]*gw*area*c2;
+            auto xdotg = qp[0]*g2[0] + qp[1]*g2[1] + qp[2]*g2[2];
             auto ndotx = n0*qp[0] + n1*qp[1] + n2*qp[2];
             M[1][3][nms] += rdotn * xdotg + rdotg * ndotx;
           }
@@ -380,7 +377,9 @@ class StokesSphericalBEM : public StokesSpherical
     else
     {
       StokesSpherical::M2P(M[1],center,target,r);
-      result -= 1./2*r;
+      // need to scale result by -3 / 6 = -0.5
+      //printf("adding: %g, %g, %g\n", 0.5*r[0],0.5*r[1],0.5*r[2]);
+      result += 0.5*r;
     }
   }
 
@@ -407,7 +406,7 @@ class StokesSphericalBEM : public StokesSpherical
     if (target.BC == Panel::VELOCITY)
     {
       StokesSpherical::L2P(L[0],center,target,r);
-      result += r;
+      result += 1./2*r;
     }
     else
     {

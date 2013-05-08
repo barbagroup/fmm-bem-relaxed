@@ -12,28 +12,6 @@
 #include <cmath>
 #include "Preconditioner.hpp"
 
-template <typename T>
-void vec_to_double(const std::vector<Vec<3,T>>& v, std::vector<T>& v_arr)
-{
-  int i=0;
-  for (auto vi : v) {
-    v_arr[i*3    ] = vi[0];
-    v_arr[i*3 + 1] = vi[1];
-    v_arr[i*3 + 2] = vi[2];
-    i++;
-  }
-}
-
-template <typename T>
-void double_to_vec(const std::vector<T>& arr, std::vector<Vec<3,T>>& v)
-{
-  for (unsigned i=0; i<v.size(); i++) {
-    v[i][0] = arr[i*3    ];
-    v[i][1] = arr[i*3 + 1];
-    v[i][2] = arr[i*3 + 2];
-  }
-}
-
 /** Very basic matrix type */
 template <typename T>
 class Matrix
@@ -190,7 +168,7 @@ void fmm_gmres(FMM& fmm,
 template <typename FMM, typename SolverOptions, typename Preconditioner>
 void fmm_gmres(FMM& fmm,
                std::vector<typename FMM::charge_type>& x,
-               std::vector<typename FMM::result_type>& b_fmm,
+               std::vector<typename FMM::result_type>& b,
                const SolverOptions& opts, const Preconditioner& M)
 {
   const int N = x.size();
@@ -202,16 +180,12 @@ void fmm_gmres(FMM& fmm,
   int iter = 0;
   // allocate the workspace
   double resid = 0;
-  std::vector<double> b(3*N);
 
-  std::vector<typename FMM::result_type> w_fmm(N);
-  std::vector<double> w(3*N);
+  std::vector<double> w(N);
 
-  std::vector<typename FMM::result_type> V0_fmm(N);
-  std::vector<double> V0(3*N);
+  std::vector<double> V0(N);
 
-  Matrix<double> V(3*N,R+1);
-  std::vector<typename FMM::charge_type> V_fmm(N);
+  Matrix<double> V(N,R+1);
 
   Matrix<double> H(R+1,R);
   std::vector<double> s(R+1);
@@ -224,7 +198,6 @@ void fmm_gmres(FMM& fmm,
 
   // scale residual by ||b||
   // convert input b to double
-  vec_to_double(b_fmm,b);
   auto normb = norm(b.begin(),b.end());
 
   // main loop
@@ -232,9 +205,7 @@ void fmm_gmres(FMM& fmm,
     // convert x from double[3*N] to Vec<3,double>[N]
 
     // dot product of A*x -- FMM call
-    w_fmm = fmm.execute(x); // V(0) = A*x
-    // convert w to double[3*N]
-    vec_to_double(w_fmm,w);
+    w = fmm.execute(x); // V(0) = A*x
 
     // V(0) = M*V(0) -- preconditioner step if desired
     M(w,w);
@@ -258,11 +229,7 @@ void fmm_gmres(FMM& fmm,
 
       // perform w = A*x
       std::fill(V0.begin(),V0.end(),0.);
-      // convert V.column(i) to vec<3,T>
-      double_to_vec(V.column(i),V_fmm);
-      V0_fmm = fmm.execute(V_fmm);
-      // convert V0 to double[3*N]
-      vec_to_double(V0_fmm, V0);
+      V0 = fmm.execute(V.column(i));
 
       M(V0,w); // instead of preconditioner step
 
@@ -302,11 +269,7 @@ void fmm_gmres(FMM& fmm,
     // Update the solution
     for (int j=0; j<=i; j++) {
       // x =x + x[j]*V(:,j)
-      // convert x -> vector<double>, axpy then convert -> vec<3,T>
-      std::vector<double> x_temp(3*N);
-      vec_to_double(x,x_temp);
-      blas::axpy(V.column(j),x_temp,s[j]);
-      double_to_vec(x_temp,x);
+      blas::axpy(V.column(j),x,s[j]);
     }
     if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 

@@ -1,9 +1,7 @@
-#include "executor/INITM.hpp"
-#include "executor/INITL.hpp"
+#include "INITM.hpp"
+#include "INITL.hpp"
 
-#include "LaplaceCartesian.hpp"
-#include "LaplaceSpherical.hpp"
-
+#define STRESSLET
 #include "StokesSpherical.hpp"
 
 #include "Math.hpp"
@@ -28,11 +26,17 @@ void single_level_test(const Kernel& K)
 
   // init charge
   std::vector<charge_type> c(1);
-  c[0] = charge_type(1,2,3);
+  // c[0] = charge_type(1,2,3,1,0,0);
+  c[0][0] = 1;
+  c[0][1] = 2;
+  c[0][2] = 1;
+  c[0][3] = 1;
+  c[0][4] = 0;
+  c[0][5] = 1;
 
   // init target
   std::vector<target_type> t(1);
-  t[0] = target_type(0.9,0,0);
+  t[0] = target_type(0.9,0.9,0.9);
   // target_type t = target_type(0.9,0,0); // 1,1);
 
   // init results vectors for exact, FMM
@@ -52,12 +56,13 @@ void single_level_test(const Kernel& K)
   INITM::eval(K, M, M_center, 1u);
   K.P2M(s[0], c[0], M_center, M);
 
+
   // test M2P
   K.M2P(M, M_center, t[0], rm2p);
 
   // test M2L, L2P
   local_type L;
-  point_type L_center(0.875,0,0); // 0.875,0.875);
+  point_type L_center(0.875,0.875,0.875);
   auto d = L_center - M_center;
   printf("DIST: (%lg, %lg, %lg) : %lg\n",d[0],d[1],d[2],norm(d));
   // L_center = point_type(t);
@@ -67,8 +72,8 @@ void single_level_test(const Kernel& K)
 
   // check errors
   std::cout << "rexact = " << rexact[0] << std::endl;
-  std::cout << "rm2p = " << rm2p << std::endl;
-  std::cout << "rfmm = " << rfmm << std::endl;
+  std::cout << "rm2p = " << 1./6*rm2p << std::endl;
+  std::cout << "rfmm = " << 1./6*rfmm << std::endl;
 
   /*
   std::cout << "M2P L1 rel error: "

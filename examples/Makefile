@@ -58,6 +58,9 @@ LaplaceBEM: LaplaceBEM.o
 LaplaceBEM_time: LaplaceBEM_time.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
+StokesBEM: StokesBEM.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
 YukawaBEM: YukawaBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
@@ -68,12 +71,12 @@ reader_test: reader_test.o
 #   $<: the name of the prereq of the rule (a .cpp file)
 #   $@: the name of the target of the rule (a .o file)
 .cpp.o:
-	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(DEFS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CFLAGS) $(DEPCFLAGS) $(INCLUDES) -c -o $@ $<
 
 # 'make clean' - deletes all .o and temp files, exec, and dependency file
 clean:
 	-$(RM) *.o *~ */*~
-	-$(RM) LaplaceBEM YukawaBEM reader_test
+	-$(RM) LaplaceBEM YukawaBEM StokesBEM
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

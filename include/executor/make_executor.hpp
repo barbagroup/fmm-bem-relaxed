@@ -29,8 +29,8 @@ void make_evaluators(Executor& executor, Options& opts)
   } else if (opts.local_evaluation) {
     // only evaluate local field for preconditioner
     if (opts.sparse_local) {
-      auto sparse_eval = make_sparse_local_eval(executor, opts);
-      executor.insert(sparse_eval);
+      //auto sparse_eval = make_sparse_local_eval(executor, opts);
+      //executor.insert(sparse_eval);
     }
     else {
       auto local_eval = make_local_eval(executor, opts);

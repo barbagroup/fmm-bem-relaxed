@@ -5,6 +5,12 @@
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
 
+#define USE_ANALYTICAL
+
+#if defined(USE_ANALYTICAL)
+#include "FataAnalytical.hpp"
+#endif
+
 class LaplaceSphericalBEM : public LaplaceSpherical
 {
  // private:
@@ -157,10 +163,14 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     if (sqrt(2*source.Area)/dist >= 0.5) {
       // perform semi-analytical integral
       namespace AI = AnalyticalIntegral;
-      double G = 0., dGdn = 0.;
       auto& vertices = source.vertices;
+#if defined(USE_ANALYTICAL)
+      return AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::G);
+#else
+      double G = 0., dGdn = 0.;
       AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
       return G;
+#endif
     }
     else
     {
@@ -183,9 +193,13 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       namespace AI = AnalyticalIntegral;
       // semi-analytical integral
       auto& vertices = source.vertices;
+#if defined(USE_ANALYTICAL)
+      return -AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::dGdn);
+#else
       double G = 0., dGdn = 0.;
       AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
       return -dGdn;
+#endif
     } else {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(K);
       double res=0.;
@@ -267,13 +281,13 @@ class LaplaceSphericalBEM : public LaplaceSpherical
           else
           {
             // otherwise influence of dGdn needed
-            complex brh = (double)n/rho*Ynm[nm];
-            complex bal = YnmTheta[nm];
-            complex bbe = -complex(0,1.)*(double)m*Ynm[nm];
+            complex brh = (double)n/rho*Ynm[nm]; // d(rho)
+            complex bal = YnmTheta[nm];          // d(alpha)
+            complex bbe = -complex(0,1.)*(double)m*Ynm[nm]; // d(beta)
 
-            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe;
-            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe;
-            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal;
+            complex bxd = sin(alpha)*cos(beta)*brh + cos(alpha)*cos(beta)/rho*bal - sin(beta)/rho/sin(alpha)*bbe; // dx
+            complex byd = sin(alpha)*sin(beta)*brh + cos(alpha)*sin(beta)/rho*bal + cos(beta)/rho/sin(alpha)*bbe; // dy
+            complex bzd = cos(alpha)*brh - sin(alpha)/rho*bal; // dz
 
             auto& normal = source.normal;
             complex mult_term = charge * gauss_weight[i] * source.Area;

@@ -2,6 +2,7 @@
  * @brief Testing and debugging script for FMM-BEM applications
  */
 
+#include "StokesSphericalBEM.hpp"
 
 #include "FMM_plan.hpp"
 #include "DirectMatvec.hpp"

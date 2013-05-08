@@ -209,6 +209,12 @@ class fixed_vector
   fixed_vector()
       : vector_type(N,T()) {}
   BOOST_UBLAS_INLINE
+  explicit fixed_vector(size_type size)
+      : vector_type(N,T()) {
+    (void) size;
+    BOOST_UBLAS_CHECK(size == N, ublas::bad_size());
+  }
+  BOOST_UBLAS_INLINE
   fixed_vector(const fixed_vector& v)
       : vector_type(v) {}
   template<class A2>              // Allow vector<T,fixed_array<N> construction
@@ -281,8 +287,7 @@ bool operator==(const Vec<N,T>& a,
                 const Vec<N,T>& b) {
   return std::equal(a.begin(), a.end(), b.begin());
 }
-/** Equality comparison (weak) */
-template <unsigned N, typename T>
+template <std::size_t N, typename T>
 BOOST_UBLAS_INLINE
 bool operator!=(const Vec<N,T>& a,
                 const Vec<N,T>& b) {
@@ -437,4 +442,3 @@ operator*(const ublas::vector_expression<E1>& e1,
     >::expression_type expression_type;
   return expression_type(e1(), e2());
 }
-

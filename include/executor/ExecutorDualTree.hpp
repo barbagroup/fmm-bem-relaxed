@@ -55,14 +55,14 @@ class ExecutorDualTree : public ExecutorBase<Kernel>
 
   //! Kernel type
   typedef Kernel kernel_type;
+  //! Kernel value type
+  typedef typename Kernel::kernel_value_type kernel_value_type;
   //! Kernel charge type
   typedef typename kernel_type::multipole_type multipole_type;
   //! Kernel result type
   typedef typename kernel_type::local_type local_type;
   //! Kernel point type
   typedef typename kernel_type::point_type point_type;
-  //! Kernel value_type
-  typedef typename kernel_type::kernel_value_type kernel_value_type;
   //! Kernel source type
   typedef typename kernel_type::source_type source_type;
   //! Kernel target type

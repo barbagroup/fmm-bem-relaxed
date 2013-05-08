@@ -5,27 +5,20 @@
 //#define DEBUG
 
 #include <FMM_plan.hpp>
-//#include <LaplaceSphericalModified.hpp>
-#include <LaplaceSpherical.hpp>
-//#include <UnitKernel.hpp>
-//#include <KernelSkeleton.hpp>
-//#include <KernelSkeletonMixed.hpp>
-#include <LaplaceCartesian.hpp>
-//#include <YukawaCartesian.hpp>
-//#include <YukawaSpherical.hpp>
+#define STRESSLET
 #include "StokesSpherical.hpp"
 
-#include <cstring>
+#include <string.h>
 
 // modify error checking for counting kernel
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
+//#define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
 //#define YUKAWA_SPH
-//#define STOKES_SPH
+#define STOKES_SPH
 
 // Random number in [0,1)
 inline double drand() {
@@ -39,17 +32,11 @@ inline double drand(double A, double B) {
 
 int main(int argc, char **argv)
 {
-  //std::vector<std::string> args(argv+1, argv+argc);
-  //std::cout << args[0] << '\n' << args[1] << '\n' << args[2] << std::endl;
-
   int numBodies = 1000, p=5;
   bool checkErrors = true;
   double beta = 0.125;
 
   FMMOptions opts = get_options(argc, argv);
-
-  //opts.local_evaluation = true;
-  //opts.sparse_local = true;
 
   // parse custom command line args
   for (int i = 1; i < argc; ++i) {
@@ -117,7 +104,16 @@ int main(int argc, char **argv)
   std::vector<charge_type> charges(numBodies);
   for (int k = 0; k < numBodies; ++k) {
 #if defined(STOKES_SPH)
+  #if defined(STRESSLET)
+    charges[k][0] = drand();
+    charges[k][1] = drand();
+    charges[k][2] = drand();
+    charges[k][3] = 1.;
+    charges[k][4] = 0.;
+    charges[k][5] = 0.;
+  #else
     charges[k] = charge_type(1,1,1); // charge_type(drand(),drand(),drand());
+  #endif
 #else
     charges[k] = drand();
 #endif
@@ -184,6 +180,7 @@ int main(int argc, char **argv)
     for (unsigned k = 0; k < exact.size(); ++k) {
       auto exact_val = exact[k];
       auto fmm_val = result[sample_map[k]];
+      // std::cout << exact_val << "  :  " << fmm_val << std::endl;
 
       for (unsigned i=0; i < 3; i++) {
         rdiff[i] += (fmm_val[i]-exact_val[i])*(fmm_val[i]-exact_val[i]);

@@ -4,6 +4,7 @@
 #include "LaplaceCartesian.hpp"
 #include "LaplaceSpherical.hpp"
 #include "YukawaCartesian.hpp"
+#include "StokesSpherical.hpp"
 
 #include "Math.hpp"
 
@@ -24,27 +25,30 @@ void two_level_test(const Kernel& K)
   typedef typename kernel_type::local_type local_type;
 
   // init source
-  source_type s = source_type(0,0,0);
+  std::vector<source_type> s(1);
+  s[0] = source_type(0,0,0);
 
   // init charge
-  charge_type c = 1;
+  std::vector<charge_type> c(1);
+  c[0] = charge_type(1,2,3);
 
   // init target
-  target_type t = target_type(0.98,0.98,0.98);
+  std::vector<target_type> t(1);
+  t[0] = target_type(0.98,0.98,0.98);
 
   // init results vectors for exact, FMM
-  result_type rexact;
+  std::vector<result_type> rexact(1);
   result_type rm2p;
   result_type rfmm;
 
   // test direct
-  rexact = K(t,s) * c;
+  K.P2P(s.begin(),s.end(),c.begin(),t.begin(),t.end(),rexact.begin());
 
   // setup intial multipole expansion
   multipole_type M;
   const point_type M_center(0.05, 0.05, 0.05);
   INITM::eval(K, M, M_center, 2u);
-  K.P2M(s, c, M_center, M);
+  K.P2M(s[0], c[0], M_center, M);
 
   // perform M2M
   multipole_type M2;
@@ -54,7 +58,7 @@ void two_level_test(const Kernel& K)
   //K.P2M(s,c,M2_center,M2);
 
   // test M2P
-  K.M2P(M2, M2_center, t, rm2p);
+  K.M2P(M2, M2_center, t[0], rm2p);
 
   // test M2L, L2P
 #ifndef TREECODE_ONLY
@@ -70,14 +74,15 @@ void two_level_test(const Kernel& K)
   K.L2L(L2, L, L_center - L2_center);
 
   // test L2P
-  K.L2P(L2, L2_center, t, rfmm);
+  K.L2P(L2, L2_center, t[0], rfmm);
 #endif
 
   // check errors
-  std::cout << "rexact = " << rexact << std::endl;
+  std::cout << "rexact = " << rexact[0] << std::endl;
   std::cout << "rm2p = " << rm2p << std::endl;
   std::cout << "rfmm = " << rfmm << std::endl;
 
+/*
   std::cout << "M2P L1 rel error: "
             << std::scientific << l1_rel_error(rm2p, rexact) << std::endl;
   std::cout << "M2P L2 error:     "
@@ -92,6 +97,7 @@ void two_level_test(const Kernel& K)
   std::cout << "FMM L2 rel error: "
             << std::scientific << l2_rel_error(rfmm, rexact) << std::endl;
 #endif
+*/
 }
 
 
@@ -102,7 +108,8 @@ int main(int argc, char **argv)
 
   //LaplaceCartesian<5> K;
   //LaplaceSpherical K(10);
-  YukawaCartesian K(10, 0.1);
+  //YukawaCartesian K(10, 0.1);
+  StokesSpherical K(5);
 
   two_level_test(K);
 }

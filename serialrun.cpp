@@ -10,7 +10,7 @@
 //#include <UnitKernel.hpp>
 //#include <KernelSkeleton.hpp>
 //#include <KernelSkeletonMixed.hpp>
-//#include <LaplaceCartesian.hpp>
+#include <LaplaceCartesian.hpp>
 //#include <YukawaCartesian.hpp>
 //#include <YukawaSpherical.hpp>
 #include "StokesSpherical.hpp"
@@ -48,8 +48,8 @@ int main(int argc, char **argv)
 
   FMMOptions opts = get_options(argc, argv);
 
-  opts.local_evaluation = false;
-  opts.sparse_local = false;
+  //opts.local_evaluation = true;
+  //opts.sparse_local = true;
 
   // parse custom command line args
   for (int i = 1; i < argc; ++i) {

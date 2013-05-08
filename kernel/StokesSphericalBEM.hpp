@@ -406,12 +406,12 @@ class StokesSphericalBEM : public StokesSpherical
     if (target.BC == Panel::VELOCITY)
     {
       StokesSpherical::L2P(L[0],center,target,r);
-      result += 1./2*r;
+      result += 1./2/Mu*r;
     }
     else
     {
       StokesSpherical::L2P(L[1],center,target,r);
-      result -= 1./6*r;
+      result += 0.5*r;
     }
   }
 };

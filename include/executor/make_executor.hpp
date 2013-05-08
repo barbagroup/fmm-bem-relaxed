@@ -52,9 +52,10 @@ void make_evaluators(Executor& executor, Options& opts)
 template <typename Kernel,
           typename SourceIter,
           typename Options>
-ExecutorBase<Kernel>* make_executor(const Kernel& K,
-                                    SourceIter first, SourceIter last,
-                                    Options& opts) {
+// ExecutorBase<Kernel>* make_executor(const Kernel& K,
+ExecutorSingleTree<Kernel,Octree<typename Kernel::point_type>>* make_executor(const Kernel& K,
+                                          SourceIter first, SourceIter last,
+                                          Options& opts) {
   typedef Octree<typename Kernel::point_type> Tree;
 
   auto executor = make_executor<Tree>(K,

@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 {
   int numPanels= 1000, recursions = 4, p = 8, k = 4;
   double mu = 1e-3;
-  FMMOptions opts;
+  FMMOptions opts = get_options(argc, argv);
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
 

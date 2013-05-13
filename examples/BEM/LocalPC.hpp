@@ -41,6 +41,7 @@ class LocalInnerSolver
   void operator()(VecType x, VecType& y) {
     // y = x;
     // printf("Calling Preconditioners::LocalInnerSolver\n");
+    std::fill(y.begin(),y.end(),typename VecType::value_type(0.));
     GMRES(plan, y, x, options); // , preconditioner);
   }
 
@@ -48,10 +49,11 @@ class LocalInnerSolver
   template <typename Kernel, typename SourceVector, typename ResultVector>
   LocalInnerSolver(Kernel k, SourceVector& sources, ResultVector& RHS)
     : plan(k,sources,local_options()), rhs(RHS), preconditioner(k,sources.begin(),sources.end()), context(RHS.size(), 50) {
+    //: plan(k,sources,local_options()), rhs(RHS), context(RHS.size(), 50) {
 
-    options.residual= 1e-3;
+    options.residual= 1e-1;
     options.variable_p = false;
-    options.max_iters = 0;
+    options.max_iters = 1;
   }
 
   /*

@@ -12,6 +12,7 @@ public:
 	bool lazy_evaluation; // use lazy evaluation of multipole / local expansions / translations?
   bool local_evaluation; // use only local evaluation (for preconditioners)
   bool sparse_local; // only local eval using sparse matrix
+  bool block_diagonal; // only diagonal eval, using sparse matrix
 
 	//! Evaluation type
 	enum EvalType {FMM, TREECODE};
@@ -40,6 +41,7 @@ public:
 		: lazy_evaluation(false),
       local_evaluation(false),
       sparse_local(false),
+      block_diagonal(false),
 		  evaluator(FMM),
 		  MAC_(DefaultMAC(0.5)),
 		  NCRIT_(64),

@@ -12,6 +12,9 @@
 #include "GMRES.hpp"
 #include "fmgmres.hpp"
 #include "LocalPC.hpp"
+#include "BlockDiagonalPC.hpp"
+
+#include "MshReader.hpp"
 
 #include "timing.hpp"
 
@@ -69,6 +72,8 @@ int main(int argc, char **argv)
   // opts.set_max_per_box(10);
   SolverOptions solver_options;
   bool second_kind = false;
+  char *mesh_name;
+  bool mesh = false;
 
   // solve / PC settings
   SOLVERS solver = SOLVE_GMRES;
@@ -103,6 +108,8 @@ int main(int argc, char **argv)
       solver_options.residual = (double)atof(argv[i]);
     } else if (strcmp(argv[i],"-gmres") == 0) {
       solver = SOLVE_GMRES;
+    } else if (strcmp(argv[i],"-fgmres") == 0) {
+      solver = SOLVE_FGMRES;
     } else if (strcmp(argv[i],"-local") == 0) {
       solver = SOLVE_FGMRES;
       pc = LOCAL;
@@ -110,6 +117,10 @@ int main(int argc, char **argv)
       pc = DIAGONAL;
     } else if (strcmp(argv[i],"-help") == 0) {
       printHelpAndExit();
+    } else if (strcmp(argv[i],"-mesh") == 0) {
+      i++;
+      mesh_name = argv[i];
+      mesh = true;
     } else {
       printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
       // printHelpAndExit();
@@ -133,14 +144,28 @@ int main(int argc, char **argv)
   // Init points and charges
   std::vector<source_type> panels(numPanels);
   std::vector<charge_type> charges(numPanels);
-  initialiseSphere(panels, charges, recursions); //, ProblemOptions());
+
+  if (mesh) {
+    printf("reading mesh from: %s\n",mesh_name);
+    readMsh<point_type,source_type>(mesh_name, panels); // , panels);
+  } else {
+    initialiseSphere(panels, charges, recursions); //, ProblemOptions());
+  }
 
   // run case solving for Phi (instead of dPhi/dn)
   if (second_kind)
     for (auto& it : panels) it.switch_BC();
 
   // set constant Phi || dPhi/dn for each panel
+  /*
   charges.resize(panels.size());
+  // set up a more complicated charge, from BEM++
+  for (unsigned i=0; i<panels.size(); i++) {
+    auto center = panels[i].center;
+    double x = center[0], y = center[1], z = center[2];
+    double r = norm(center);
+    charges[i] = 2*x*z/(r*r*r*r*r) - y/(r*r*r);
+  }*/
   charges = std::vector<charge_type>(panels.size(),1.);
 
   // Build the FMM structure
@@ -164,14 +189,20 @@ int main(int argc, char **argv)
   // Solve the system using GMRES
   // generate the Preconditioner
   tic = get_time();
-  Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  //M.print();
+  Preconditioners::Diagonal<charge_type> M(K,
+                                           plan.source_begin(),
+                                           plan.source_end()
+                                          );
+  // M.print();
   SolverOptions inner_options(1e-2,1,2);
   inner_options.variable_p = true;
   // Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
 
   // Local preconditioner
-  Preconditioners::LocalInnerSolver<FMM_plan<kernel_type>, Preconditioners::Diagonal<charge_type>> local(K, panels, b);
+  Preconditioners::LocalInnerSolver<FMM_plan<kernel_type>, Preconditioners::Diagonal<result_type>> local(K, panels, b);
+
+  // block diagonal preconditioner
+  Preconditioners::BlockDiagonal<FMM_plan<kernel_type>> block_diag(K,panels);
 
   // Initial low accuracy solve
   //
@@ -191,9 +222,10 @@ int main(int argc, char **argv)
   */
 
   // Outer GMRES solve with diagonal preconditioner & relaxation
-  solver_options.residual = 1e-5;
   FGMRESContext<result_type> context(x.size(), solver_options.restart);
 
+  if (second_kind) printf("2nd-kind equation being solved\n");
+  else             printf("1st-kind equation being solved\n");
   if (solver == SOLVE_GMRES && pc == IDENTITY){
     printf("Solver: GMRES\nPreconditioner: Identity\n");
     // straight GMRES, no preconditioner
@@ -204,6 +236,16 @@ int main(int argc, char **argv)
     printf("Solver: GMRES\nPreconditioner: Diagonal\n");
     // GMRES, diagonal preconditioner
     GMRES(plan,x,b,solver_options, M, context);
+  }
+  else if (solver == SOLVE_FGMRES && pc == IDENTITY) {
+    printf("Solver: FMRES\nPreconditioner: Identity\n");
+    // GMRES, diagonal preconditioner
+    FGMRES(plan,x,b,solver_options);
+  }
+  else if (solver == SOLVE_FGMRES && pc == DIAGONAL) {
+    printf("Solver: FGMRES\nPreconditioner: Block Diagonal\n");
+    // GMRES, diagonal preconditioner
+    FGMRES(plan,x,b,solver_options, block_diag, context);
   }
   else if (solver == SOLVE_FGMRES && pc == LOCAL) {
     printf("Solver: FGMRES\nPreconditioner: Local solve\n");
@@ -228,8 +270,23 @@ int main(int argc, char **argv)
   // check errors -- analytical solution for dPhi/dn = 1.
   double e = 0.;
   double e2 = 0.;
-  double an = 1.;
-  for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
+  //double an = 1.;
+  //for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
+  std::vector<result_type> analytical(panels.size());
+  for (unsigned i=0; i<panels.size(); i++) {
+    auto center = panels[i].center;
+    double x = center[0], y = center[1], z = center[2];
+    double r = norm(center);
+    analytical[i] = -(-6 * x * z / (r*r*r*r*r*r) + 2 * y / (r*r*r*r));
+  }
+
+  auto ai = analytical.begin();
+  for (auto xi : x) {
+    // printf("approx: %.4g, analytical: %.4g\n",xi,*ai);
+    e += (xi-*ai)*(xi-*ai);
+    e2 += (*ai)*(*ai);
+    ++ai;
+  }
 
   printf("error: %.3e\n",sqrt(e/e2));
 }

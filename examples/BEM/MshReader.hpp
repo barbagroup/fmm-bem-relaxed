@@ -95,6 +95,7 @@ void readMsh(const char *fname, std::vector<triangle_type>& elements)
     int v2 = atoi(split_str[2+num_properties+2].c_str()) - 1;
     int v3 = atoi(split_str[2+num_properties+3].c_str()) - 1;
 
-    elements[element_no-1] = triangle_type(nodes[v1],nodes[v2],nodes[v3]);
+    // elements[element_no-1] = triangle_type(nodes[v1],nodes[v2],nodes[v3]); // clockwise
+    elements[element_no-1] = triangle_type(nodes[v1],nodes[v3],nodes[v2]); // anti-clockwise
   }
 }

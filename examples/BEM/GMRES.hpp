@@ -220,6 +220,16 @@ void GMRES(Matvec& MV,
   printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }
 
+template <typename Matvec>
+void FGMRES(Matvec& MV,
+            std::vector<typename Matvec::charge_type>& x,
+            std::vector<typename Matvec::result_type>& b,
+            const SolverOptions& opts)
+{
+  Preconditioners::Identity M;
+  FGMRES(MV,x,b,opts,M);
+}
+
 //! pass with preconditioner but no context
 template <typename Matvec, typename Preconditioner>
 void FGMRES(Matvec& MV,

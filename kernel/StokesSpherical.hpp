@@ -5,7 +5,14 @@
  */
 
 #include "LaplaceSpherical.hpp"
+#include "Mat3.hpp"
 #include <iostream>
+
+// multiplication operator for KVT * CT
+Vec<3,real> operator*(const Mat3<real>& A, const Vec<3,real>& x)
+{
+  return A.multiply(x);
+}
 
 class StokesSpherical : public LaplaceSpherical
 {
@@ -23,8 +30,8 @@ class StokesSpherical : public LaplaceSpherical
   //! charge type - { f1, f2, f3 }
   typedef Vec<3, LaplaceSpherical::charge_type> charge_type;
 #endif
-  //! return of kernel evaluation
-  typedef Vec<3, real> kernel_value_type;
+  //! return of kernel evaluation - 3x3 matrix
+  typedef Mat3<real> kernel_value_type;
   //! product of charge and KVT
   typedef Vec<3, real> result_type;
 
@@ -57,63 +64,26 @@ class StokesSpherical : public LaplaceSpherical
     }
   }
 
+#ifndef STRESSLET
   /** Kernel evaluation
    * K(t,s)
    * this is kind of useless -- I need to define a P2P anyway, as charge * KVT doesn't work for this app...
    */
-  /*
   kernel_value_type operator()(const target_type& t, const source_type& s) const {
     // do shit here
-    (void) t;
-    (void) s;
-    //oint_type dist = s - t;
-    //real R2 = norm(dist);
-    //real invR2 = 1.0 / R2;
-    //if (R2 < 1e-8) invR2 = 0;
-    // real invR = std::sqrt(invR2);
-    return kernel_value_type(0,0,0);
-  }
-  */
+    kernel_value_type M;
+    point_type dist = s - t;
+    real dx = dist[0], dy = dist[1], dz = dist[2];
+    real r2 = normSq(dist);
+    real invR2 = 1.0 / r2;
+    if (r2 < 1e-8) invR2 = 0;
+    real invR = std::sqrt(invR2);
+    real invR3 = invR2 * invR;
 
-#ifndef STRESSLET
-  template <typename SourceIter, typename ChargeIter,
-            typename TargetIter, typename ResultIter>
-  void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
-           TargetIter t_first, TargetIter t_last, ResultIter r_first) const {
-    // do crap here
-    auto ti = t_first;
-    auto ri = r_first;
-
-    for ( ; ti != t_last; ++ti, ++ri) {
-      auto si = s_first;
-      auto ci = c_first;
-      for ( ; si != s_last; ++si, ++ci) {
-        // interact target, source & charge here
-        point_type dist = *ti - *si;
-        auto r2 = normSq(dist);
-        real R1 = r2;
-        real R2 = R1;
-        real invR = 1. / R1;
-        if (r2 < 1e-8) invR = 0;
-
-        //auto invR2 = 1./r2;
-        //if (invR2 < 1e-8) invR2 = 0;
-        //auto invR = std::sqrt(invR2);
-        auto H = std::sqrt(invR) * invR; // 1 / R^3
-
-        auto& f = *ci;
-        auto fdx = dist[0]*f[0] + dist[1]*f[1] + dist[2]*f[2];
-
-        // auto& r = *r_first;
-
-        //r[0] += 1.; // H * (c[0] * R2 + fdx * dist[0]);
-        //r[1] += 1.; // H * (c[1] * R2 + fdx * dist[1]);
-        //r[2] += 1.; // H * (c[2] * R2 + fdx * dist[2]);
-        (*ri)[0] +=  H * (f[0] * R2 + fdx * dist[0]);
-        (*ri)[1] +=  H * (f[1] * R2 + fdx * dist[1]);
-        (*ri)[2] +=  H * (f[2] * R2 + fdx * dist[2]);
-      }
-    }
+    M(0,0) = invR3*(r2 + dx*dy); M(0,1) = invR3*dx*dy; M(0,2) = invR3*dx*dz;
+    M(1,0) = invR3*dx*dy; M(1,1) = invR3*(r2 + dy*dy); M(1,2) = invR3*dy*dz;
+    M(2,0) = invR3*dx*dz; M(2,1) = invR3*dy*dz; M(2,2) = invR3*(r2 + dz*dz);
+    return M;
   }
 #else
   template <typename SourceIter, typename ChargeIter,

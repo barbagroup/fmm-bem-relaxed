@@ -57,7 +57,7 @@ struct Mat3 {
     return (temp += M);
   }
   // matvec
-  Vec<3,T> multiply(Vec<3,T>& x) {
+  Vec<3,T> multiply(const Vec<3,T>& x) const {
     Vec<3,T> result;
     result[0] = vals_[0]*x[0]+vals_[1]*x[1]+vals_[2]*x[2];
     result[1] = vals_[3]*x[0]+vals_[4]*x[1]+vals_[5]*x[2];

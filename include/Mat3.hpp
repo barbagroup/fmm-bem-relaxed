@@ -64,4 +64,10 @@ struct Mat3 {
     result[2] = vals_[6]*x[0]+vals_[7]*x[1]+vals_[8]*x[2];
     return result;
   }
+  Mat3<T> multiply(const double x) const {
+    Mat3<T> M(*this);
+
+    for (unsigned i=0; i<9; i++) M.vals_[i]*=x;
+    return M;
+  }
 };

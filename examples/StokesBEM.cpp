@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   double mu = 1e-3;
   FMMOptions opts = get_options(argc, argv);
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
-  opts.set_max_per_box(10);
+  opts.set_max_per_box(50);
 
   // parse command line args
   // check if no arguments given

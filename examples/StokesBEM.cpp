@@ -142,6 +142,11 @@ int main(int argc, char **argv)
     for (auto& it : panels) it.switch_BC();
   }
 
+  /*
+  // print the RHS and exit
+  for (auto bi : b) std::cout << bi << std::endl;
+  std::exit(0);
+  */
 
   // Solve the system using GMRES
   // generate the Preconditioner

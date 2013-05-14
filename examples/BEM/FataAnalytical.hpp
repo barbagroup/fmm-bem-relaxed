@@ -411,8 +411,10 @@ Vec<3,T> multiply(Mat3<T> m, Vec<3,T> x)
 
 template <equation e, typename ChargeType, typename VectorType=Vec<3,double>, typename Context=IntegrationContext>
 auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f,
-                    VectorType& x, bool self_interaction, AnswerType type) -> decltype(multiply(Integration<e>::integrate(Context(),type),f))
+//                     VectorType& x, bool self_interaction, AnswerType type) -> decltype(multiply(Integration<e>::integrate(Context(),type),f))
+                    VectorType& x, bool self_interaction, AnswerType type) -> decltype(Integration<e>::integrate(Context(),type))
 {
+  (void) f; // for now
   Context context;
 
   /* code to set up the integration domain goes here
@@ -672,7 +674,8 @@ auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f
   auto r = Integration<e>::integrate(context, type);
 
   // multiply with the charge to get the final result
-  return multiply(r,f);
+  // return multiply(r,f);
+  return r;
 }
 
 /*

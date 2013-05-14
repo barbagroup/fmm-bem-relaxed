@@ -157,7 +157,8 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      auto ai = -3*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn);
+      auto M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn));
+      auto ai = -3*AI::matvec(M,g);
       // std::cout << "ai: " << result_type(ai) << std::endl;
       if (isnan(ai[0]) || isnan(ai[1]) || isnan(ai[2])) {
         printf("NAN found\n");
@@ -220,7 +221,8 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      return 1./2/Mu*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G);
+      Mat3<real> M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G));
+      return 1./2/Mu*AI::matvec(M,f);
     }
     else
     {

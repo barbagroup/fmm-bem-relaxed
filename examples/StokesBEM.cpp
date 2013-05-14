@@ -5,7 +5,7 @@
 #include "FMM_plan.hpp"
 #include "StokesSphericalBEM.hpp"
 #include "Triangulation.hpp"
-#include "gmres.hpp"
+#include "gmres_stokes.hpp"
 // #include "Preconditioner.hpp"
 
 struct SolverOptions

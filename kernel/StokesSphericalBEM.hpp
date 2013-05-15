@@ -4,6 +4,7 @@
 #include "FataAnalytical.hpp"
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
+#include "Mat3.hpp"
 
 class StokesSphericalBEM : public StokesSpherical
 {
@@ -22,7 +23,7 @@ class StokesSphericalBEM : public StokesSpherical
   //! Charge type
   typedef StokesSpherical::charge_type charge_type;
   //! kernel evaluation type
-  typedef StokesSpherical::kernel_value_type kernel_value_type;
+  typedef Mat3<real> kernel_value_type;
   //! result type
   typedef StokesSpherical::result_type result_type;
 
@@ -140,15 +141,20 @@ class StokesSphericalBEM : public StokesSpherical
     StokesSpherical::init_local(L[1],extents,level);
   }
 
-  result_type eval_traction_integral(const source_type& source, const target_type& target, const charge_type& g) const
+  kernel_value_type eval_traction_integral(const source_type& source, const target_type& target) const
   {
     auto dist = static_cast<point_type>(target) - source.center;
-    real d = norm(dist);
+    auto d = norm(dist);
+    result_type g(0.);
 
     // check for self-interaction
     bool self = fabs(d) < 1e-8;
     if (d < 1e-8) {
-      return 2*M_PI*g;
+      kernel_value_type r(0.);
+      r(0,0) = 2*M_PI;
+      r(1,1) = 2*M_PI;
+      r(2,2) = 2*M_PI;
+      return r;
     }
 
     // check for analytical integral / gauss quadrature
@@ -157,55 +163,44 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      auto ai = -3*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn);
-#ifdef DEBUG
-      // std::cout << "ai: " << result_type(ai) << std::endl;
-      if (isnan(ai[0]) || isnan(ai[1]) || isnan(ai[2])) {
-        printf("NAN found\n");
-        std::cout << "self: " << self << std::endl;
-        std::cout << "y1: " << vertices[0] << std::endl;
-        std::cout << "y2: " << vertices[2] << std::endl;
-        std::cout << "y3: " << vertices[1] << std::endl;
-        std::cout << "x: " << target.center << std::endl;
-        std::cout << "g: " << g << std::endl;
-        std::exit(0);
-      }
-#endif
-      return ai;
+      auto M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn));
+      return M.multiply(-3);
     }
     else
     {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
-      result_type res(0.);
+      real area = source.Area;
+      kernel_value_type res(0.), temp(0.);
 
       for (unsigned i=0; i<K; i++) {
         // eval contribution from this gauss point
-        auto g2 = g*gauss_weight[i]*source.Area;
+        // point_type dist_quad = source.quad_points[i] - target.center;
         point_type dist_quad = target.center - source.quad_points[i];
-        real r2 = normSq(dist_quad);
-        real invR = 1. / r2;
-        if (r2 < 1e-8) invR = 0;
+        auto r2 = normSq(dist_quad);
+        real invR2 = 1. / r2;
+        if (r2 < 1e-8) invR2 = 0;
+        real invR5 = invR2*invR2*std::sqrt(invR2);
+
+        double dx = dist_quad[0], dy = dist_quad[1], dz = dist_quad[2];
 
         auto& normal = source.normal;
         real dxdotn = dist_quad[0]*normal[0] + dist_quad[1]*normal[1] + dist_quad[2]*normal[2];
 
-        real H = std::sqrt(invR) * invR; // 1 / R^3
-        H *= dxdotn * invR;  // (dx . n) / r^5
+        temp(0,0) = dx*dx; temp(0,1) = dx*dy; temp(0,2) = dx*dz;
+        temp(1,0) = dx*dy; temp(1,1) = dy*dy; temp(1,2) = dy*dz;
+        temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = dz*dz;
 
-        real dx0 = dist_quad[0], dx1 = dist_quad[1], dx2 = dist_quad[2];
-
-        res[0] += H * (dx0*dx0*g2[0] + dx0*dx1*g2[1] + dx0*dx2*g2[2]);
-        res[1] += H * (dx0*dx1*g2[0] + dx1*dx1*g2[1] + dx1*dx2*g2[2]);
-        res[2] += H * (dx0*dx2*g2[0] + dx1*dx2*g2[1] + dx2*dx2*g2[2]);
+        AnalyticalIntegral::add_influence(res, gauss_weight[i]*area*dxdotn*invR5, temp);
       }
-      return -3*res;
+      return res.multiply(-3);
     }
   }
 
-  result_type eval_velocity_integral(const source_type& source, const target_type& target, const charge_type& f) const
+  kernel_value_type eval_velocity_integral(const source_type& source, const target_type& target) const
   {
     auto dist = static_cast<point_type>(target) - source.center;
-    real d = norm(dist);
+    auto d = norm(dist);
+    result_type f(0.);
 
     bool self = d < 1e-8;
 
@@ -215,66 +210,48 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      return 1./2/Mu*AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G);
+      Mat3<real> M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G));
+      return M.multiply(1./2/Mu);
     }
     else
     {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights();
-      real area = source.Area;
-      result_type res(0.);
+      auto area = source.Area;
+      kernel_value_type res(0.), temp(0.);
+
 
       for (unsigned i=0; i<K; i++) {
         // eval contribution from this gauss point
         // auto dist_quad = source.quad_points[i] - target.center;
         auto dist_quad = target.center - source.quad_points[i];
-        real r2 = normSq(dist_quad);
-        real invR = 1. / r2;
-        if (r2 < 1e-8) invR = 0;
+        auto r2 = normSq(dist_quad);
+        real invR2 = 1. / r2;
+        if (r2 < 1e-8) invR2 = 0;
+        real invR3 = invR2*std::sqrt(invR2);
+        double dx = dist_quad[0], dy = dist_quad[1], dz = dist_quad[2];
 
-        auto H = std::sqrt(invR) * invR; // 1 / R^3
+        temp(0,0) = r2 + dx*dx; temp(0,1) = dx*dy; temp(0,2) = dx*dz;
+        temp(1,0) = dx*dy; temp(1,1) = r2 + dy*dy; temp(1,2) = dy*dz;
+        temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = r2 + dz*dz;
 
-        auto f2 = f*gauss_weight[i]*area;
-        auto fdx = dist_quad[0]*f2[0] + dist_quad[1]*f2[1] + dist_quad[2]*f2[2];
+        AnalyticalIntegral::add_influence(res, gauss_weight[i]*area*invR3, temp);
 
-        res[0] +=  H * (f2[0] * r2 + fdx * dist_quad[0]);
-        res[1] +=  H * (f2[1] * r2 + fdx * dist_quad[1]);
-        res[2] +=  H * (f2[2] * r2 + fdx * dist_quad[2]);
       }
-      return 1./2/Mu*res;
+      return res.multiply(1./2/Mu);
     }
   }
 
-  // Operators
-  template <typename SourceIter, typename ChargeIter,
-            typename TargetIter, typename ResultIter>
-  void P2P(SourceIter s_first, SourceIter s_last, ChargeIter c_first,
-           TargetIter t_first, TargetIter t_last, ResultIter r_first) const
+  kernel_value_type operator()(const target_type& s, const source_type& t) const
   {
-    auto ti = t_first;
-    auto ri = r_first;
-
-    for ( ; ti != t_last; ++ti, ++ri) {
-      auto si = s_first;
-      auto ci = c_first;
-
-      result_type res(0.), res_i(0.);
-      for ( ; si != s_last; ++si, ++ci) {
-
-        // get relevant G / dGdn for this panel
-        if (ti->BC == Panel::VELOCITY) {
-          res_i = eval_velocity_integral(*si, *ti, *ci); // -=
-        }
-        else if (ti->BC == Panel::TRACTION) {
-          res_i = -eval_traction_integral(*si, *ti, *ci); // +=
-        }
-        else // should never get here
-        {
-          printf("Error\n");
-          res += result_type(0.);
-        }
-        res += res_i;
-      }
-      (*ri) += res;
+    if (t.BC == Panel::VELOCITY) {
+      return eval_velocity_integral(t,s);
+    }
+    else if (t.BC == Panel::TRACTION) {
+      // return eval_traction_integral(s,t);
+      return -eval_traction_integral(t,s);
+    }
+    else {
+      return kernel_value_type(0);
     }
   }
 

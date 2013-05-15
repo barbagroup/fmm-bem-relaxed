@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   double mu = 1e-3;
   FMMOptions opts = get_options(argc, argv);
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
-  opts.set_max_per_box(10);
+  opts.set_max_per_box(50);
 
   // parse command line args
   // check if no arguments given
@@ -142,6 +142,11 @@ int main(int argc, char **argv)
     for (auto& it : panels) it.switch_BC();
   }
 
+  /*
+  // print the RHS and exit
+  for (auto bi : b) std::cout << bi << std::endl;
+  std::exit(0);
+  */
 
   // Solve the system using GMRES
   // generate the Preconditioner

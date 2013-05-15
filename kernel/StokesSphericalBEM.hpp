@@ -6,11 +6,6 @@
 #include "BEMConfig.hpp"
 #include "Mat3.hpp"
 
-Vec<3,double> operator*(const Mat3<double>& A, const Vec<3,double>& x)
-{
-  return A.multiply(x);
-}
-
 class StokesSphericalBEM : public StokesSpherical
 {
  public:

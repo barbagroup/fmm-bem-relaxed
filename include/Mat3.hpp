@@ -56,6 +56,13 @@ struct Mat3 {
 
     return (temp += M);
   }
+  Vec<3,T> operator*(const Vec<3,T>& x) const {
+    Vec<3,T> result;
+    result[0] = vals_[0]*x[0]+vals_[1]*x[1]+vals_[2]*x[2];
+    result[1] = vals_[3]*x[0]+vals_[4]*x[1]+vals_[5]*x[2];
+    result[2] = vals_[6]*x[0]+vals_[7]*x[1]+vals_[8]*x[2];
+    return result;
+  }
   // matvec
   Vec<3,T> multiply(const Vec<3,T>& x) const {
     Vec<3,T> result;

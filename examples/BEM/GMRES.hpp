@@ -7,10 +7,31 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
+#include <type_traits>
 
 #include "Preconditioner.hpp"
 #include "SolverOptions.hpp"
 #include "BLAS.hpp"
+
+/** default case */
+template <typename T, typename ...Args>
+struct ChargeSize {
+  static int size() { return 1; }
+};
+
+template <typename T>
+struct ChargeSize<T> {
+  static int size() { return 1; }
+};
+template <int N, typename T2>
+struct ChargeSize<Vec<N,T2>> {
+  static int size() { return N; }
+};
+
+template <>
+struct ChargeSize<Vec<3,double>> {
+  static int size() { return 3;}
+};
 
 //! Context to store all GMRES temporary vectors -- shared between calls
 template <typename T>
@@ -25,20 +46,19 @@ struct GMRESContext
 
   //! constructor
   GMRESContext(const unsigned N=0, const unsigned R=50)
-     : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
-/*
+//     : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
   {
     printf("R: %d\n",R);
-    w  = std::vector<T>(N);
-    V0 = std::vector<T>(N);
-    z  = std::vector<T>(N);
+    unsigned factor = ChargeSize<T>::size();
+    w  = std::vector<T>(factor*N);
+    V0 = std::vector<T>(factor*N);
+    z  = std::vector<T>(factor*N);
     s  = std::vector<T>(R+1);
     cs = std::vector<T>(R);
     sn = std::vector<T>(R);
-    V  = Matrix<T>(N,R+1);
+    V  = Matrix<T>(factor*N,R+1);
     H  = Matrix<T>(R+1,R);
   }
-*/
 };
 
 //! Context for FGMRES temporary vectors
@@ -127,6 +147,10 @@ void GMRES(Matvec& MV,
 {
   typedef typename Matvec::charge_type charge_type;
   typedef typename Matvec::result_type result_type;
+
+  // get sizes of charges and results
+  //int charge_size = ChargeSize<charge_type>::size();
+  //int result_size = ChargeSize<result_type>::size();
 
   const int R = opts.restart;
   const int max_iters = opts.max_iters;

@@ -2,6 +2,7 @@
 
 #include "EvaluatorBase.hpp"
 #include "EvalP2P.hpp"
+#include "Matvec.hpp"
 
 #include <deque>
 
@@ -57,7 +58,8 @@ class EvalDiagonalSparse
 
     // call the matvec
     typedef typename Context::result_type result_type;
-    ublas::vector<result_type> results = ublas::prod(A, charges);
+    // ublas::vector<result_type> results = ublas::prod(A, charges);
+    ublas::vector<result_type> results = Matvec(A, charges);
 
     // copy results back into iterator
     std::transform(results.begin(), results.end(),

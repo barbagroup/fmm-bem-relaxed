@@ -5,16 +5,10 @@
 #include "FMM_plan.hpp"
 #include "StokesSphericalBEM.hpp"
 #include "Triangulation.hpp"
-#include "gmres_stokes.hpp"
+#include "SolverOptions.hpp"
+// #include "gmres_stokes.hpp"
+#include "GMRES_Stokes.hpp"
 // #include "Preconditioner.hpp"
-
-struct SolverOptions
-{
-  double residual;
-  int max_iters, restart;
-
-  SolverOptions() : residual(1e-5), max_iters(500), restart(1000) {};
-};
 
 struct ProblemOptions
 {
@@ -151,7 +145,8 @@ int main(int argc, char **argv)
   // Solve the system using GMRES
   // generate the Preconditioner
   //Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  fmm_gmres(plan, x, b, SolverOptions());
+  FGMRES(plan, x, b, SolverOptions());
+  //fmm_gmres(plan, x, b, SolverOptions());
   //direct_gmres(K, panels, x, b, SolverOptions());
 
   double fx = 0.;

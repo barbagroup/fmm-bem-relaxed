@@ -71,7 +71,7 @@ template <typename T>
 struct FGMRESContext : public GMRESContext<T>
 {
  public:
-  Matrix<T> Z;
+  Matrix<double> Z;
 
   //! constructor
   FGMRESContext(const unsigned N, const unsigned R)
@@ -222,8 +222,7 @@ void GMRES(Matvec& MV,
 
       // set p for this iteration
       int p = opts.predict_p(fabs(resid));
-      (void) K;
-      // K.set_p(p);
+      K.set_p(p);
 
       // perform w = A*x
       ArrayToVec(context.V.column(i), context.V_fmm);
@@ -245,7 +244,7 @@ void GMRES(Matvec& MV,
       // H(i+1,i) = nrm2(w)
       context.H(i+1,i) = blas::nrm2(context.w);
       // V(i+1) = V(i+1) / H(i+1,i)
-      auto& w_temp = context.w;
+      auto w_temp = context.w;
       blas::scal(w_temp,1./context.H(i+1,i));
       // V(:,i+1) = w
       context.V.set_column(i+1,w_temp);
@@ -309,7 +308,7 @@ void FGMRES(Matvec& MV,
 template <typename Matvec, typename Preconditioner, typename SolverContext>
 void FGMRES(Matvec& MV,
             std::vector<typename Matvec::charge_type>& x,
-            std::vector<typename Matvec::result_type>& b,
+            std::vector<typename Matvec::result_type>& b_fmm,
             const SolverOptions& opts, Preconditioner& M,
             SolverContext& context)
 {
@@ -318,13 +317,15 @@ void FGMRES(Matvec& MV,
 
   const int R = opts.restart;
   const int max_iters = opts.max_iters;
-  result_type beta = 0.;
+  double beta = 0.;
 
   int i; // , j;
   int iter = 0;
   // allocate the workspace
-  result_type resid = 0;
+  double resid = 0;
 
+  std::vector<double> b(3*b_fmm.size());
+  VecToArray(b_fmm, b);
   // scale residual by ||b||
   auto normb = norm(b.begin(),b.end());
 
@@ -333,7 +334,9 @@ void FGMRES(Matvec& MV,
   // outer (restart) loop
   do {
     // dot product of A*x -- FMM call
-    context.w = MV.execute(x); // V(0) = A*x
+    std::fill(context.w_fmm.begin(), context.w_fmm.end(), result_type(0.));
+    context.w_fmm = MV.execute(x); // V(0) = A*x
+    VecToArray(context.w_fmm,context.w);
     // V(0) = V(0) - b
     blas::axpy(b,context.w,-1.);
     beta = blas::nrm2(context.w); // beta = ||V(0)||
@@ -354,13 +357,20 @@ void FGMRES(Matvec& MV,
 
       // set p for this iteration
       int p = opts.predict_p(fabs(resid));
-      K.set_p(p);
+      (void) K;
+      // K.set_p(p);
 
       // perform w = A*x
-      std::fill(context.V0.begin(),context.V0.end(),0.);
-      M(context.V.column(i),context.z);
-      context.Z.set_column(i,context.z);
-      context.w = MV.execute(context.z);
+      ArrayToVec(context.V.column(i), context.V_fmm);
+      M(context.V_fmm, context.z);
+
+      VecToArray(context.z, context.z_temp);
+      context.Z.set_column(i,context.z_temp);
+
+      std::fill(context.w_fmm.begin(), context.w_fmm.end(), result_type(0.));
+
+      context.w_fmm = MV.execute(context.z);
+      VecToArray(context.w_fmm, context.w);
 
       for (int k=0; k<=i; k++) {
         auto V_col = context.V.column(k);
@@ -395,11 +405,13 @@ void FGMRES(Matvec& MV,
       }
     }
 
+    VecToArray(x, context.x_temp);
     // Update the solution
     for (int j=0; j<=i; j++) {
       // x =x + x[j]*V(:,j)
-      blas::axpy(context.Z.column(j),x,context.s[j]);
+      blas::axpy(context.Z.column(j),context.x_temp,context.s[j]);
     }
+    ArrayToVec(context.x_temp, x);
     if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 
   } while (fabs(resid) > opts.residual && iter < opts.max_iters);

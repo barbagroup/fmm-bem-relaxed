@@ -361,7 +361,7 @@ void FGMRES(Matvec& MV,
       // set p for this iteration
       int p = opts.predict_p(fabs(resid));
       (void) K;
-      // K.set_p(p);
+      K.set_p(p);
 
       // perform w = A*x
       ArrayToVec(context.V.column(i), context.V_fmm);

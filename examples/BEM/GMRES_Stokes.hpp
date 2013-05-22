@@ -308,7 +308,7 @@ void FGMRES(Matvec& MV,
 template <typename Matvec, typename Preconditioner, typename SolverContext>
 void FGMRES(Matvec& MV,
             std::vector<typename Matvec::charge_type>& x,
-            std::vector<typename Matvec::result_type>& b_fmm,
+            std::vector<typename Matvec::result_type>& b,
             const SolverOptions& opts, Preconditioner& M,
             SolverContext& context)
 {
@@ -324,10 +324,9 @@ void FGMRES(Matvec& MV,
   // allocate the workspace
   double resid = 0;
 
-  std::vector<double> b(3*b_fmm.size());
-  VecToArray(b_fmm, b);
   // scale residual by ||b||
-  auto normb = norm(b.begin(),b.end());
+  auto normb = blas::nrm2<result_type::dimension,double>(b);
+  printf("Initial norm: %.4g\n",normb);
 
   auto& K = MV.kernel();
 
@@ -336,15 +335,19 @@ void FGMRES(Matvec& MV,
     // dot product of A*x -- FMM call
     std::fill(context.w_fmm.begin(), context.w_fmm.end(), result_type(0.));
     context.w_fmm = MV.execute(x); // V(0) = A*x
-    VecToArray(context.w_fmm,context.w);
+    //VecToArray(context.w_fmm,context.w);
     // V(0) = V(0) - b
-    blas::axpy(b,context.w,-1.);
-    beta = blas::nrm2(context.w); // beta = ||V(0)||
-    blas::scal(context.w,-1./beta); // V(0) = -V(0)/beta
+    blas::axpy<result_type::dimension,double>(b,context.w_fmm,-1.);
+    beta = blas::nrm2<result_type::dimension,double>(context.w_fmm); // beta = ||V(0)||
+
+    blas::scal(context.w_fmm,-1./beta); // V(0) = -V(0)/beta
     // w at this point contains V(0)
     // V(:,0) = V(0) { V(:,0) = w }
-    context.V.set_column(0,context.w);
+    context.V.template set_column<result_type::dimension,double>(0, context.w_fmm);
     // set S = 0
+
+    /** remove later? */
+    VecToArray(context.w_fmm,context.w);
 
     context.s[0] = beta;
     i = -1;
@@ -364,8 +367,10 @@ void FGMRES(Matvec& MV,
       ArrayToVec(context.V.column(i), context.V_fmm);
       M(context.V_fmm, context.z);
 
-      VecToArray(context.z, context.z_temp);
-      context.Z.set_column(i,context.z_temp);
+      // remove?
+      // VecToArray(context.z, context.z_temp);
+
+      context.Z.template set_column<result_type::dimension, double>(i,context.z);
 
       std::fill(context.w_fmm.begin(), context.w_fmm.end(), result_type(0.));
 

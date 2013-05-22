@@ -48,6 +48,15 @@ class Matrix
       vals_[col*rows_ + i] = v[i];
     }
   }
+  // overload for Vec<N,T>
+  template <int N, typename T2>
+  void set_column(int col, std::vector<Vec<N,T2>> v) {
+    for (unsigned i=0; i<v.size(); i++) {
+      for (int j=0; j<N; j++) {
+        vals_[col*rows_ + N*i + j] = v[i][j];
+      }
+    }
+  }
   void print() {
     for (unsigned i=0; i<rows_; i++) {
       for (unsigned j=0; j<cols_; j++) {
@@ -67,8 +76,20 @@ T nrm2(std::vector<T>& vec) {
   return std::sqrt(res);
 }
 
-template <typename T>
-void scal(std::vector<T>& vec, T s)
+template <int N, typename T>
+T nrm2(std::vector<Vec<N,T>>& vec) {
+  T res = T(0.);
+
+  for (auto it=vec.begin(); it!=vec.end(); ++it) {
+    for (int j=0; j<N; j++) {
+      res += (*it)[j] * (*it)[j];
+    }
+  }
+  return std::sqrt(res);
+}
+
+template <typename T1, typename T2>
+void scal(std::vector<T1>& vec, T2 s)
 {
   for (auto it=vec.begin(); it!=vec.end(); ++it)
     *it *= s;
@@ -100,6 +121,22 @@ template <typename T>
 void axpy(std::vector<T> x, std::vector<T>& y, T a) {
   for (unsigned i=0; i<x.size(); i++) {
     y[i] = a*x[i] + y[i];
+  }
+}
+
+template <int N, typename T>
+void axpy(std::vector<Vec<N,T>> x, std::vector<Vec<N,T>>& y, T a) {
+  for (unsigned i=0; i<x.size(); i++) {
+    y[i] += a*x[i];
+  }
+}
+
+template <int N, typename T>
+void axpy(std::vector<Vec<N,T>> x, std::vector<T>& y, T a) {
+  for (unsigned i=0; i<x.size(); i++) {
+    for (unsigned j=0; j<N; j++) {
+      y[i*N + j] += a*x[i][j];
+    }
   }
 }
 

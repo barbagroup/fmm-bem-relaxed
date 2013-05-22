@@ -157,7 +157,6 @@ int main(int argc, char **argv)
     for (auto& it : panels) it.switch_BC();
 
   // set constant Phi || dPhi/dn for each panel
-  /*
   charges.resize(panels.size());
   // set up a more complicated charge, from BEM++
   for (unsigned i=0; i<panels.size(); i++) {
@@ -165,8 +164,8 @@ int main(int argc, char **argv)
     double x = center[0], y = center[1], z = center[2];
     double r = norm(center);
     charges[i] = 2*x*z/(r*r*r*r*r) - y/(r*r*r);
-  }*/
-  charges = std::vector<charge_type>(panels.size(),1.);
+  }
+  // charges = std::vector<charge_type>(panels.size(),1.);
 
   // Build the FMM structure
   FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, panels, opts);

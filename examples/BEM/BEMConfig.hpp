@@ -7,7 +7,7 @@
 class BEMConfig {
 
  public:
-  static void Init(); 
+  static void Init();
   static BEMConfig *Instance();
   static void Destroy();
 
@@ -24,6 +24,13 @@ class BEMConfig {
   }
   std::vector<double>& GaussWeights() {
     return GQ.weights(K);
+  }
+
+  std::vector<Vec<3,double>>& GaussPoints(int k) {
+    return GQ.points(k);
+  }
+  std::vector<double>& GaussWeights(int k) {
+    return GQ.weights(k);
   }
 
  private:

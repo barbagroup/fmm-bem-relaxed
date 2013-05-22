@@ -391,6 +391,7 @@ struct Integration<STOKES>
       add_influence(IT,-et*et*I5_zeta,e3e2);
       add_influence(IT,-et*et*et*I5,e3e3);
 
+      // printf("et: %g\n",et);
       // return the matrix
       return IT;
     }
@@ -472,10 +473,19 @@ auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f
 
   for (k=0; k<3; k++) // Loop over all components
     r1[k] = x[k] - y1[k]; // r1 = x[0:2]-y1
+
+  /*
+  printf("e1: %.12g, %.12g, %.12g\n",e1[0],e1[1],e1[2]);
+  printf("e2: %.12g, %.12g, %.12g\n",e2[0],e2[1],e2[2]);
+  printf("e3: %.12g, %.12g, %.12g\n",e3[0],e3[1],e3[2]);
+  printf("r1: %.12g, %.12g, %.12g\n",r1[0],r1[1],r1[2]);
+  */
+
   xi = r1[0]*e1[0] + r1[1]*e1[1] + r1[2]*e1[2];
   zt = r1[0]*e2[0] + r1[1]*e2[1] + r1[2]*e2[2];
-  eth = r1[0]*e3[0] + r1[1]*e3[1] + r1[2]*e3[2];
+  eth = r1[0]*e3[0] + r1[1]*e3[1] + r1[2]*e3[2] + 1e-6;
 
+  // printf("x1: %.12g, zt: %.12g, eth: %.12g\n",xi,zt,eth);
   p11 = -xi; p12 = bQ-xi; q[0] = -zt; et = -eth;
 
   if (fabs(et) < gm_eps) et = 0.0;

@@ -60,6 +60,8 @@ class StokesSphericalBEM : public StokesSpherical
       vertices[1] = p1;
       vertices[2] = p2;
 
+      // check vertices not duplicated
+      assert(p0 != p1 && p0 != p2 && p1 != p2);
       // get the center
       center = (p0+p1+p2)/3;
 
@@ -72,6 +74,10 @@ class StokesSphericalBEM : public StokesSpherical
                           L0[0]*L1[1]-L0[1]*L1[0]);
       Area = 0.5*norm(c);
       normal = c/2/Area;
+
+      assert(Area >= 0.);
+      // check for sphere case: norm(center + normal) > R
+      // assert(norm(normal+center) >= 1);
 
       // generate the quadrature points
       // assume K = 3 for now
@@ -163,8 +169,62 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      auto M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn));
-      return M.multiply(-3);
+      if (self) {
+        auto M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],g,target.center,self,AI::dGdn));
+      /*
+      for (int i=0; i<9; i++) {
+        if (isnan(M.vals_[i])) {
+          auto sc = source.center;
+          auto tc = target.center;
+          printf("panels %g,%g,%g and %g,%g,%g cause nans\n",sc[0],sc[1],sc[2],tc[0],tc[1],tc[2]);
+          // print source vertices
+          std::cout << "self-interaction: " << (int)self << std::endl;
+          std::cout << "v0: " << vertices[0] << std::endl;
+          std::cout << "v1: " << vertices[1] << std::endl;
+          std::cout << "v2: " << vertices[2] << std::endl;
+          std::cout << "center: " << target.center << std::endl;
+          AnalyticalIntegral::print_matrix("IT",M);
+        }
+        assert(!isnan(M.vals_[i]));
+      }*/
+        return M.multiply(-3);
+      } else {
+        // K_fine case
+        auto& gauss_weights = BEMConfig::Instance()->GaussWeights(17);
+        auto& gauss_points  = BEMConfig::Instance()->GaussPoints(17);
+        real area = source.Area;
+        kernel_value_type res(0.), temp(0.);
+
+        // loop over gauss points
+        for (unsigned i=0; i<gauss_points.size(); i++) {
+
+          // generate this gauss point
+          auto& gp = gauss_points[i];
+
+          point_type point(vertices[0][0]*gp[0] + vertices[1][0]*gp[1] + vertices[2][0]*gp[2],
+                           vertices[0][1]*gp[0] + vertices[1][1]*gp[1] + vertices[2][1]*gp[2],
+                           vertices[0][2]*gp[0] + vertices[1][2]*gp[1] + vertices[2][2]*gp[2]);
+
+          point_type dist_quad = target.center - point;
+          auto r2 = normSq(dist_quad);
+          real invR2 = 1. / r2;
+          if (r2 < 1e-8) invR2 = 0;
+          real invR5 = invR2*invR2*std::sqrt(invR2);
+
+          double dx = dist_quad[0], dy = dist_quad[1], dz = dist_quad[2];
+
+          auto& normal = source.normal;
+          real dxdotn = dist_quad[0]*normal[0] + dist_quad[1]*normal[1] + dist_quad[2]*normal[2];
+
+          temp(0,0) = dx*dx; temp(0,1) = dx*dy; temp(0,2) = dx*dz;
+          temp(1,0) = dx*dy; temp(1,1) = dy*dy; temp(1,2) = dy*dz;
+          temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = dz*dz;
+
+          AnalyticalIntegral::add_influence(res, gauss_weights[i]*area*dxdotn*invR5, temp);
+
+        }
+        return res.multiply(-3);
+      }
     }
     else
     {
@@ -191,6 +251,9 @@ class StokesSphericalBEM : public StokesSpherical
         temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = dz*dz;
 
         AnalyticalIntegral::add_influence(res, gauss_weight[i]*area*dxdotn*invR5, temp);
+        for (int i=0; i<9; i++) {
+          assert(!isnan(res.vals_[i]));
+        }
       }
       return res.multiply(-3);
     }
@@ -210,8 +273,45 @@ class StokesSphericalBEM : public StokesSpherical
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
 
-      Mat3<real> M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G));
-      return M.multiply(1./2/Mu);
+      if (self) {
+        Mat3<real> M(AI::FataAnalytical<AI::STOKES>(vertices[0],vertices[2],vertices[1],f,target.center,self,AI::G));
+
+        for (int i=0; i<9; i++) {
+          assert(!isnan(1./2/Mu*M.vals_[i]));
+        }
+        return M.multiply(1./2/Mu);
+      } else {
+        // K_fine case
+        auto& gauss_weights = BEMConfig::Instance()->GaussWeights(17);
+        auto& gauss_points  = BEMConfig::Instance()->GaussPoints(17);
+        real area = source.Area;
+        kernel_value_type res(0.), temp(0.);
+
+        // loop over gauss points
+        for (unsigned i=0; i<gauss_points.size(); i++) {
+
+          // generate this gauss point
+          auto& gp = gauss_points[i];
+
+          point_type point(vertices[0][0]*gp[0] + vertices[1][0]*gp[1] + vertices[2][0]*gp[2],
+                           vertices[0][1]*gp[0] + vertices[1][1]*gp[1] + vertices[2][1]*gp[2],
+                           vertices[0][2]*gp[0] + vertices[1][2]*gp[1] + vertices[2][2]*gp[2]);
+
+          auto dist_quad = target.center - point;
+          auto r2 = normSq(dist_quad);
+          real invR2 = 1. / r2;
+          if (r2 < 1e-8) invR2 = 0;
+          real invR3 = invR2*std::sqrt(invR2);
+          double dx = dist_quad[0], dy = dist_quad[1], dz = dist_quad[2];
+
+          temp(0,0) = r2 + dx*dx; temp(0,1) = dx*dy; temp(0,2) = dx*dz;
+          temp(1,0) = dx*dy; temp(1,1) = r2 + dy*dy; temp(1,2) = dy*dz;
+          temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = r2 + dz*dz;
+
+          AnalyticalIntegral::add_influence(res, gauss_weights[i]*area*invR3, temp);
+        }
+        return res.multiply(1./2/Mu);
+      }
     }
     else
     {
@@ -235,6 +335,9 @@ class StokesSphericalBEM : public StokesSpherical
         temp(2,0) = dx*dz; temp(2,1) = dy*dz; temp(2,2) = r2 + dz*dz;
 
         AnalyticalIntegral::add_influence(res, gauss_weight[i]*area*invR3, temp);
+        for (int i=0; i<9; i++) {
+          assert(!isnan(1./2/Mu*res.vals_[i]));
+        }
 
       }
       return res.multiply(1./2/Mu);

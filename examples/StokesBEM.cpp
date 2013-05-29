@@ -151,6 +151,7 @@ int main(int argc, char **argv)
       printHelpAndExit();
     } */
   }
+  solver_options.max_p = p;
 
   double tic, toc;
   tic = get_time();

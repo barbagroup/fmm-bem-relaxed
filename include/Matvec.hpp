@@ -11,10 +11,10 @@
 #include "Mat3.hpp"
 #include "Vec.hpp"
 
-template <typename Matrix, typename Vector>
-Vector Matvec(const Matrix& A, const Vector& x)
+template <typename Matrix, typename Vector, typename ResultVector>
+ResultVector Matvec(const Matrix& A, const Vector& x)
 {
-  Vector r(x.size(),typename Vector::value_type(0));
+  ResultVector r(x.size(),typename ResultVector::value_type(0));
 
   // get internal details from A
   auto& offsets = A.index1_data();
@@ -27,7 +27,7 @@ Vector Matvec(const Matrix& A, const Vector& x)
     for (unsigned j=offsets[i]; j<offsets[i+1]; j++) {
       auto col = indices[j];
       auto temp = values[j]*x[col];
-      r[col] += temp;
+      r[i] = r[i]+temp;
     }
   }
   return r;

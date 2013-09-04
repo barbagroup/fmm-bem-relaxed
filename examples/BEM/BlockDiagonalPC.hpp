@@ -41,6 +41,8 @@ class BlockDiagonal
     options.residual= 1e-1;
     options.variable_p = false;
     options.max_iters = 1;
+
+    context.output = false;
   }
 
   static FMMOptions& local_options()
@@ -49,7 +51,7 @@ class BlockDiagonal
     opts->local_evaluation = false;
     opts->lazy_evaluation = false;
     opts->set_mac_theta(0.5);
-    opts->sparse_local = false;
+    opts->sparse_local = true;
     opts->block_diagonal = true;
 
     return *opts;

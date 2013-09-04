@@ -295,6 +295,7 @@ struct Integration<STOKES>
       double rho_bar[3], I1, etI3, I3_xi, I3_xi_xi, I3_zeta, I3_zeta_zeta, I3_zeta_xi, I3_xi_zeta;
 
       // simple constants
+      //I1 = c.omega - c.et*c.ThetGam;
       I1 = c.omega - c.et*c.ThetGam;
       etI3 = c.ThetGam;
 
@@ -483,7 +484,7 @@ auto FataAnalytical(VectorType& y1, VectorType& y2, VectorType& y3, ChargeType f
 
   xi = r1[0]*e1[0] + r1[1]*e1[1] + r1[2]*e1[2];
   zt = r1[0]*e2[0] + r1[1]*e2[1] + r1[2]*e2[2];
-  eth = r1[0]*e3[0] + r1[1]*e3[1] + r1[2]*e3[2] + 1e-6;
+  eth = r1[0]*e3[0] + r1[1]*e3[1] + r1[2]*e3[2]; //  + 1e-9;
 
   // printf("x1: %.12g, zt: %.12g, eth: %.12g\n",xi,zt,eth);
   p11 = -xi; p12 = bQ-xi; q[0] = -zt; et = -eth;

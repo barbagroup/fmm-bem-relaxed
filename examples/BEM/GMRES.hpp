@@ -44,11 +44,12 @@ struct GMRESContext
   // matrix quantities
   Matrix<T> V, H;
 
+  bool output;
+
   //! constructor
-  GMRESContext(const unsigned N=0, const unsigned R=50)
+  GMRESContext(const unsigned N=0, const unsigned R=50) : output(true)
 //     : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
   {
-    printf("R: %d\n",R);
     unsigned factor = ChargeSize<T>::size();
     w  = std::vector<T>(factor*N);
     V0 = std::vector<T>(factor*N);
@@ -191,7 +192,7 @@ void GMRES(Matvec& MV,
       ++iter;
 
       // set p for this iteration
-      int p = opts.predict_p(fabs(resid));
+      int p = std::max(1u,opts.predict_p(fabs(resid)));
       K.set_p(p);
 
       // perform w = A*x
@@ -219,9 +220,11 @@ void GMRES(Matvec& MV,
       resid = context.s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
-      printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
 
-    } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
+      if (context.output)
+        printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
+
+    } while(i+1 < R && i+1 <= max_iters  && fabs(resid) > opts.residual);
 
     // solve upper triangular system in place
     for (int j=i; j >= 0; j--) {
@@ -238,10 +241,14 @@ void GMRES(Matvec& MV,
       M(context.V.column(j),context.z);
       blas::axpy(context.z,x,context.s[j]);
     }
-    if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
+    if (context.output)
+      if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 
   } while (fabs(resid) > opts.residual && iter < opts.max_iters);
-  printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
+  // } while (iter < opts.max_iters);
+
+  if (context.output)
+    printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }
 
 template <typename Matvec>
@@ -342,7 +349,9 @@ void FGMRES(Matvec& MV,
       resid = context.s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
-      printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
+
+      if (context.output)
+        printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
 
     } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
 
@@ -360,8 +369,12 @@ void FGMRES(Matvec& MV,
       // x =x + x[j]*V(:,j)
       blas::axpy(context.Z.column(j),x,context.s[j]);
     }
-    if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
+
+    if (context.output)
+      if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 
   } while (fabs(resid) > opts.residual && iter < opts.max_iters);
-  printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
+
+  if (context.output)
+    printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }

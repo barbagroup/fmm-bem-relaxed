@@ -18,6 +18,9 @@
 
 #include "timing.hpp"
 
+// simple or more complicated test
+// #define BEMCPP_TEST
+
 enum SolveType { INITIAL_SOLVE = 1,
                  GMRES_DIAGONAL = 2,
                  INNER_OUTER = 4 };
@@ -67,9 +70,9 @@ void initialiseSphere(std::vector<SourceType>& panels,
 
 int main(int argc, char **argv)
 {
-  int numPanels= 1000, recursions = 4, p = 5, k = 3;
+  int numPanels= 1000, recursions = 4, p = 5, k = 3, max_iterations = 500;
   FMMOptions opts = get_options(argc,argv);
-  // opts.set_max_per_box(10);
+  opts.sparse_local = true;
   SolverOptions solver_options;
   bool second_kind = false;
   char *mesh_name;
@@ -106,6 +109,9 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-solver_tol") == 0) {
       i++;
       solver_options.residual = (double)atof(argv[i]);
+    } else if (strcmp(argv[i],"-max_iters") == 0) {
+      i++;
+      max_iterations = atoi(argv[i]);
     } else if (strcmp(argv[i],"-gmres") == 0) {
       solver = SOLVE_GMRES;
     } else if (strcmp(argv[i],"-fgmres") == 0) {
@@ -127,9 +133,10 @@ int main(int argc, char **argv)
     }
   }
 
+  solver_options.max_iters = max_iterations;
+  solver_options.restart = max_iterations;
   // opts.sparse_local = true;
   double tic, toc;
-  tic = get_time();
   // Init the FMM Kernel
   typedef LaplaceSphericalBEM kernel_type;
   kernel_type K(p,k);
@@ -147,9 +154,10 @@ int main(int argc, char **argv)
 
   if (mesh) {
     printf("reading mesh from: %s\n",mesh_name);
-    readMsh<point_type,source_type>(mesh_name, panels); // , panels);
+    MeshIO::readMsh<point_type,source_type>(mesh_name, panels); // , panels);
   } else {
-    initialiseSphere(panels, charges, recursions); //, ProblemOptions());
+    Triangulation::UnitSphere(panels, recursions);
+    // initialiseSphere(panels, charges, recursions); //, ProblemOptions());
   }
 
   // run case solving for Phi (instead of dPhi/dn)
@@ -160,10 +168,14 @@ int main(int argc, char **argv)
   charges.resize(panels.size());
   // set up a more complicated charge, from BEM++
   for (unsigned i=0; i<panels.size(); i++) {
+#if BEMCPP_TEST
     auto center = panels[i].center;
     double x = center[0], y = center[1], z = center[2];
     double r = norm(center);
     charges[i] = 2*x*z/(r*r*r*r*r) - y/(r*r*r);
+#else
+    charges[i] = 1.;
+#endif
   }
   // charges = std::vector<charge_type>(panels.size(),1.);
 
@@ -173,12 +185,23 @@ int main(int argc, char **argv)
   // generate the RHS and initial condition
   std::vector<charge_type> x(panels.size(),0.);
 
+  tic = get_time();
   std::vector<result_type> b(panels.size(),0.);
+  double tic2, toc2;
   // generate RHS using temporary FMM plan
   {
+    tic2 = get_time();
     for (auto& it : panels) it.switch_BC();
+    toc2 = get_time();
+    printf("Flipping BC: %g\n",toc2-tic2);
+    tic2 = get_time();
     FMM_plan<kernel_type> rhs_plan = FMM_plan<kernel_type>(K,panels,opts);
+    toc2 = get_time();
+    printf("Creating plan: %g\n",toc2-tic2);
+    tic2 = get_time();
     b = rhs_plan.execute(charges);
+    toc2 = get_time();
+    printf("Executing plan: %g\n",toc2-tic2);
     for (auto& it : panels) it.switch_BC();
   }
 
@@ -188,6 +211,7 @@ int main(int argc, char **argv)
   // Solve the system using GMRES
   // generate the Preconditioner
   tic = get_time();
+  /*
   Preconditioners::Diagonal<charge_type> M(K,
                                            plan.source_begin(),
                                            plan.source_end()
@@ -203,6 +227,7 @@ int main(int argc, char **argv)
   // block diagonal preconditioner
   Preconditioners::BlockDiagonal<FMM_plan<kernel_type>> block_diag(K,panels);
 
+  */
   // Initial low accuracy solve
   //
   /*
@@ -225,12 +250,14 @@ int main(int argc, char **argv)
 
   if (second_kind) printf("2nd-kind equation being solved\n");
   else             printf("1st-kind equation being solved\n");
+#if 1
   if (solver == SOLVE_GMRES && pc == IDENTITY){
     printf("Solver: GMRES\nPreconditioner: Identity\n");
     // straight GMRES, no preconditioner
     // DirectMV<kernel_type> MV(K, panels, panels);
     GMRES(plan,x,b,solver_options);
   }
+#else
   else if (solver == SOLVE_GMRES && pc == DIAGONAL) {
     printf("Solver: GMRES\nPreconditioner: Diagonal\n");
     // GMRES, diagonal preconditioner
@@ -255,7 +282,7 @@ int main(int argc, char **argv)
     printf("[E] no valid solver / preconditioner option chosen\n");
     exit(0);
   }
-
+#endif
   // GMRES(MV,x,b,solver_options, M, context);
   // FGMRES(plan,x,b,solver_options, inner, context); // , context);
   // Outer/Inner FGMRES / GMRES (Diagonal)
@@ -269,8 +296,7 @@ int main(int argc, char **argv)
   // check errors -- analytical solution for dPhi/dn = 1.
   double e = 0.;
   double e2 = 0.;
-  //double an = 1.;
-  //for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
+#if BEMCPP_TEST
   std::vector<result_type> analytical(panels.size());
   for (unsigned i=0; i<panels.size(); i++) {
     auto center = panels[i].center;
@@ -286,6 +312,31 @@ int main(int argc, char **argv)
     e2 += (*ai)*(*ai);
     ++ai;
   }
+#else
+  double an = 1.;
+  for (auto xi : x) { e += (xi-an)*(xi-an); e2 += an*an; }
+#endif
+
+#define EXTERNAL_ERROR
+#ifdef EXTERNAL_ERROR
+  std::vector<target_type> outside_point(1);
+  outside_point[0] = target_type(point_type(3.,3.,3.),point_type(3.,3.,3.),point_type(3.,3.,3.));
+  outside_point[0].center = point_type(3.,3.,3.);
+  std::vector<result_type> outside_result_1(1);
+  std::vector<result_type> outside_result_2(1);
+  outside_result_1[0] = 0.;
+  outside_result_2[0] = 0.;
+
+  // first layer
+  Direct::matvec(K, panels.begin(), panels.end(), x.begin(), outside_point.begin(), outside_point.end(), outside_result_2.begin());
+  // for (auto& pi : panels) pi.switch_BC();
+  for (auto& op : outside_point) op.switch_BC();
+  Direct::matvec(K, panels.begin(), panels.end(), charges.begin(), outside_point.begin(), outside_point.end(), outside_result_1.begin());
+  double exact = 1. / norm(static_cast<point_type>(outside_point[0])) * 1;
+  double outside_result = (outside_result_2[0]-outside_result_1[0])/4/M_PI;
+  double outside_error = fabs(outside_result-exact)/fabs(exact);
+  printf("external phi: %.5g, exact: %.5g, error: %.4e\n",outside_result,exact, outside_error);
+#endif
 
   printf("error: %.3e\n",sqrt(e/e2));
 }

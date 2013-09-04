@@ -97,7 +97,10 @@ class EvalLocalSparse
     // call the matvec
     typedef typename Context::result_type result_type;
     // ublas::vector<result_type> results = ublas::prod(A, charges);
-    ublas::vector<result_type> results = Matvec(A, charges);
+    // ublas::vector<result_type> results = Matvec(A, charges);
+    ublas::vector<result_type> results = Matvec<ublas::compressed_matrix<kernel_value_type>,
+                                                ublas::vector<charge_type>,
+                                                ublas::vector<result_type>>(A,charges);
 
     // copy results back into iterator
     //tic = get_time();

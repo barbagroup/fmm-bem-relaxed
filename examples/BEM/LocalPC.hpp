@@ -54,6 +54,8 @@ class LocalInnerSolver
     options.residual= 1e-1;
     options.variable_p = false;
     options.max_iters = 1;
+
+    context.output = false;
   }
 
   /*

@@ -5,7 +5,7 @@
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
 
-#define USE_ANALYTICAL
+// #define USE_ANALYTICAL
 
 #if defined(USE_ANALYTICAL)
 #include "FataAnalytical.hpp"
@@ -156,7 +156,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     LaplaceSpherical::init_local(L[1], extents, level);
   }
   /** perform Gaussian integration over panel to evaluate \int G */
-  double eval_G(const source_type source, const point_type target) const {
+  double eval_G(const source_type& source, const point_type& target) const {
     auto dist = norm(target-source.center);
 
     // check whether I need Semi-Analytical or Gauss Quadrature
@@ -166,7 +166,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       auto& vertices = source.vertices;
 
       // self-interaction case
-      if (dist < 1e-10) {
+      if (true) { // dist < 1e-10) {
 #if defined(USE_ANALYTICAL)
         return AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::G);
 #else
@@ -205,10 +205,12 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   };
 
   /** Perform gaussian integration from this panel to target */
-  double eval_dGdn(const source_type source, const point_type target) const {
+  double eval_dGdn(const source_type& source, const point_type& target) const {
     double dist = norm(target-source.center);
     // check for self-interaction
-    if (dist < 1e-8) return 2*M_PI;
+    if (dist < 1e-8) {
+      return 2*M_PI;
+    }
     // check for SA / GQ
     if (sqrt(2*source.Area)/dist >= 0.5) {
 #if 0

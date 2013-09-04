@@ -7,29 +7,13 @@
 #include <vector>
 #include <cstring>
 #include <string>
-#include <sstream>
 #include <fstream>
 
-// split a string by white space
-void split(const std::string& str, std::vector<std::string>& v)
+#include "MeshIO.hpp"
+
+namespace MeshIO
 {
-  std::stringstream ss(str);
-  ss >> std::noskipws;
 
-  std::string field;
-  char ws_delim;
-
-  while (1) {
-    if (ss >> field)
-      v.push_back(field);
-    else if (ss.eof())
-      break;
-    else
-      v.push_back(std::string());
-    ss.clear();
-    ss >> ws_delim;
-  }
-}
 
 template <typename point_type, typename triangle_type>
 void readMsh(const char *fname, std::vector<triangle_type>& elements)
@@ -81,6 +65,7 @@ void readMsh(const char *fname, std::vector<triangle_type>& elements)
   printf("num_elements: %d\n",num_elements);
   elements.resize(num_elements);
 
+  int skipped = 0; // # skipped elements
   for (int i=0; i<num_elements; i++) {
     split_str.clear();
 
@@ -88,6 +73,11 @@ void readMsh(const char *fname, std::vector<triangle_type>& elements)
     split(str.c_str(), split_str);
 
     int element_no = atoi(split_str[0].c_str());
+    if (atoi(split_str[1].c_str()) != 2) {
+      skipped++;
+      // printf("\tNon-triangular element found -- skipping\n");
+      continue;
+    }
     // int element_type = atoi(split_str[1].c_str());
     int num_properties = atoi(split_str[2].c_str());
 
@@ -98,4 +88,9 @@ void readMsh(const char *fname, std::vector<triangle_type>& elements)
     // elements[element_no-1] = triangle_type(nodes[v1],nodes[v2],nodes[v3]); // clockwise
     elements[element_no-1] = triangle_type(nodes[v1],nodes[v3],nodes[v2]); // anti-clockwise
   }
+
+  printf("%d elements skipped\n",skipped);
+  elements.resize(num_elements-skipped);
 }
+
+}; // end namespace MeshIO

@@ -20,7 +20,7 @@ OBJC := gcc
 endif
 LINK := $(CXX)
 
-# DEBUG = 1
+DEBUG = 1
 
 # define any compile-time flags
 CFLAGS := -fopenmp -funroll-loops -fforce-addr -O3 -W -Wall -Wextra #-ffast-math

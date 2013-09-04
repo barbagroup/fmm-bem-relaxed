@@ -15,6 +15,7 @@
 
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
+#include "EvalInteractionLazySparse.hpp"
 
 #include "tree/Octree.hpp"
 
@@ -24,9 +25,15 @@ template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
 {
 	if (opts.lazy_evaluation) {
-		// Custom lazy evaluator
-		auto lazy_eval = make_lazy_eval(executor, opts);
-		executor.insert(lazy_eval);
+    if (opts.sparse_local) {
+      // sparse local evaluation
+      auto lazy_eval = make_lazy_sparse_eval(executor, opts);
+      executor.insert(lazy_eval);
+    } else {
+      // Custom lazy evaluator
+      auto lazy_eval = make_lazy_eval(executor, opts);
+      executor.insert(lazy_eval);
+    }
   } else if (opts.local_evaluation) {
     // only evaluate local field for preconditioner
     if (opts.sparse_local) {

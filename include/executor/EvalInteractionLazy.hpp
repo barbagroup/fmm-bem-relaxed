@@ -10,6 +10,8 @@
 #include "L2P.hpp"
 #include "L2L.hpp"
 
+#include "timing.hpp"
+
 #include <functional>
 #include <set>
 #include <unordered_set>
@@ -132,13 +134,22 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     // Evaluate all M2M operations
     eval_M2M_list(bc);
     // Evaluate queued long-range interactions
+    double tic, toc, m2l_time = 0., p2p_time = 0.;
+    tic = get_time();
     eval_LR_list(bc);
+    toc = get_time();
+    m2l_time = toc-tic;
     // Evaluate L2L operations
     eval_L2L_list(bc);
     // Evaluate L2P operations
     eval_L2P_list(bc);
     // Evaluate queued P2P interactions
+    tic = get_time();
     eval_P2P_lists(bc);
+    toc = get_time();
+    p2p_time = toc-tic;
+
+    printf("P2P: %.4gs, M2L (%d): %.4gs\n",p2p_time,(int)LR_list.size(),m2l_time);
   }
 
  private:

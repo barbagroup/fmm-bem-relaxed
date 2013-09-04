@@ -11,6 +11,7 @@ FMMOptions& local_options()
   opts->lazy_evaluation = false;
   opts->set_mac_theta(0.5);
   opts->sparse_local = true;
+  opts->set_max_per_box(100);
 
   return *opts;
 }
@@ -32,6 +33,7 @@ class LocalInnerSolver
   Plan plan;
   SolverOptions options;
   GMRESContext<output_type> context;
+  Preconditioners::Identity M;
 
  public:
   //! Call inner solver from preconditioner interface
@@ -40,18 +42,22 @@ class LocalInnerSolver
     // y = x;
     // printf("Calling Preconditioners::LocalInnerSolver\n");
     std::fill(y.begin(),y.end(),typename VecType::value_type(0.));
-    GMRES(plan, y, x, options); // , preconditioner);
+
+    GMRES(plan, y, x, options, M, context);
+    context.reset();
   }
 
   // construct from sources & targets
   template <typename Kernel, typename SourceVector, typename ResultVector>
   LocalInnerSolver(Kernel k, SourceVector& sources, ResultVector& RHS)
-    : plan(k,sources,local_options()), context(RHS.size(), 50) {
+    : plan(k,sources,local_options()), context(RHS.size(), 50), M() {
     //: plan(k,sources,local_options()), rhs(RHS), context(RHS.size(), 50) {
 
     options.residual= 1e-1;
     options.variable_p = false;
     options.max_iters = 1;
+
+    context.output = false;
   }
 
   /*

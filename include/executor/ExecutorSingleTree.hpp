@@ -114,7 +114,8 @@ class ExecutorSingleTree : public ExecutorBase<Kernel>
   local_container L_;
   //! The sources associated with bodies in the source_tree (aliased as targets)
   typedef std::vector<source_type> source_container;
-  typedef typename source_container::const_iterator source_iterator;
+  // typedef typename source_container::const_iterator source_iterator;
+  typedef typename source_container::iterator source_iterator;
   source_container sources;
   source_iterator s_;
 

@@ -13,26 +13,6 @@
 #include "SolverOptions.hpp"
 #include "BLAS.hpp"
 
-/** default case */
-template <typename T, typename ...Args>
-struct ChargeSize {
-  static int size() { return 1; }
-};
-
-template <typename T>
-struct ChargeSize<T> {
-  static int size() { return 1; }
-};
-template <int N, typename T2>
-struct ChargeSize<Vec<N,T2>> {
-  static int size() { return N; }
-};
-
-template <>
-struct ChargeSize<Vec<3,double>> {
-  static int size() { return 3;}
-};
-
 //! Context to store all GMRES temporary vectors -- shared between calls
 template <typename T>
 struct GMRESContext
@@ -45,11 +25,14 @@ struct GMRESContext
   // matrix quantities
   Matrix<double> V, H;
 
+  // do we want to output anything?
+  bool output;
+
   //! constructor
   GMRESContext(const unsigned N=0, const unsigned R=50)
 //     : w(N), V0(N), z(N), s(R+1), cs(R), sn(R), V(N,R+1), H(R+1,R) {};
+    : output(true)
   {
-    printf("R: %d\n",R);
     x_temp  = std::vector<double>(3*N);
     w  = std::vector<double>(3*N);
     w_fmm = std::vector<T>(N);
@@ -64,6 +47,22 @@ struct GMRESContext
     H  = Matrix<double>(R+1,R);
     z_temp = std::vector<double>(3*N);
   }
+
+  void reset() {
+    std::fill(x_temp.begin(), x_temp.end(), 0.);
+    std::fill(w.begin(), w.end(), 0.);
+    std::fill(w_fmm.begin(), w_fmm.end(), T(0.));
+    std::fill(V0.begin(), V0.end(), 0.);
+    std::fill(V0_fmm.begin(), V0_fmm.end(), T(0.));
+    std::fill(z.begin(), z.end(), T(0.));
+    std::fill(s.begin(), s.end(), 0.);
+    std::fill(cs.begin(), cs.end(), 0.);
+    std::fill(sn.begin(), sn.end(), 0.);
+    // std::fill(V.begin(), V.end(), 0.);
+    std::fill(V_fmm.begin(), V_fmm.end(), T(0.));
+    // std::fill(H.begin(), H.end(), 0.);
+    std::fill(z_temp.begin(), z_temp.end(), 0.);
+  }
 };
 
 //! Context for FGMRES temporary vectors
@@ -76,6 +75,11 @@ struct FGMRESContext : public GMRESContext<T>
   //! constructor
   FGMRESContext(const unsigned N, const unsigned R)
     : GMRESContext<T>(N,R), Z(3*N,R+1) {};
+
+  void reset() {
+    GMRESContext<T>::reset();
+    // std::fill(Z.begin(), Z.end(), 0.);
+  }
 };
 
 template <typename T>
@@ -221,7 +225,8 @@ void GMRES(Matvec& MV,
       ++iter;
 
       // set p for this iteration
-      int p = opts.predict_p(fabs(resid));
+      // int p = std::max(5u,opts.predict_p(fabs(resid)));
+      int p = std::max(opts.p_min,opts.predict_p(fabs(resid))-1);
       K.set_p(p);
 
       // perform w = A*x
@@ -254,7 +259,9 @@ void GMRES(Matvec& MV,
       resid = context.s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
-      printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
+
+      if (context.output)
+        printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
 
     } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
 
@@ -277,10 +284,14 @@ void GMRES(Matvec& MV,
       blas::axpy(context.z_temp,context.x_temp,context.s[j]);
     }
     ArrayToVec(context.x_temp, x);
-    if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
+
+    if (context.output)
+      if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 
   } while (fabs(resid) > opts.residual && iter < opts.max_iters);
-  printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
+
+  if (context.output)
+    printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }
 
 template <typename Matvec>
@@ -326,9 +337,9 @@ void FGMRES(Matvec& MV,
 
   // scale residual by ||b||
   auto normb = blas::nrm2<result_type::dimension,double>(b);
-  printf("Initial norm: %.4g\n",normb);
 
   auto& K = MV.kernel();
+
 
   // outer (restart) loop
   do {
@@ -359,7 +370,7 @@ void FGMRES(Matvec& MV,
       ++iter;
 
       // set p for this iteration
-      int p = opts.predict_p(fabs(resid));
+      int p = std::max(5u,opts.predict_p(fabs(resid)));
       (void) K;
       K.set_p(p);
 
@@ -397,7 +408,9 @@ void FGMRES(Matvec& MV,
       resid = context.s[i+1]/normb;
 
       if (fabs(resid) < opts.residual) break;
-      printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
+
+      if (context.output)
+        printf("it: %03d, res: %.3e, fmm_req_p: %01d\n",iter,fabs(resid),p);
 
     } while(i+1 < R && i+1 <= max_iters && fabs(resid) > opts.residual);
 
@@ -417,8 +430,12 @@ void FGMRES(Matvec& MV,
       blas::axpy(context.Z.column(j),context.x_temp,context.s[j]);
     }
     ArrayToVec(context.x_temp, x);
-    if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
+
+    if (context.output)
+      if (iter % 10 == 0) printf("it: %04d, residual: %.3e\n",iter,(double)fabs(resid));
 
   } while (fabs(resid) > opts.residual && iter < opts.max_iters);
-  printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
+
+  if (context.output)
+    printf("Final residual: %.4e, after %d iterations\n",fabs(resid),iter);
 }

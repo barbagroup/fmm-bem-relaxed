@@ -12,7 +12,7 @@ struct SolverOptions
 {
   double residual;
   int max_iters, restart;
-  unsigned max_p;
+  unsigned max_p, p_min;
   bool variable_p;
 
   enum relaxation_type { SIMONCINI, BOURAS };
@@ -20,7 +20,7 @@ struct SolverOptions
   relaxation_type relax_type;
 
   SolverOptions(double r, int m_iters, unsigned p) : residual(r), max_iters(m_iters), restart(50), max_p(p), variable_p(false), relax_type(BOURAS) {};
-  SolverOptions() : residual(1e-5), max_iters(50), restart(50), max_p(12), variable_p(true), relax_type(BOURAS) {};
+  SolverOptions() : residual(1e-5), max_iters(500), restart(500), max_p(16), p_min(5), variable_p(true), relax_type(BOURAS) {};
 
   unsigned predict_p(double eps) const {
     // if no relaxation, return default p

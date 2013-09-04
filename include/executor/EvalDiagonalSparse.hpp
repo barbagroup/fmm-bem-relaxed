@@ -32,7 +32,6 @@ class EvalDiagonalSparse
  public:
   // constructor -- create matrix
   EvalDiagonalSparse(Context& bc) {
-    printf("EvalDiagonalSparse::EvalDiagonalSparse(Context&)\n");
     // Local P2P evaluator to construct the interaction matrix
     P2P_Lazy<Context> p2p_lazy(bc);
 
@@ -59,7 +58,10 @@ class EvalDiagonalSparse
     // call the matvec
     typedef typename Context::result_type result_type;
     // ublas::vector<result_type> results = ublas::prod(A, charges);
-    ublas::vector<result_type> results = Matvec(A, charges);
+    // ublas::vector<result_type> results = Matvec(A, charges);
+    ublas::vector<result_type> results = Matvec<ublas::compressed_matrix<kernel_value_type>,
+                                                ublas::vector<charge_type>,
+                                                ublas::vector<result_type>>(A,charges);
 
     // copy results back into iterator
     std::transform(results.begin(), results.end(),

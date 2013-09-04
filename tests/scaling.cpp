@@ -1,13 +1,6 @@
 #include <FMM_plan.hpp>
 #include <LaplaceSpherical.hpp>
 
-double get_time()
-{
-  struct timeval tv;
-  gettimeofday(&tv,nullptr);
-  return (double)(tv.tv_sec+tv.tv_usec*1e-6);
-}
-
 inline double drand()
 {
   return ::drand48();
@@ -54,6 +47,13 @@ int main()
 
   for (auto it=times.begin(); it!=times.end(); ++it) {
     printf("%d\t%.3e\n", it->first, it->second);
+  }
+
+  for (auto it=times.begin(); it!=times.end(); ++it) {
+    printf("%d\n",it->first);
+  }
+  for (auto it=times.begin(); it!=times.end(); ++it) {
+    printf("%.3e\n",it->second);
   }
 }
 

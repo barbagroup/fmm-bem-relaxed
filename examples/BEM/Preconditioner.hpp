@@ -5,7 +5,7 @@
 namespace Preconditioners {
 
 /** Identity preconditioner -- no change */
-class Identity 
+class Identity
 {
  public:
   template <typename VecType>

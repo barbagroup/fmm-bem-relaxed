@@ -18,7 +18,7 @@ class LaplaceSpherical
   typedef std::complex<real> complex;
 
   //! Expansion order
-  const int P;
+  int P;
   //! \f$ \sqrt{ \frac{(n - |m|)!}{(n + |m|)!} } \f$
   std::vector<real> prefactor;
   //! \f$ (-1)^n / \sqrt{ \frac{(n + m)!}{(n - m)!} } \f$
@@ -77,6 +77,15 @@ class LaplaceSpherical
   //! Constructor
   LaplaceSpherical(int p)
       : P(p), prefactor(4*P*P), Anm(4*P*P), Cnm(P*P*P*P) {
+    precompute();
+  }
+
+  /**
+   * precompute all values
+   * assume memory correctly allocated
+   */
+  void precompute()
+  {
     for( int n=0; n!=2*P; ++n ) {                               // Loop over n in Anm
       for( int m=-n; m<=n; ++m ) {                              //  Loop over m in Anm
         int nm = n*n+n+m;                                       //   Index of Anm
@@ -105,6 +114,17 @@ class LaplaceSpherical
         }                                                       //   End loop over n in Cjknm
       }                                                         //  End loop over in k in Cjknm
     }                                                           // End loop over in j in Cjknm
+  }
+
+  void set_p(int p)
+  {
+    P = p;
+    prefactor.resize(4*P*P);
+    Anm.resize(4*P*P);
+    Cnm.resize(P*P*P*P);
+
+    // recompute all precomputed values for new P
+    precompute();
   }
 
   /** Initialize a multipole expansion with the size of a box at this level */

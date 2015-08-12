@@ -63,6 +63,13 @@ struct Mat3 {
     result[2] = vals_[6]*x[0]+vals_[7]*x[1]+vals_[8]*x[2];
     return result;
   }
+  Mat3<T> operator*(const double x) const {
+    Mat3<T> result;
+
+    for (unsigned i=0; i<9; i++) result.vals_[i] = x*vals_[i];
+
+    return result;
+  }
   // matvec
   Vec<3,T> multiply(const Vec<3,T>& x) const {
     Vec<3,T> result;

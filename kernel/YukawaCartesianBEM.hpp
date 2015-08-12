@@ -238,7 +238,7 @@ class YukawaCartesianBEM : public YukawaCartesian
    * @param[in,out] M The multipole expansion to accumulate into
    */
   void P2M(const source_type& source, const charge_type& charge,
-           const point_type& center, multipole_type& M) const {
+           const point_type& center, multipole_type& M, unsigned p) const {
     auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(3);
     auto& I = YukawaCartesian::I;
     auto& J = YukawaCartesian::J;
@@ -251,7 +251,8 @@ class YukawaCartesianBEM : public YukawaCartesian
       point_type dX = center - static_cast<point_type>(qp);
       auto mult_term = charge * gauss_weight[j] * source.Area;
 
-      for (unsigned i=0; i < MTERMS; i++) {
+      unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+      for (unsigned i=0; i < mterms; i++) {
         // Multipole term constants
         auto C = pow(dX[0],I[i]) * pow(dX[1],J[i]) * pow(dX[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
 
@@ -280,9 +281,9 @@ class YukawaCartesianBEM : public YukawaCartesian
    */
   void M2M(const multipole_type& Msource,
            multipole_type& Mtarget,
-           const point_type& translation) const {
-    YukawaCartesian::M2M(Msource[0],Mtarget[0],translation);
-    YukawaCartesian::M2M(Msource[1],Mtarget[1],translation);
+           const point_type& translation, unsigned p) const {
+    YukawaCartesian::M2M(Msource[0],Mtarget[0],translation,p);
+    YukawaCartesian::M2M(Msource[1],Mtarget[1],translation,p);
   }
 
   /** Kernel M2P operation
@@ -295,7 +296,7 @@ class YukawaCartesianBEM : public YukawaCartesian
    * @pre M includes the influence of all points within its box
    */
   void M2P(const multipole_type& M, const point_type& center,
-           const target_type& target, result_type& result) const {
+           const target_type& target, result_type& result, unsigned p) const {
 
     std::vector<real> a_aux(MTERMS,0), ax_aux(MTERMS,0), ay_aux(MTERMS,0), az_aux(MTERMS,0);
 
@@ -311,7 +312,9 @@ class YukawaCartesianBEM : public YukawaCartesian
     double result_pot = 0.;
     double result_dn  = 0.;
     // loop over tarSize
-    for (unsigned j=0; j<MTERMS; j++) {
+    //
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned j=0; j<mterms; j++) {
       double fact_term = fact[I[j]]*fact[J[j]]*fact[K[j]];
       result_pot +=  a_aux[j]*M[0][j]*fact_term;
       result_dn  +=  a_aux[j]*M[1][j]*fact_term;
@@ -323,22 +326,22 @@ class YukawaCartesianBEM : public YukawaCartesian
 
   void M2L(const multipole_type& Msource,
                  local_type& Ltarget,
-           const point_type& translation)
+           const point_type& translation, unsigned p) const
   {
-    YukawaCartesian::M2L(Msource[0],Ltarget[0],translation);
-    YukawaCartesian::M2L(Msource[1],Ltarget[1],translation);
+    YukawaCartesian::M2L(Msource[0],Ltarget[0],translation,p);
+    YukawaCartesian::M2L(Msource[1],Ltarget[1],translation,p);
   }
 
   void L2L(const local_type& Lsource,
                  local_type& Ltarget,
-           const point_type& translation)
+           const point_type& translation, unsigned p) const
   {
-    YukawaCartesian::L2L(Lsource[0],Ltarget[0],translation);
-    YukawaCartesian::L2L(Lsource[1],Ltarget[1],translation);
+    YukawaCartesian::L2L(Lsource[0],Ltarget[0],translation,p);
+    YukawaCartesian::L2L(Lsource[1],Ltarget[1],translation,p);
   }
 
   void L2P(const local_type& L, const point_type& center,
-           const target_type& target, result_type& result)
+           const target_type& target, result_type& result, unsigned p) const
   {
     auto dx = static_cast<point_type>(target) - center;
     auto& I    = YukawaCartesian::I;
@@ -346,7 +349,8 @@ class YukawaCartesianBEM : public YukawaCartesian
     auto& K    = YukawaCartesian::K;
     auto& fact = YukawaCartesian::fact;
 
-    for (unsigned i=0; i<MTERMS; i++) {
+    unsigned mterms = (p+1)*(p+2)*(p+3)/6;
+    for (unsigned i=0; i<mterms; i++) {
       double mult_term = pow(dx[0],I[i])*pow(dx[1],J[i])*pow(dx[2],K[i]) / (fact[I[i]]*fact[J[i]]*fact[K[i]]);
       double result_pot = L[0][i]*mult_term;
       double result_dn  = L[1][i]*mult_term;

@@ -9,10 +9,8 @@
 namespace AnalyticalIntegral
 {
 
-// typedef enum { LAPLACE, YUKAWA } equation;
-
-template <equation E, typename T=double>
-void lineInt(T& G, T& dGdn, T z, T x, T v1, T v2, T kappa=0.)
+template <equation E, typename ResultType=double, typename T=double, typename KappaType=double>
+void lineInt(ResultType& G, ResultType& dGdn, T z, T x, T v1, T v2, KappaType kappa=0.)
 {
   auto theta1 = atan2(v1,x);
   auto theta2 = atan2(v2,x);
@@ -25,23 +23,40 @@ void lineInt(T& G, T& dGdn, T z, T x, T v1, T v2, T kappa=0.)
   else            signZ = z/absZ;
 
   // Loop over gauss points
-  T thetak, Rtheta, R, expKr, expKz = exp(-kappa*absZ);
+  ResultType expKr, expKz = exp(-kappa*absZ);
+  T thetak, Rtheta, R;
 
   // define gauss points -- hardcode for now
+  const int n_gauss = 5;
   double xk[5] = { -9.06179846e-01, -5.38469310e-01, 1.78162900e-17, 9.06179846e-01,5.38469310e-01 };
   double wk[5] = { 0.23692689, 0.47862867, 0.56888889, 0.23692689, 0.47862867 };
-  for (int i=0; i<5; i++)
+  //double xk[7] = { -9.49107912e-01, -7.41531186e-01, -4.05845151e-01, -5.34227877e-17, 9.49107912e-01, 7.41531186e-01, 4.05845151e-01 };
+  //double wk[7] = { 0.12948497, 0.27970539, 0.38183005, 0.41795918, 0.12948497, 0.27970539, 0.38183005 };
+  for (int i=0; i<n_gauss; i++)
   {
     thetak = dtheta/2*xk[i] + thetam;
     Rtheta = x/cos(thetak);
     R      = sqrt(Rtheta*Rtheta + z*z);
     expKr  = exp(-kappa*R);
-    if (E == YUKAWA) {
+    if (E == HELMHOLTZ) {
+      if (std::abs(kappa)>1e-10)
+      {
+        G += ResultType(0.);
+        dGdn += ResultType(0.);
+      }
+      // devolve to Laplace
+      else
+      {
+        G += wk[i]*(R-absZ) * dtheta/2;
+        dGdn += wk[i]*(z/R - signZ) * dtheta/2;
+      }
+    } else if (E == YUKAWA) {
       if (kappa>1e-10)
       {
         G += -wk[i]*(expKr - expKz)/kappa * dtheta/2;
         dGdn +=  wk[i]*(z/R*expKr - expKz*signZ) * dtheta/2;
       }
+      // devolve to Laplace
       else
       {
         G += wk[i]*(R-absZ) * dtheta/2;
@@ -62,8 +77,8 @@ Vec<3,T> cross(const Vec<3,T>& u, const Vec<3,T>& v) {
                   u[0]*v[1] - u[1]*v[0]);
 }
 
-template <equation E, typename T=double>
-void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
+template <equation E, typename ResultType=double, typename T=double>
+void intSide(ResultType& G, ResultType& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
 {
   typedef Vec<3,T> vec3;
   typedef Mat3<T>  mat3;
@@ -112,8 +127,8 @@ void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
     T G1 = 0., dG1dn = 0.;
     T G2 = 0., dG2dn = 0.;
 
-    lineInt<E,T>(G1,dG1dn, p, x, 0, v1new[1], Kappa);
-    lineInt<E,T>(G2,dG2dn, p, x, v2new[1], 0, Kappa);
+    lineInt<E,ResultType,T>(G1,dG1dn, p, x, 0, v1new[1], Kappa);
+    lineInt<E,ResultType,T>(G2,dG2dn, p, x, v2new[1], 0, Kappa);
 
     G += G1 + G2;
     dGdn += dG1dn + dG2dn;
@@ -121,7 +136,7 @@ void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
   else
   {
     T G1 = 0., dG1dn = 0.;
-    lineInt<E,T>(G1,dG1dn, p, x, v1new[1], v2new[1], Kappa);
+    lineInt<E,ResultType,T>(G1,dG1dn, p, x, v1new[1], v2new[1], Kappa);
 
     G -= G1;
     dGdn -= dG1dn;
@@ -129,8 +144,8 @@ void intSide(T& G, T& dGdn, Vec<3,T>& v1, Vec<3,T>& v2, T p, T Kappa)
 
 }
 
-template <equation E, typename T=double>
-void SemiAnalytical(T& G, T &dGdn, Vec<3,T> y0, Vec<3,T> y1, Vec<3,T> y2, Vec<3,T> x, bool same, T Kappa=0)
+template <equation E, typename ResultType=double, typename T=double>
+void SemiAnalytical(ResultType& G, ResultType& dGdn, Vec<3,T> y0, Vec<3,T> y1, Vec<3,T> y2, Vec<3,T> x, bool same, T Kappa=0)
 {
   typedef Vec<3,T> vec3;
   typedef Mat3<T> mat3;
@@ -175,9 +190,9 @@ void SemiAnalytical(T& G, T &dGdn, Vec<3,T> y0, Vec<3,T> y1, Vec<3,T> y2, Vec<3,
   panel2_final[2] = panel2_plane[2];
 
   // Loop over sides
-  intSide<E,T>(G, dGdn, panel0_final, panel1_final, x_plane[2], Kappa); // Side 0
-  intSide<E,T>(G, dGdn, panel1_final, panel2_final, x_plane[2], Kappa); // Side 1
-  intSide<E,T>(G, dGdn, panel2_final, panel0_final, x_plane[2], Kappa); // Side 2
+  intSide<E,ResultType,T>(G, dGdn, panel0_final, panel1_final, x_plane[2], Kappa); // Side 0
+  intSide<E,ResultType,T>(G, dGdn, panel1_final, panel2_final, x_plane[2], Kappa); // Side 1
+  intSide<E,ResultType,T>(G, dGdn, panel2_final, panel0_final, x_plane[2], Kappa); // Side 2
 
   if (same)
   {

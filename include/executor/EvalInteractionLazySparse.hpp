@@ -1,12 +1,15 @@
 #pragma once
 
 #include "EvaluatorBase.hpp"
+#include "EvalP2P.hpp"
+#include "Matvec.hpp"
+
+#include <deque>
 
 #include "P2M.hpp"
 #include "M2M.hpp"
 #include "M2L.hpp"
 #include "M2P.hpp"
-#include "P2P.hpp"
 #include "L2P.hpp"
 #include "L2L.hpp"
 
@@ -19,13 +22,17 @@
 
 
 template <typename Context, bool IS_FMM>
-class EvalInteractionLazy : public EvaluatorBase<Context>
+class EvalInteractionLazySparse : public EvaluatorBase<Context>
 {
   //! Type of box
   typedef typename Context::box_type box_type;
   //! Pair of boxees
   typedef std::pair<box_type, box_type> box_pair;
   typedef std::pair<int, int> int_pair;
+  // kernel type
+  typedef typename Context::kernel_type kernel_type;
+  // kernel value type
+  typedef typename kernel_type::kernel_value_type kernel_value_type;
   //! List for P2P interactions    TODO: could further compress these...
   mutable std::vector<std::vector<int>> P2P_lists;
   //! List for P2M calls
@@ -51,16 +58,16 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
   //! keep track of # of sparse matrix entries needed
   mutable std::vector<unsigned> mat_entries;
 
+  ublas::compressed_matrix<kernel_value_type> A;
+
  public:
 
 	/** Constructor
 	 * Precompute the interaction lists, P2P_list and LR_list
 	 */
-	EvalInteractionLazy(Context& bc) : mat_entries(bc.source_tree().bodies()) {
-    // Queue based tree traversal for P2P, M2P, and/or M2L operations
-    // initialise P2P lists
-    auto num_leaves = bc.source_tree().boxes();
-    P2P_lists.resize(num_leaves);
+	EvalInteractionLazySparse(Context& bc) : mat_entries(bc.source_tree().bodies()) {
+    // Local P2P evaluator to construct the interaction matrix
+    P2P_Lazy<Context> p2p_lazy(bc);
 
     std::deque<box_pair> pairQ;
     pairQ.push_back(box_pair(bc.source_tree().root(),
@@ -74,9 +81,7 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
       if (b1.is_leaf()) {
 	      if (b2.is_leaf()) {
 		      // Both are leaves, P2P
-		      // P2P_list.push_back(std::make_pair(b2.index(),b1.index()));
-          // printf("P2P pushing: %d x %d\n",(int)b2.index(), (int)b1.index());
-		      P2P_lists[b1.index()].push_back(b2.index());
+          p2p_lazy.insert(b1,b2);
 	      } else {
 		      // Split the second box into children and interact
 		      auto c_end = b2.child_end();
@@ -103,23 +108,18 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 	      }
       }
     }
+
+    A = p2p_lazy.to_matrix();
     // run through interaction lists and generate all call lists
     resolve_LR_interactions(bc);
-
-    /* print out the # of P2P interactions & estimated sparse matrix size */
-    /*
-      int mat_elements = std::accumulate(mat_entries.begin(),mat_entries.end(),0);
-      double elements_row = (double)mat_elements / mat_entries.size();
-      int mat_size = mat_elements*(sizeof(double)+sizeof(int)) + (mat_entries.size()+1)*sizeof(int);
-      double mat_storage = (double)mat_size / 1024. / 1024.;
-      printf("Sparse matrix entries: %d (%.3lg): %.4eMB\n",mat_elements,elements_row,mat_storage);
-    */
 	}
 
 	/** Execute this evaluator by applying the operators to the interaction lists
    *  Note this is implicitly cached as lists generated in the constructor
 	 */
   void execute(Context& bc) const {
+    auto root = bc.source_tree().root();
+
     // Reset/Initialise all multipole & local expansions
     auto it_end = bc.source_tree().box_end();
     for (auto it = bc.source_tree().box_begin(); it != it_end; ++it)
@@ -129,12 +129,31 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
       for (auto it = bc.target_tree().box_begin(); it != it_end; ++it)
         INITL::eval(bc.kernel(), bc, *it);
     }
+    double tic, toc, m2l_time = 0., p2p_time = 0.;
+
+    tic = get_time();
+    // Matrix-based P2P
+    typedef typename Context::charge_type charge_type;
+    ublas::vector<charge_type> charges(bc.source_tree().bodies());
+    std::copy(bc.charge_begin(root),bc.charge_end(root),charges.begin());
+
+    typedef typename Context::result_type result_type;
+    ublas::vector<result_type> results = Matvec<ublas::compressed_matrix<kernel_value_type>,
+                                                ublas::vector<charge_type>,
+                                                ublas::vector<result_type>>(A,charges);
+
+    // copy results back into iterator
+    std::transform(results.begin(), results.end(),
+                   bc.result_begin(root), bc.result_begin(root),
+                   std::plus<result_type>());
+    toc = get_time();
+    p2p_time = toc-tic;
+
     // Generate all Multipole coefficients
     eval_P2M_list(bc);
     // Evaluate all M2M operations
     eval_M2M_list(bc);
     // Evaluate queued long-range interactions
-    double tic, toc, m2l_time = 0., p2p_time = 0.;
     tic = get_time();
     eval_LR_list(bc);
     toc = get_time();
@@ -144,10 +163,6 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     // Evaluate L2P operations
     eval_L2P_list(bc);
     // Evaluate queued P2P interactions
-    tic = get_time();
-    eval_P2P_lists(bc);
-    toc = get_time();
-    p2p_time = toc-tic;
 
     printf("P2P: %.4gs, M2L (%d): %.4gs\n",p2p_time,(int)LR_list.size(),m2l_time);
   }
@@ -236,21 +251,6 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
     }
   }
 
-  void eval_P2P_lists(Context& bc) const
-  {
-    unsigned j;
-#pragma omp parallel for private(j)
-    for (unsigned i=0; i<P2P_lists.size(); i++) {
-      // evaluate this pair using P2P
-      for (j=0; j<P2P_lists[i].size(); j++) {
-        P2P::eval(bc.kernel(), bc,
-                  bc.source_tree().box(P2P_lists[i][j]),
-                  bc.target_tree().box(i),
-                  P2P::ONE_SIDED());
-      }
-    }
-  }
-
   void eval_P2M_list(Context& bc) const
   {
 #pragma omp parallel for
@@ -302,11 +302,11 @@ class EvalInteractionLazy : public EvaluatorBase<Context>
 
 
 template <typename Context, typename Options>
-EvaluatorBase<Context>* make_lazy_eval(Context& c, Options& opts) {
+EvaluatorBase<Context>* make_lazy_sparse_eval(Context& c, Options& opts) {
   if (opts.evaluator == FMMOptions::FMM) {
-	  return new EvalInteractionLazy<Context, true>(c);
+	  return new EvalInteractionLazySparse<Context, true>(c);
   } else if (opts.evaluator == FMMOptions::TREECODE) {
-	  return new EvalInteractionLazy<Context, false>(c);
+	  return new EvalInteractionLazySparse<Context, false>(c);
   }
   return nullptr;
 }

@@ -5,7 +5,7 @@
 #include "GaussQuadrature.hpp"
 #include "BEMConfig.hpp"
 
-#define USE_ANALYTICAL
+// #define USE_ANALYTICAL
 
 #if defined(USE_ANALYTICAL)
 #include "FataAnalytical.hpp"
@@ -134,6 +134,11 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     Config->setK(K);
   };
 
+  void set_p(int p)
+  {
+    LaplaceSpherical::set_p(p);
+  }
+
   /** Initialize a multipole expansion with the size of a box at this level */
   void init_multipole(multipole_type& M,
                       const point_type& extents, unsigned level) const {
@@ -151,7 +156,7 @@ class LaplaceSphericalBEM : public LaplaceSpherical
     LaplaceSpherical::init_local(L[1], extents, level);
   }
   /** perform Gaussian integration over panel to evaluate \int G */
-  double eval_G(const source_type source, const point_type target) const {
+  double eval_G(const source_type& source, const point_type& target) const {
     auto dist = norm(target-source.center);
 
     // check whether I need Semi-Analytical or Gauss Quadrature
@@ -159,13 +164,34 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       // perform semi-analytical integral
       namespace AI = AnalyticalIntegral;
       auto& vertices = source.vertices;
+
+      // self-interaction case
+      if (true) { // dist < 1e-10) {
 #if defined(USE_ANALYTICAL)
-      return AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::G);
+        return AI::FataAnalytical<AI::LAPLACE>(vertices[0],vertices[2],vertices[1],1.,target,dist<1e-10,AI::G);
 #else
-      double G = 0., dGdn = 0.;
-      AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
-      return G;
+        double G = 0., dGdn = 0.;
+        AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
+        return G;
 #endif
+      } else {
+        // K_fine case
+        auto& gauss_weights = BEMConfig::Instance()->GaussWeights(17);
+        auto& gauss_points  = BEMConfig::Instance()->GaussPoints(17);
+
+        // loop over gauss points
+        double r = 0.;
+        for (unsigned i=0; i < gauss_points.size(); i++) {
+          auto& gp = gauss_points[i];
+          Vec<3,double> point(vertices[0][0]*gp[0] + vertices[1][0]*gp[1] + vertices[2][0]*gp[2],
+                              vertices[0][1]*gp[0] + vertices[1][1]*gp[1] + vertices[2][1]*gp[2],
+                              vertices[0][2]*gp[0] + vertices[1][2]*gp[1] + vertices[2][2]*gp[2]);
+
+          // accumulate influence
+          r += gauss_weights[i]*source.Area/norm(target - point);
+        }
+        return r;
+      }
     }
     else
     {
@@ -179,12 +205,15 @@ class LaplaceSphericalBEM : public LaplaceSpherical
   };
 
   /** Perform gaussian integration from this panel to target */
-  double eval_dGdn(const source_type source, const point_type target) const {
+  double eval_dGdn(const source_type& source, const point_type& target) const {
     double dist = norm(target-source.center);
     // check for self-interaction
-    if (dist < 1e-8) return 2*M_PI;
+    if (dist < 1e-8) {
+      return 2*M_PI;
+    }
     // check for SA / GQ
     if (sqrt(2*source.Area)/dist >= 0.5) {
+#if 0
       namespace AI = AnalyticalIntegral;
       // semi-analytical integral
       auto& vertices = source.vertices;
@@ -195,6 +224,29 @@ class LaplaceSphericalBEM : public LaplaceSpherical
       AI::SemiAnalytical<AI::LAPLACE>(G,dGdn,vertices[0],vertices[1],vertices[2],target,dist < 1e-10);
       return -dGdn;
 #endif
+#endif
+      // K_fine case
+      auto& vertices = source.vertices;
+      auto& normal = source.normal;
+      auto& gauss_weights = BEMConfig::Instance()->GaussWeights(17);
+      auto& gauss_points  = BEMConfig::Instance()->GaussPoints(17);
+
+      // loop over gauss points
+      double r = 0.;
+      for (unsigned i=0; i < gauss_points.size(); i++) {
+        auto& gp = gauss_points[i];
+        Vec<3,double> point(vertices[0][0]*gp[0] + vertices[1][0]*gp[1] + vertices[2][0]*gp[2],
+                            vertices[0][1]*gp[0] + vertices[1][1]*gp[1] + vertices[2][1]*gp[2],
+                            vertices[0][2]*gp[0] + vertices[1][2]*gp[1] + vertices[2][2]*gp[2]);
+
+        point_type dx = point - target;
+        double r2 = normSq(dx);
+        double r3 = r2*std::sqrt(r2);
+
+        // accumulate influence
+        r += gauss_weights[i]*source.Area*(dx[0]*normal[0]+dx[1]*normal[1]+dx[2]*normal[2])/r3;
+      }
+      return r;
     } else {
       auto& gauss_weight = BEMConfig::Instance()->GaussWeights(); // GQ.weights(K);
       double res=0.;

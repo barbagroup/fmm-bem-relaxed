@@ -8,18 +8,19 @@
 #include "Triangulation.hpp"
 #include "gmres.hpp"
 
-struct SolverOptions
-{
-  double residual;
-  int max_iters, restart;
+#include <sys/time.h>
 
-  SolverOptions() : residual(1e-5), max_iters(50), restart(50) {};
-};
+double get_time()
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (double)(tv.tv_sec + 1e-6*tv.tv_usec);
+}
 
 struct ProblemOptions
 {
   typedef enum { PHI_SET, DPHIDN_SET } BoundaryCondition;
-  double kappa_ = 0.125;
+  double kappa_ = 0.;
   BoundaryCondition bc_ = PHI_SET;
   double value_ = 1.;
   int recursions = 4;
@@ -62,11 +63,12 @@ void initialiseSphere(std::vector<SourceType>& panels,
 int main(int argc, char **argv)
 {
   int numPanels= 1000, recursions = 4, p = 5, k = 3;
-  double kappa = 0.125;
+  double kappa = 0.;
   FMMOptions opts;
   opts.set_mac_theta(0.5);    // Multipole acceptance criteria
   opts.set_max_per_box(10);
-  opts.evaluator = FMMOptions::TREECODE;
+  SolverOptions solver_options;
+  bool second_kind = false;
 
   // parse command line args
   // check if no arguments given
@@ -78,6 +80,15 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-theta") == 0) {
       i++;
       opts.set_mac_theta((double)atof(argv[i]));
+    } else if (strcmp(argv[i],"-eval") == 0) {
+      i++;
+      if (strcmp(argv[i],"FMM") == 0) {
+        opts.evaluator = FMMOptions::FMM;
+      } else if (strcmp(argv[i],"TREE") == 0) {
+        opts.evaluator = FMMOptions::TREECODE;
+      } else {
+        printf("[W]: Unknown evaluator type: \"%s\"\n",argv[i]);
+      }
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
@@ -92,6 +103,10 @@ int main(int argc, char **argv)
     } else if (strcmp(argv[i],"-recursions") == 0) {
       i++;
       recursions = atoi(argv[i]);
+    } else if (strcmp(argv[i],"-second_kind") == 0) {
+      second_kind = true;
+    } else if (strcmp(argv[i],"-fixed_p") == 0) {
+      solver_options.variable_p = false;
     } else if (strcmp(argv[i],"-help") == 0) {
       printHelpAndExit();
     } else {
@@ -100,6 +115,8 @@ int main(int argc, char **argv)
     }
   }
 
+  double tic, toc;
+  tic = get_time();
   // Init the FMM Kernel
   typedef YukawaCartesianBEM kernel_type;
   kernel_type K(p, kappa, k);
@@ -116,8 +133,9 @@ int main(int argc, char **argv)
   std::vector<charge_type> charges(numPanels);
   initialiseSphere(panels, charges, recursions); //, ProblemOptions());
 
-  // run case solving for Phi (instead of dPhi/dn)
-  for (auto& it : panels) it.switch_BC();
+  // run case solving for Phi (instead of dPhi/dn) // Second-kind equation
+  if (second_kind)
+    for (auto& it : panels) it.switch_BC();
 
   // set constant Phi || dPhi/dn for each panel
   charges.resize(panels.size());
@@ -129,17 +147,30 @@ int main(int argc, char **argv)
   // generate the RHS and initial condition
   std::vector<charge_type> x(panels.size(),0.);
 
-  // generate RHS using direct calculation
-  for (auto& it : panels) it.switch_BC();
+  // generate RHS using temporary FMM plan
   std::vector<result_type> b(panels.size(),0.);
-  Direct::matvec(K,panels,charges,b);
-  for (auto& it : panels) it.switch_BC();
+  {
+    for (auto& it : panels) it.switch_BC();
+    FMM_plan<kernel_type> rhs_plan = FMM_plan<kernel_type>(K,panels,opts);
+    b = rhs_plan.execute(charges,p);
+    for (auto& it : panels) it.switch_BC();
+  }
+
+  toc = get_time();
+  double setup_time = toc-tic;
 
   // Solve the system using GMRES
   // generate the Preconditioner
+  tic = get_time();
   Preconditioners::Diagonal<charge_type> M(K,panels.begin(),panels.end());
-  fmm_gmres(plan, x, b, SolverOptions(),M);
+  fmm_gmres(plan, x, b, solver_options, M);
   // direct_gmres(K, panels, x, b, SolverOptions());
+  toc = get_time();
+  double solve_time = toc-tic;
+
+  printf("\nTIMING:\n");
+  printf("\tsetup : %.4es\n",setup_time);
+  printf("\tsolve : %.4es\n",solve_time);
 
   // check errors -- analytical solution for dPhi/dn = 1.
   double e = 0.;

@@ -11,30 +11,42 @@
 
 #include "EvalLocal.hpp"
 #include "EvalLocalSparse.hpp"
+#include "EvalDiagonalSparse.hpp"
 
 #include "EvalInteractionQueue.hpp"
 #include "EvalInteractionLazy.hpp"
+#include "EvalInteractionLazySparse.hpp"
 
 #include "tree/Octree.hpp"
+
 
 
 template <typename Executor, typename Options>
 void make_evaluators(Executor& executor, Options& opts)
 {
 	if (opts.lazy_evaluation) {
-		// Custom lazy evaluator
-		auto lazy_eval = make_lazy_eval(executor, opts);
-		executor.insert(lazy_eval);
+    if (opts.sparse_local) {
+      // sparse local evaluation
+      auto lazy_eval = make_lazy_sparse_eval(executor, opts);
+      executor.insert(lazy_eval);
+    } else {
+      // Custom lazy evaluator
+      auto lazy_eval = make_lazy_eval(executor, opts);
+      executor.insert(lazy_eval);
+    }
   } else if (opts.local_evaluation) {
     // only evaluate local field for preconditioner
     if (opts.sparse_local) {
-      //auto sparse_eval = make_sparse_local_eval(executor, opts);
-      //executor.insert(sparse_eval);
+      auto sparse_eval = make_sparse_local_eval(executor, opts);
+      executor.insert(sparse_eval);
     }
     else {
       auto local_eval = make_local_eval(executor, opts);
       executor.insert(local_eval);
     }
+  } else if (opts.block_diagonal) {
+    auto block_diagonal_eval = make_sparse_diagonal_eval(executor, opts);
+    executor.insert(block_diagonal_eval);
 	} else {
 		// Standard evaluators
 		auto upward = make_upward(executor, opts);
@@ -51,9 +63,10 @@ void make_evaluators(Executor& executor, Options& opts)
 template <typename Kernel,
           typename SourceIter,
           typename Options>
-ExecutorBase<Kernel>* make_executor(const Kernel& K,
-                                    SourceIter first, SourceIter last,
-                                    Options& opts) {
+// ExecutorBase<Kernel>* make_executor(const Kernel& K,
+ExecutorSingleTree<Kernel,Octree<typename Kernel::point_type>>* make_executor(const Kernel& K,
+                                          SourceIter first, SourceIter last,
+                                          Options& opts) {
   typedef Octree<typename Kernel::point_type> Tree;
 
   auto executor = make_executor<Tree>(K,

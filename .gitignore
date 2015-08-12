@@ -1,0 +1,13 @@
+
+# make and build files
+*.o
+.deps
+*.swp
+examples/LaplaceBEM
+examples/sphericalBEM
+examples/YukawaBEM
+serialrun
+tests/correctness
+tests/single_level
+tests/scaling
+tests/multi_level

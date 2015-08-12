@@ -12,7 +12,7 @@
 //#include <KernelSkeletonMixed.hpp>
 #include <LaplaceCartesian.hpp>
 //#include <YukawaCartesian.hpp>
-//#include <YukawaSpherical.hpp>
+#include <YukawaSpherical.hpp>
 #include "StokesSpherical.hpp"
 
 #include <cstring>
@@ -21,10 +21,10 @@
 // TODO: Do this much better...
 //#define SKELETON_KERNEL
 //#define UNIT_KERNEL
-#define SPH_KERNEL
+// #define SPH_KERNEL
 //#define CART_KERNEL
 //#define YUKAWA_KERNEL
-//#define YUKAWA_SPH
+#define YUKAWA_SPH
 //#define STOKES_SPH
 
 // Random number in [0,1)

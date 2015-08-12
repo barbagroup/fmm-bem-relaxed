@@ -6,6 +6,10 @@
 
 #include <cmath>
 #include "Vec.hpp"
+#include <fstream>
+#include <cstdlib>
+
+namespace Triangulation {
 
 struct triangle
 {
@@ -98,7 +102,7 @@ void divide_all(std::vector<triangle>& triangles)
 }
 
 template <typename PanelType>
-void create_unit_sphere(std::vector<PanelType>& panels, unsigned recursions = 2)
+void UnitSphere(std::vector<PanelType>& panels, unsigned recursions = 2)
 {
   std::vector<triangle> triangles(8);
   init_octahedron_triangles(triangles);
@@ -115,5 +119,205 @@ void create_unit_sphere(std::vector<PanelType>& panels, unsigned recursions = 2)
   for (auto it=triangles.begin(); it!=triangles.end(); ++it, ++pit) {
     *pit = PanelType(it->v0_,it->v1_,it->v2_);
   }
+
+  // save the triangulation to test.vert, test.face
+  std::ofstream face("test.face");
+  std::ofstream vert("test.vert");
+
+  int vnum = 1;
+  for (auto it=triangles.begin(); it!=triangles.end();++it) {
+    vert << it->v0_[0] << " " << it->v0_[1] << " " << it->v0_[2] << std::endl;
+    vert << it->v1_[0] << " " << it->v1_[1] << " " << it->v1_[2] << std::endl;
+    vert << it->v2_[0] << " " << it->v2_[1] << " " << it->v2_[2] << std::endl;
+    face << vnum << ' ' << vnum+1 << ' ' << vnum+2 << std::endl;
+    vnum+=3;
+  }
 }
 
+template <typename T>
+int sgn(T val)
+{
+  return (T(0) < val) - (val < T(0));
+}
+
+Mat3<double> RotationMatrix(double alpha, double beta, double gamma)
+{
+  double ca = cos(alpha), cb = cos(beta), cg = cos(gamma);
+  double sa = sin(alpha), sb = sin(beta), sg = sin(gamma);
+
+  Mat3<double> M;
+
+  M(0,0) = cb*cg;
+  M(0,1) = -cb*sg;
+  M(0,2) = sb;
+
+  M(1,0) = ca*sg + cg*sa*sb;
+  M(1,1) = ca*cg - sa*sb*sg;
+  M(1,2) = -cb*sa;
+
+  M(2,0) = sa*sg - ca*cg*sb;
+  M(2,1) = cg*sa + ca*sb*sg;
+  M(2,2) = ca*cb;
+
+  return M;
+}
+
+template <typename VertexType>
+void shift(VertexType& v, double xs, double ys, double zs)
+{
+  v[0] += xs;
+  v[1] += ys;
+  v[2] += zs;
+}
+
+// rotate a point using a rotation matrix
+template <typename VertexType, typename MatrixType>
+void rotate(VertexType& v, MatrixType& m)
+{
+  VertexType r(0.);
+
+  r = m*v;
+  v = r;
+}
+
+template <typename VertexType>
+void ConvertRedBloodCellTriangle(VertexType& v)
+{
+  // constants:
+  double r = 3.91, C0 = 0.81, C2 = 7.83, C4 = -4.39;
+
+  double x = v[0]*r, y = v[1]*r;
+  double rho = std::sqrt(x*x + y*y);
+  double ratio = rho / r;
+
+  // new z co-ordinate
+  double z = std::sqrt(1-ratio*ratio + 1e-12)*(C0 + C2*ratio*ratio + C4*ratio*ratio*ratio*ratio)*0.5*sgn(v[2]);
+
+  if (isnan(z)) {
+    printf("[E]: z is NaN\n");
+    printf("x: %g, y: %g, rho: %g, ratio: %g\n",x,y,rho,ratio);
+    double temp = 1-ratio*ratio;
+    printf("temp: %g, z: %g\n",temp,z);
+    std::exit(0);
+  }
+  v[0] = x; v[1] = y; v[2] = z;
+
+}
+
+/**
+ * Convert a unit sphere into an ethrocyte (RBC)
+ */
+template <typename PanelType>
+void RedBloodCell(std::vector<PanelType>& panels, unsigned recursions = 2, Mat3<double> rotation = Mat3<double>(0.), double *s = nullptr)
+{
+  std::vector<triangle> triangles(8);
+  init_octahedron_triangles(triangles);
+
+  for (unsigned i=0; i<recursions-1; i++) {
+    divide_all(triangles);
+  }
+
+  // convert all vertices to make RBC
+  for (auto it=triangles.begin(); it!=triangles.end(); ++it) {
+    // first vertex
+    ConvertRedBloodCellTriangle(it->v0_);
+    rotate(it->v0_, rotation);
+    ConvertRedBloodCellTriangle(it->v1_);
+    rotate(it->v1_, rotation);
+    ConvertRedBloodCellTriangle(it->v2_);
+    rotate(it->v2_, rotation);
+    shift(it->v0_, s[0], s[1], s[2]);
+    shift(it->v1_, s[0], s[1], s[2]);
+    shift(it->v2_, s[0], s[1], s[2]);
+  }
+
+  printf("RBC: initialised %d triangles\n",(int)triangles.size());
+  // now triangles contains the full triangulation -- convert to panel
+  panels.resize(triangles.size());
+
+  auto pit = panels.begin();
+  for (auto it=triangles.begin(); it!=triangles.end(); ++it, ++pit) {
+    *pit = PanelType(it->v0_,it->v1_,it->v2_);
+  }
+
+  // save the triangulation to test.vert, test.face
+  std::ofstream face("rbc.face");
+  std::ofstream vert("rbc.vert");
+
+  int vnum = 1;
+  for (auto it=triangles.begin(); it!=triangles.end();++it) {
+    vert << it->v0_[0] << " " << it->v0_[1] << " " << it->v0_[2] << std::endl;
+    vert << it->v1_[0] << " " << it->v1_[1] << " " << it->v1_[2] << std::endl;
+    vert << it->v2_[0] << " " << it->v2_[1] << " " << it->v2_[2] << std::endl;
+    face << vnum << ' ' << vnum+1 << ' ' << vnum+2 << std::endl;
+    vnum+=3;
+  }
+}
+
+/**
+ * Create multiple red blood cells, with random orientations
+ */
+template <typename PanelType>
+void MultipleRedBloodCell(std::vector<PanelType>& panels, unsigned recursions = 2, unsigned cells = 1)
+{
+  unsigned panels_per_cell = 8 * (unsigned)pow(4,recursions-1);
+  unsigned total_panels = panels_per_cell * cells;
+  panels.resize(total_panels);
+
+  // temp vector to hold a single cell
+  std::vector<PanelType> temp;
+
+  unsigned offset = 0;
+  double sx = 0., sy = 0., sz = 0.;
+  for (unsigned i=0; i<cells; i++) {
+    // generate a rotation matrix
+    auto M = RotationMatrix(::drand48(), ::drand48(), ::drand48());
+
+    if (i>0) {
+      sy += 2*3.91 + 3.91*::drand48();
+      sx = i*::drand48() + 2.83*::drand48();
+      sz = ((i%2==0)? 1 : -1)*10*::drand48();
+    }
+
+    // double sy = 3.91*::drand48() + 2*i*3.91, sx = i*::drand48() + ::drand48(), sz = ((i%2==0)? 1 : -1)*4*::drand48();
+    double s[] = {sx, sy, sz};
+    // generate the RBC into temp vector
+    RedBloodCell(temp, recursions, M, s);
+
+    // shift all panels
+    printf("shifting: %g, %g, %g\n",sx,sy,sz);
+    /*
+    for (auto it=temp.begin(); it!=temp.end(); ++it) {
+      shift(it->vertices[0], sx, sy, sz);
+      shift(it->vertices[1], sx, sy, sz);
+      shift(it->vertices[2], sx, sy, sz);
+    }
+    */
+    // copy temp vector into main panels vector
+    for (unsigned j=0; j<panels_per_cell; j++) {
+      panels[offset + j] = temp[j];
+    }
+    // clear the temp vector and increase offset
+    temp.clear();
+    offset += panels_per_cell;
+  }
+
+  // output the entire domain (all cells)
+  std::ofstream face("cells.face");
+  std::ofstream vert("cells.vert");
+
+  int vnum = 1;
+  for (auto it=panels.begin(); it!=panels.end(); ++it)
+  {
+    auto& v = it->vertices;
+
+    // output vertices
+    vert << v[0][0] << " " << v[0][1] << " " << v[0][2] << std::endl;
+    vert << v[1][0] << " " << v[1][1] << " " << v[1][2] << std::endl;
+    vert << v[2][0] << " " << v[2][1] << " " << v[2][2] << std::endl;
+    face << vnum << " " << vnum+1 << " " << vnum+2 << std::endl;
+    vnum += 3;
+  }
+}
+
+}; // end namespace Triangulation

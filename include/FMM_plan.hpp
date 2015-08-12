@@ -18,6 +18,7 @@ class FMM_plan
  public:
 	typedef Kernel kernel_type;
 
+  typedef typename kernel_type::point_type point_type;
 	typedef typename kernel_type::source_type source_type;
 	typedef typename kernel_type::target_type target_type;
 	// TODO: Better point support?
@@ -25,6 +26,8 @@ class FMM_plan
 	//typedef typename Vec<kernel_type::dimension, typename kernel_type::point_type> point_type;
 	typedef typename kernel_type::charge_type charge_type;
 	typedef typename kernel_type::result_type result_type;
+  // executor type
+  typedef ExecutorSingleTree<kernel_type, Octree<point_type>> executor_type;
 
 	// CONSTRUCTOR
 
@@ -69,8 +72,6 @@ class FMM_plan
 
 	// EXECUTE
 
-	/** Execute this FMM plan
-	 */
 	std::vector<result_type> execute(const std::vector<charge_type>& charges)
 	{
 		// Assert that source == target in FMMOptions
@@ -80,6 +81,7 @@ class FMM_plan
 			return std::vector<result_type>(0);
 		}
 
+    // XXX: results.size == charges.size()?
 		std::vector<result_type> results(charges.size());
 		executor_->execute(charges, results);
 
@@ -93,8 +95,20 @@ class FMM_plan
     return opts_;  // XXX: Need to update the plan with any new settings...
   }
 
+  /** Access to iterators
+   */
+  typedef typename executor_type::body_source_iterator body_source_iterator;
+  body_source_iterator source_begin() {
+    return executor_->source_begin(executor_->source_tree().root());
+  }
+
+  body_source_iterator source_end() {
+    return executor_->source_end(executor_->source_tree().root());
+  }
+
  private:
-	ExecutorBase<kernel_type>* executor_;
+	// ExecutorBase<kernel_type>* executor_;
+  executor_type *executor_;
 	kernel_type K;
 	FMMOptions opts_;
 

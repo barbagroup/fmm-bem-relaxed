@@ -50,7 +50,7 @@ LIBS +=
 ##################
 
 # 'make' - default rule
-all: LaplaceBEM YukawaBEM
+all: LaplaceBEM StokesBEM
 
 LaplaceBEM: LaplaceBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
@@ -59,9 +59,6 @@ LaplaceBEM_time: LaplaceBEM_time.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 StokesBEM: StokesBEM.o
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
-
-YukawaBEM: YukawaBEM.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 reader_test: reader_test.o
@@ -77,6 +74,7 @@ reader_test: reader_test.o
 clean:
 	-$(RM) *.o *~ */*~
 	-$(RM) LaplaceBEM YukawaBEM StokesBEM
+	-$(RM) *.charge *.face *.vert
 	$(RM) -r $(DEPSDIR)
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d) $(wildcard $(DEPSDIR)/*/*.d)

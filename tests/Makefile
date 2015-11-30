@@ -49,13 +49,13 @@ LIBS += -lm
 ##################
 
 # 'make' - default rule
-EXECS += multi_level
+#EXECS += multi_level
 EXECS += scaling
-EXECS += correctness
-EXECS += dual_correctness
-EXECS += single_level
-EXECS += single_level_stresslet
-EXECS += multi_level_stresslet
+#EXECS += correctness
+#EXECS += dual_correctness
+#EXECS += single_level
+#EXECS += single_level_stresslet
+#EXECS += multi_level_stresslet
 
 all: $(EXECS)
 

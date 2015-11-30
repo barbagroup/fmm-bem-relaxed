@@ -49,11 +49,4 @@ int main()
     printf("%d\t%.3e\n", it->first, it->second);
   }
 
-  for (auto it=times.begin(); it!=times.end(); ++it) {
-    printf("%d\n",it->first);
-  }
-  for (auto it=times.begin(); it!=times.end(); ++it) {
-    printf("%.3e\n",it->second);
-  }
 }
-

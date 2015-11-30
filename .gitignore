@@ -5,9 +5,21 @@
 *.swp
 examples/LaplaceBEM
 examples/sphericalBEM
+examples/StokesBEM
 examples/YukawaBEM
+examples/*.sh
+examples/result
 serialrun
 tests/correctness
 tests/single_level
 tests/scaling
 tests/multi_level
+
+*.face
+*.vert
+*.charge
+
+# results from autorun
+examples/Laplace_result
+examples/Stokes_sphere_result
+examples/Stokes_rbc_result

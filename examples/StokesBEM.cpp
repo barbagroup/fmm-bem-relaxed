@@ -356,10 +356,10 @@ int main(int argc, char **argv)
   }
   double analytical_soln = 6*M_PI*mu; // Ux = 1, R = 1
   double analytical_area = 4*M_PI;
-  printf("\n\nFx: %.4lg, analytical: %.4lg\n",fx,analytical_soln);
+  printf("\n\nFx: %.5lf, analytical: %.4lg\n",fx,analytical_soln);
   printf("Fy: %.4g, Fz: %.4g\n",fy,fz);
   double drag_error = fabs(analytical_soln-fx)/fabs(analytical_soln);
-  printf("error: %.5e\n",drag_error);
+  printf("error on a sphere: %.5e\n",drag_error);
   printf("\n\n");
   printf("\tdrag error per panel : %.5e, average panel area: %.5e\n",drag_error / panels.size(), area_sum / panels.size());
   double area_error = fabs(area_sum - analytical_area) / analytical_area;

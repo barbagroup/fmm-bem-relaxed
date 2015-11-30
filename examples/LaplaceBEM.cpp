@@ -18,6 +18,7 @@
 
 #include "timing.hpp"
 
+#include <cmath>
 // simple or more complicated test
 // #define BEMCPP_TEST
 
@@ -47,15 +48,21 @@ void printHelpAndExit()
 {
   printf("serialBEM : FMM-BEM for Potential problems\n");
   printf("\nUsage: ./serialBEM <options>\n\n");
-  printf("Options:\n");
+  printf("FMM/Treecode Options:\n");
   printf("-theta <double> : Set MAC theta for treecode evaluators\n");
-  printf("-eval {FMM,TREE} : Choose either FMM or treecode evaluator\n");
-  printf("-p <double> : Number of terms in the Multipole / Local expansions\n");
-  printf("-k {1,3,4,7} : Number of Gauss integration points used per panel\n");
+  printf("-eval {FMM,TREE} : Choose either FMM or treecode evaluator\n"); 
   printf("-lazy_eval : enable 'lazy' evaluator\n");
   printf("-ncrit <int> : Maximum # of particles per Octree box\n");
-  printf("-recursions <int> : number of recursive subdivisions to create a sphere - # panels = 2*4^recursions\n");
+  printf("\n");
+  printf("Problem & Solver Options:\n");
+  printf("-p <double> : Number of terms in the Multipole / Local expansions\n");
+  printf("-k {1,3,4,7} : Number of Gauss integration points used per panel\n");
+  printf("-recursions <int> : number of recursive subdivisions to create a sphere - # panels = 2*4^recursions, default = 4\n");
+  printf("-second_kind : enable 'second-kind' option to solve second-kind integral equations\n");
+  printf("-fixed_p : enable 'non-relaxed' option\n");
+  printf("-solver_tol <double> : Set the solver tolerance, default = 1e-5\n"); 
   printf("-help : print this message\n");
+
   std::exit(0);
 }
 
@@ -87,28 +94,46 @@ int main(int argc, char **argv)
 
   // parse command line args
   // check if no arguments given
+  printf("\nLaplaceBEM on a sphere\n");
   if (argc == 1) printHelpAndExit();
+	printf("parameters : \n");
+	printf("============ \n");
   for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i],"-N") == 0) {
+    if (strcmp(argv[i],"-theta") == 0) {
       i++;
-      numPanels = atoi(argv[i]);
+	printf("theta = %s\n", argv[i]);
+    } else if (strcmp(argv[i],"-recursions") == 0) {
+      i++;
+      recursions = atoi(argv[i]);
+	// print out problem size based on the # of recursions
+	printf("N = %i\n", 2* (int) pow(4, recursions));
+    } else if (strcmp(argv[i],"-eval") == 0) {
+      i++;
+    } else if (strcmp(argv[i], "-lazy_eval") == 0) {
+	printf("lazy_eval = True\n");    
+    } else if (strcmp(argv[i], "-ncrit") == 0) {
+      i++;
+	printf("ncrit = %s\n", argv[i]);
+    } else if (strcmp(argv[i], "-printtree") == 0) {
+    
     } else if (strcmp(argv[i],"-p") == 0) {
       i++;
       p = atoi(argv[i]);
       solver_options.max_p = p;
+	printf("max-p = %i\n", p);
     } else if (strcmp(argv[i],"-k") == 0) {
       i++;
       k = atoi(argv[i]);
-    } else if (strcmp(argv[i],"-recursions") == 0) {
-      i++;
-      recursions = atoi(argv[i]);
     } else if (strcmp(argv[i],"-second_kind") == 0) {
       second_kind = true;
+	printf("second-kind = True\n");
     } else if (strcmp(argv[i],"-fixed_p") == 0) {
       solver_options.variable_p = false;
+	printf("relaxed = False\n");
     } else if (strcmp(argv[i],"-solver_tol") == 0) {
       i++;
       solver_options.residual = (double)atof(argv[i]);
+	printf("solver_tol = %.2e\n", solver_options.residual);
     } else if (strcmp(argv[i],"-max_iters") == 0) {
       i++;
       max_iterations = atoi(argv[i]);
@@ -127,12 +152,16 @@ int main(int argc, char **argv)
       i++;
       mesh_name = argv[i];
       mesh = true;
-    } else {
-      printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
-      // printHelpAndExit();
     }
-  }
+      
+     
 
+      else {
+      printf("[W]: Unknown command line arg: \"%s\"\n",argv[i]);
+      printHelpAndExit();
+    }
+  }	
+  printf("============\n");
   solver_options.max_iters = max_iterations;
   solver_options.restart = max_iterations;
   // opts.sparse_local = true;
@@ -211,7 +240,7 @@ int main(int argc, char **argv)
   // Solve the system using GMRES
   // generate the Preconditioner
   tic = get_time();
-  /*
+  
   Preconditioners::Diagonal<charge_type> M(K,
                                            plan.source_begin(),
                                            plan.source_end()
@@ -219,7 +248,8 @@ int main(int argc, char **argv)
   // M.print();
   SolverOptions inner_options(1e-2,1,2);
   inner_options.variable_p = true;
-  // Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
+ /* 
+// Preconditioners::FMGMRES<FMM_plan<kernel_type>,Preconditioners::Diagonal<charge_type>> inner(plan, b, inner_options, M);
 
   // Local preconditioner
   Preconditioners::LocalInnerSolver<FMM_plan<kernel_type>, Preconditioners::Diagonal<result_type>> local(K, panels, b);
@@ -257,6 +287,11 @@ int main(int argc, char **argv)
     // DirectMV<kernel_type> MV(K, panels, panels);
     GMRES(plan,x,b,solver_options);
   }
+	else if (solver == SOLVE_GMRES && pc == DIAGONAL) {
+	printf("Solver: GMRES\nPreconditioner: Diagonal\n");
+	// GMRES, diagonal preconditioner
+	GMRES(plan, x, b, solver_options, M, context);
+}
 #else
   else if (solver == SOLVE_GMRES && pc == DIAGONAL) {
     printf("Solver: GMRES\nPreconditioner: Diagonal\n");
@@ -338,6 +373,6 @@ int main(int argc, char **argv)
   printf("external phi: %.5g, exact: %.5g, error: %.4e\n",outside_result,exact, outside_error);
 #endif
 
-  printf("error: %.3e\n",sqrt(e/e2));
+  printf("relative error: %.3e\n",sqrt(e/e2));
 }
 

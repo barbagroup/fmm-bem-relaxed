@@ -51,7 +51,6 @@ void printHelpAndExit()
   printf("FMM/Treecode Options:\n");
   printf("-theta <double> : Set MAC theta for treecode evaluators\n");
   printf("-eval {FMM,TREE} : Choose either FMM or treecode evaluator\n"); 
-  printf("-lazy_eval : enable 'lazy' evaluator\n");
   printf("-ncrit <int> : Maximum # of particles per Octree box\n");
   printf("\n");
   printf("Problem & Solver Options:\n");
@@ -109,11 +108,9 @@ int main(int argc, char **argv)
 	printf("N = %i\n", 2* (int) pow(4, recursions));
     } else if (strcmp(argv[i],"-eval") == 0) {
       i++;
-    } else if (strcmp(argv[i], "-lazy_eval") == 0) {
-	printf("lazy_eval = True\n");    
     } else if (strcmp(argv[i], "-ncrit") == 0) {
       i++;
-	printf("ncrit = %s\n", argv[i]);
+      printf("ncrit = %s\n", argv[i]);
     } else if (strcmp(argv[i], "-printtree") == 0) {
     
     } else if (strcmp(argv[i],"-p") == 0) {

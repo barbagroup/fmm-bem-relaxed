@@ -84,7 +84,6 @@ void printHelpAndExit()
   printf("-eval {FMM,TREE} : Choose either FMM or treecode evaluator\n");
   printf("-p <double> : Number of terms in the Multipole / Local expansions\n");
   printf("-k {1,3,4,7} : Number of Gauss integration points used per panel\n");
-  printf("-lazy_eval : enable 'lazy' evaluator\n");
   printf("-ncrit <int> : Maximum # of particles per Octree box\n");
   printf("-recursions <int> : number of recursive subdivisions to create a sphere - # panels = 2*4^recursions\n");
   printf("-rbc <int> : number of recursive subdivisions to create a red blood cell - # panels = 2*4^recursions\n");

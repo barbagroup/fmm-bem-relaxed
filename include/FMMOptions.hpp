@@ -38,7 +38,7 @@ public:
 	bool printTree;
 
 	FMMOptions()
-		: lazy_evaluation(false),
+		: lazy_evaluation(true),
       local_evaluation(false),
       sparse_local(false),
       block_diagonal(false),

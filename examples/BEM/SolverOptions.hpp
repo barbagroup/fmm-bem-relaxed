@@ -30,9 +30,9 @@ struct SolverOptions
       double alpha = 1. / std::min(eps, 1.);
       double nu = std::min(alpha*this->residual,1.);
       // predict p for Spherical Laplace kernel -- abstract out
-      return std::min((unsigned)ceil(-log(nu)),max_p);
+      return std::min((unsigned)ceil(-log2(nu)),max_p);
     } else if (this->relax_type == SIMONCINI) {
-      return std::min((unsigned)ceil(-log(eps)),max_p);
+      return std::min((unsigned)ceil(-log2(eps)),max_p);
     }
     return max_p;
   }

@@ -16,7 +16,7 @@ int main()
 
   FMMOptions opts;
   opts.set_mac_theta(.5);
-  opts.set_max_per_box(126);
+  opts.set_max_per_box(125);    // optimal ncrit
 
   std::vector<std::pair<unsigned,double>> times;
   double tic, toc;

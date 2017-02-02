@@ -50,6 +50,7 @@ LIBS += -lm
 
 # 'make' - default rule
 #EXECS += multi_level
+EXECS += ncrit_search
 EXECS += scaling
 #EXECS += correctness
 #EXECS += dual_correctness
@@ -67,6 +68,9 @@ scaling: scaling.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 correctness: correctness.o
+	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
+
+ncrit_search: ncrit_search.o
 	$(LINK) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@ $^
 
 dual_correctness: dual_correctness.o

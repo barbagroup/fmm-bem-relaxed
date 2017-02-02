@@ -1,5 +1,7 @@
 #include <FMM_plan.hpp>
 #include <LaplaceSpherical.hpp>
+#include <cmath>
+#include <numeric>
 
 inline double drand()
 {
@@ -21,32 +23,55 @@ int main()
   std::vector<std::pair<unsigned,double>> times;
   double tic, toc;
 
-  for (double n = 4; n <= 6; n += 0.125) {
-    int numBodies = int(pow(10,n));
-
-    std::vector<point_type> points(numBodies);
-    for (int k=0; k<numBodies; ++k) {
-      points[k] = point_type(drand(),drand(),drand());
-    }
-
-    std::vector<charge_type> charges(numBodies);
-    for (int k=0; k<numBodies; ++k) {
-      charges[k] = drand();
-    }
-
-    FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
-
-    // initialise plan & solve
-    tic = get_time();
-    auto result = plan.execute(charges);
-    toc = get_time();
-
-    printf("%d\t%.3e\n", numBodies, toc-tic);
-    times.push_back(std::make_pair(numBodies,toc-tic));
+  
+  int numBodies = 10000;
+  // initialize points
+  std::vector<point_type> points(numBodies);
+  for (int k=0; k<numBodies; ++k){
+          points[k] = point_type(drand(), drand(), drand());
   }
 
-  for (auto it=times.begin(); it!=times.end(); ++it) {
-    printf("%d\t%.3e\n", it->first, it->second);
+  // initialize charges
+  std::vector<charge_type> charges(numBodies);
+  for (int k=0; k<numBodies; ++k){
+          charges[k] = drand();
   }
+
+  // create FMM plan
+  FMM_plan<kernel_type> plan = FMM_plan<kernel_type>(K, points, opts);
+  // execute FMM
+  // run 3 times and make an average
+  int nt = 3;    // number of identical runs for timing
+  std::vector<double> timings(nt);
+  std::vector<result_type> result(numBodies);
+  for (int i=0; i<nt; i++){
+	tic = get_time();
+  	result = plan.execute(charges);
+  	toc = get_time();
+	timings[i] = toc-tic;
+  }
+  
+  double FMM_time = std::accumulate(timings.begin(), timings.end(), 0.0) / timings.size();
+  std::cout << "FMM execution time: " << FMM_time << std::endl;
+  // init exact
+  std::vector<result_type> exact(numBodies);
+  // compute using direct summation
+  tic = get_time();
+  Direct::matvec(K, points, charges, exact);
+  toc = get_time();
+ 
+  std::cout << "direct summation execution time: " << toc-tic << std::endl;
+  
+  // calculate l2 norm of relative error of the Laplace force
+  double e1 = 0;    // numerator
+  double e2 = 0;    // denominator
+  for (int k=0; k<numBodies; ++k){
+	for (int m=1; m<4; ++m){
+		e1 += (result[k][m] - exact[k][m]) * (result[k][m] - exact[k][m]);
+		e2 += exact[k][m] * exact[k][m];
+	}
+  }
+  std::cout << "the l2-norm of the relative error of Laplace force: " << sqrt(e1/e2) << std::endl;
+  return 0;
 
 }
